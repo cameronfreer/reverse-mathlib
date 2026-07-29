@@ -1,0 +1,251 @@
+# Roadmap
+
+Long-term direction for reverse-mathlib, deliberately kept out of the Milestone 1
+implementation plan. The near-term work is tracked as GitHub issues (tranche 1 remainder and
+tranche 2); everything after that lives here as ordered entries until the architecture has been
+grown through concrete mathematical pressure — not designed as an encyclopedia in advance.
+
+## Thesis
+
+**Use Simpson as the vertical theorem spine, and RMZoo as the horizontal principle graph.**
+
+Simpson ([Sim09], *Subsystems of Second Order Arithmetic*, 2nd ed.) tells us which
+representations and reversals are mathematically canonical. RMZoo tells us that the eventual
+registry must handle much more than a Big-Five ranking: conjunctions, implication and
+non-implication, ω-model consequence, conservation, formula classes, and several notions of
+uniform reducibility.
+
+The long-term target:
+
+> A typed, presentation-aware, proof-carrying superset of the RMZoo database, with
+> import/export compatibility and Lean certificates where available.
+
+```
+Simpson theorem/citation ─────┐
+                              │
+RMZoo principle/fact ─────────┼──► typed catalog
+                              │       │
+mathlib theorem/proof ────────┘       ├──► literature claim
+                                      ├──► ambient Lean factorization
+                                      ├──► restricted replay
+                                      ├──► ω-model certificate
+                                      └──► syntactic backend certificate
+                                              │
+                                              ▼
+                               RMZoo DSL / JSON / DOT / website
+```
+
+## RMZoo
+
+RMZoo (<https://github.com/ericastor/rmzoo>, MIT) is already a specialized inference engine
+over facts such as implication, non-implication, conservation, and several computable/Weihrauch
+reducibilities; it supports conjunctions (`SRT22+COH`), distinguishes ordinary RCA₀ consequence
+from ω-model consequence, and records direct versus inferred justifications
+(<https://rmzoo.math.uconn.edu/documentation/>). Its public diagrams say "last updated April
+2018" (<https://rmzoo.math.uconn.edu/diagrams/>) while the repository received small updates in
+March 2024 — treat it as an important existing standard and bibliography, not an actively
+maintained presentation.
+
+What reverse-mathlib can add that RMZoo lacks: exact formal definitions of principles; distinct
+statement variants and presentations (RMZoo's `KL` does not say *which* König's lemma — binary,
+explicitly bounded, merely finitely branching, ω-model, ambient — and these differ in strength);
+links to Lean declarations; evidence scope and strength; kernel-checked direct facts;
+proof-producing inference; proof-mined source relationships; source hashes. The JSON exporter
+(`databaseToJSON.py`) leaves principle definitions empty — a useful legacy interchange format,
+not a sufficient semantic schema. RMZoo's contributing page explicitly welcomes transcription of
+Simpson (its Simpson section in `results.txt` has only three active entries), so a pinned,
+attributed importer plus a generated upstream PR is a direct contribution opportunity.
+
+### RMZoo interface rules
+
+- **Never import RMZoo facts as Lean axioms.** An imported line like
+  `RT22+WKL w-|> ACA "Seetapun–Slaman"` becomes catalog data
+  (`evidence := literature/imported`, `status := reported`, scope recorded) — never a theorem.
+- **Direct and derived facts carry separate trust labels.** A checked graph inference over
+  literature-only leaves is `derived-from-literature`, not certified; only when every leaf has a
+  Lean/backend certificate is the result fully certified.
+- **Stable identity never depends on RMZoo's generated numeric UID.** Canonical ids like
+  `reverse-mathlib:wkl.binary-tree.omega-model`, with `rmzoo:RT22` / `simpson:I.10.3.1` as
+  aliases/external IDs that survive upstream reordering.
+- **Display choices stay display choices.** RMZoo's "is primary" designation is layout, not
+  mathematics; store it separately from equivalence facts.
+- **Upstreaming is a generated artifact**: pin a snapshot → import direct facts → add exact
+  internal Simpson records → generate a candidate `simpson-2009-results.txt` → diff against
+  upstream → coordinate conventions with maintainers → submit a focused PR. The legacy export
+  stays conservative; rich definitions/evidence live in reverse-mathlib's JSON.
+
+### What "subsuming RMZoo" could realistically mean
+
+1. **Compatibility**: read and write its facts.
+2. **Data-model subsumption**: every RMZoo relation plus exact variants and evidence.
+3. **Inference subsumption**: reproduce its queries and diagrams with checked derivation
+   objects.
+4. **Content certification**: progressively replace literature-only leaves with Lean/backend
+   certificates.
+
+Levels 1–3 are achievable relatively early; level 4 is a decades-scale program (especially
+non-implications, conservation, uniform reducibilities). Initially the project is a certified
+backend and interoperable extension — not a replacement for RMZoo's community-maintained
+knowledge.
+
+## The theorem-family ladders (from [Sim09])
+
+| Domain | Base/RCA₀ | WKL₀ | ACA₀ | ATR₀ / Π¹₁-CA₀ |
+|---|---|---|---|---|
+| Matching | finite Hall | 2-regular countable perfect matching (X.3.16) | locally finite Hall ↔ perfect matching (X.3.15) | countable König covering ↔ ATR₀ (X.3.12) |
+| Analysis | IVT | Heine–Borel, Heine–Cantor, maximum principle | monotone convergence/LUB, Bolzano–Weierstrass | perfect-set and Cantor–Bendixson results |
+| Logic | a restricted completeness formulation (I.8.3) | ordinary countable completeness (I.10.3) | — | determinacy-related principles |
+| Algebra | existence of algebraic closures | prime ideals, uniqueness of algebraic/real closure | maximal ideals, vector-space bases | Abelian-group classification |
+| WQO | elementary coding | — | Higman (X.3.22) | minimal bad sequences (X.3.24), Nash–Williams (X.3.29–30) |
+| Measure | basic special cases | — | — | WWKL sits strictly between RCA and WKL |
+
+The **matching ladder stays first**: X.3.16 (WKL₀ ↔ 2-regular perfect matching), X.3.15 (ACA₀ ↔
+locally finite Hall/perfect matching), X.3.12 (ATR₀ ↔ König covering) — one domain spanning
+three systems, continuing the Hall walking slice. Important correction recorded from this
+comparison: mathlib's countable Hall (and our `Standard.CountableHall`) is a **one-sided
+injective-choice statement**; Simpson's X.3.15/X.3.16 concern perfect matchings saturating both
+sides with Hall's condition on finite subsets of the whole bipartite vertex set — related
+statement variants, **not identical**. The port record must say so.
+
+The **analysis ladder** is the best second major domain (coded vs ambient reals, supplied vs
+constructed moduli/LUBs/subsequences). **Completeness** is the best presentation-sensitivity
+benchmark: Simpson I.8.3 has "a version" in RCA₀ while I.10.3 lists countable Gödel
+completeness as WKL₀-equivalent — a single registry node `Completeness` would erase the
+phenomenon; it must be a family of exact variants (second proof-mining experiment after Hall,
+compared with constructive analyses such as MeReMath). **WQO theory** (X.3.20–X.3.24,
+X.3.29–30; mathlib has Dickson/Higman in `Mathlib/Order/WellFoundedSet.lean` and
+Cantor–Bendixson material in `Mathlib/Topology/Perfect.lean`) is a good later mining target
+precisely because it does not form a Big-Five chain — Dickson's lemma forces the ontology to
+represent well-ordering principles (WO(ω^ω)). Modern status of book-era conjectures (exact
+Nash–Williams calibration) must be re-researched before opening formalization issues.
+
+## Tranches
+
+Tranche 1 items 1–4 are **complete** (dependency miner; Standard EFILC + countable Hall;
+relative Hall proof; artifact-shaped registry). Items in *tranche 1 remainder* and *tranche 2*
+are open GitHub issues; later tranches are ordered entries only.
+
+### Tranche 1 remainder — finish the Hall walking slice
+5. Binary/bounded/finitely-branching tree distinctions and EFILC bridges.
+6. Classical wrappers, `countableHall_nat`, honest case-study report (including the Simpson
+   X.3.15/X.3.16 variant relationship in the port record).
+
+Registry future-proofing constraint: identifiers, evidence kinds, contexts, and external
+mappings must be extensible. No RMZoo importer inside Milestone 1.
+
+### Tranche 2 — the catalog/RMZoo seam
+7. Conceptual principle identity (`PrincipleId`, aliases, external IDs, display metadata; a
+   principle is not yet a Lean proposition).
+8. Statement variants (`StatementVariant`, presentation requirements, semantic layer, optional
+   Lean declaration — e.g. `WKL.binaryTree.standard` / `.omegaModel` / `.secondOrderSyntax`,
+   `KL.explicitlyBounded.standard`, `KL.locallyFinite.omegaModel`).
+9. Typed facts and contexts (implication/equivalence, non-implication, conservation,
+   reducibility and non-reducibility, formula-class facts, normalized conjunctions — `RT22+COH`
+   is an AST, not a magic string — base theory and semantic scope).
+10. Evidence and provenance taxonomy (literature citation, imported RMZoo assertion, derived
+    catalog fact, ambient Lean theorem, restricted replay, ω-model theorem, all-model semantic
+    theorem, syntactic derivation, reversal, countermodel).
+11. Pinned RMZoo import (vendor `results.txt` at an exact commit with MIT attribution; direct
+    assertions only; everything `literature/imported`, never Lean-certified).
+12. Proof-producing catalog inference (checked derivation calculus: transitivity, equivalence
+    expansion, conjunction intro/elim, reducibility weakening, context weakening, supported
+    conservation rules — certifies inferences, not citation leaves).
+13. RMZoo-compatible export and query (legacy `results.txt` where representable, rich JSON,
+    DOT/Graphviz, `#rm_query`, derivation explanations).
+14. Simpson catalog seed (named results of I.8.3, I.9.3, I.9.4, I.10.3, I.11.5, and relevant
+    Appendix X sections as literature records with exact theorem numbers and statement-variant
+    placeholders).
+
+### Tranche 3 — coding, trees, and matching vocabulary
+15. Pairing / finite-sequence / finite-set codes (single vocabulary reused everywhere).
+16. Internal function and enumeration graphs (internal graph sets vs arbitrary Lean functions
+    vs program codes).
+17. Tree presentation matrix (subtree of 2^<ℕ; coordinatewise explicitly bounded; merely
+    finitely branching; at-most-two-successor on arbitrary labels).
+18. Bipartite graph and matching presentation matrix (one-sided injective choice; left/right
+    saturating; perfect; local finiteness with explicit neighborhood enumeration; n-regularity;
+    König covering).
+19. WKL/EFILC relative equivalence (ambient capability level; no RCA₀ claim).
+20. Map the current Hall port (implication/adaptation records among mathlib's Hall,
+    `CountableHall`, left-saturating matchings, Simpson's perfect-matching variants).
+21. Relative matching forward proofs (WKL/EFILC ⇒ regular-graph matching; ACA/range-search ⇒
+    locally finite perfect matching — correctly labeled capability-level evidence).
+
+### Tranche 4 — ω-model semantics and first exact calibrations
+22. Turing-reducibility adapters and join (reuse `Mathlib/Computability`).
+23. Turing jump (needed to characterize ACA₀ ω-models).
+24. Second-order parts and internal sets (`OmegaPart`, internal pairs/graphs/functions/
+    sequences/trees/paths).
+25. Turing ideals / RCAω (closure conditions, basic examples; scope label `omegaModel` only).
+26. WKLω and ACAω (path closure for internal infinite binary trees; relative
+    jump/arithmetical-definability closure).
+27. ACAω ↔ internal range existence (functions represented by internal graphs — quantifying
+    over arbitrary Lean ℕ → ℕ would be wrong).
+28. WKLω ↔ relative Σ⁰₁ separation (explicit relative-computability parameters).
+29. WKLω ↔ EFILCω (re-run the standard proof over internal systems and section graphs).
+30. Matching calibrations: ω-model forms of X.3.16 (WKLω ↔ 2-regular perfect matching) and
+    X.3.15 (ACAω ↔ locally finite Hall/perfect matching).
+31. Evidence matrix report per Hall/matching statement (literature / ambient / ω-model /
+    all-model / syntactic / reversal status). Still no "formalized over RCA₀" claims without
+    the all-model/object-theory backend.
+
+### Tranche 5 — first genuinely non-Big-Five slice
+32. Instance/solution problem abstraction (∀X (Instance X → ∃Y Solution X Y)) for computable
+    and Weihrauch reductions.
+33. RT²₂, SRT²₂, COH statements (exact coded and ω-model variants).
+34. RT²₂ → SRT²₂ and RT²₂ → COH (Lean-backed replacements for imported RMZoo facts).
+35. SRT²₂ + COH → RT²₂ (first substantive compound-antecedent catalog result).
+36. Upgrade the RMZoo equivalence evidence for RT22 ↔ SRT22+COH (Cholak–Jockusch–Slaman /
+    Mileti citations + exact variants + scope).
+37. WWKL and DNR statement families (without committing to the harder separations).
+38. First uniform reduction pilot (one known constructive reduction, after a feasibility
+    spike; validates the reducibility API).
+39. Countermodel/non-implication certificate interface (explicit model/ω-model witness; never
+    "failed to prove" as non-implication).
+
+### Tranche 6 — the analysis ladder
+40. Fast Cauchy real codes and correctness map to ℝ. 41. Coded real sequences. 42. Coded
+continuous functions and moduli. 43. IVT in the RCA interface. 44. Heine–Borel from WKL.
+45. WKL from Heine–Borel. 46. Heine–Cantor/boundedness/maximum principle from compactness.
+47. Reversals for selected WKL function principles. 48. Bounded monotone ⇒ coded LUB from ACA.
+49. ACA from monotone convergence/LUB. 50. Bolzano–Weierstrass from ACA. 51. ACA from
+Bolzano–Weierstrass. 52. Mathlib port comparison (`CompactSpace.uniformContinuous_of_continuous`,
+`tendsto_atTop_isLUB`, `tendsto_subseq_of_bounded` — identifying which strong construction the
+generic theorem receives as a structure or hypothesis).
+
+### Tranche 7 — logic and algebra
+53. First-order syntax/proof-system adapter. 54. Completeness formulation matrix. 55. Mine an
+existing Lean/Foundation completeness proof. 56. RCA-level restricted completeness. 57.
+WKL-level countable completeness. 58. Countable ring and ideal codes. 59. Prime ideal theorem
+from WKL and reversal. 60. Maximal ideal theorem from ACA and reversal. 61. Countable
+vector-space basis from ACA and reversal. 62. Field closure ladder (algebraic closure existence
+in RCA₀; uniqueness in WKL₀; transcendence basis in ACA₀).
+
+### Tranche 8 — WQO, ATR, and Π¹₁-CA
+63. Adapters to mathlib's WQO/Higman API. 64. Dickson's lemma ↔ WO(ω^ω) (X.3.20). 65. Hilbert
+basis theorem ↔ WO(ω^ω) (X.3.21). 66. Higman ↔ ACA (X.3.22). 67. Countable well-order codes.
+68. ATR capability and transfinite recursion. 69. Comparability of countable well-orders ↔ ATR.
+70. Countable König covering ↔ ATR (X.3.12 — the natural final chapter of the Hall/matching
+sequence). Then horizon issues forcing serious backend work: 71. Borel and analytic codes.
+72. Lusin separation/perfect-set theorem ↔ ATR. 73. Perfect-kernel construction.
+74. Cantor–Bendixson ↔ Π¹₁-CA. 75. Minimal bad sequence lemma ↔ Π¹₁-CA (X.3.24).
+
+### Later non-Big-Five domains
+- **WWKL and measure**: X.1.9, X.1.13, X.1.14 (countable additivity, Vitali covering,
+  measure-theoretic monotone convergence).
+- **Banach-space calibration**: X.2.1 (WKL-equivalent separation), X.2.9 (Π¹₁-CA-equivalent
+  weak-* closure existence). Mathematically excellent, representation-heavy.
+
+## Issue acceptance checklist
+
+Every theorem/principle issue finishes with: an exact statement variant; presentation
+assumptions; a Simpson/RMZoo/literature citation; semantic scope; an honest evidence status; a
+Lean proof or an explicit pending field; dependency/frontier audit output; an RMZoo alias or an
+explicit statement that none exists; separate upper-bound and reversal status; no `sorry` in
+the stable mathematical root.
+
+## Near-term sequence
+
+Hall walking slice → catalog/RMZoo seam → tree and matching representation matrix → ω-model
+calibrations → Simpson's WKL/ACA matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice →
+coded analysis ladder.

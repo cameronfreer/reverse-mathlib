@@ -68,6 +68,13 @@ from a `Nonempty` instance); occurrence-level auditing is future work.
   orphans), `AxiomAudit.lean` + `MetaAxiomAudit.lean` (standard axioms only, both roots, no
   exemptions), `MetaSmoke.lean` (miner micro-tests + the Hall dependency gates).
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md): Simpson as the vertical theorem spine, RMZoo as the horizontal
+principle graph, and the long-term target of a typed, presentation-aware, proof-carrying
+superset of the RMZoo database. Near-term work is tracked in the issues (walking-slice stretch,
+then the catalog/RMZoo seam).
+
 ## Building
 
 Pinned to Lean `v4.32.0` and the matching mathlib revision.
