@@ -27,6 +27,16 @@ import ReverseMathlib.Meta.Report
     closure.
 
 The visit bound is the `rm.maxNodes` option; truncated reports print `INCOMPLETE`.
+
+**What the assertion gates certify, precisely.** Three distinct levels, in increasing
+strength: (1) a *typed implication/factorization* — a relative theorem's statement, checked by
+the kernel, says the conclusion follows from the named hypothesis; (2) *exclusion of known
+alternate routes* — `#rm_assert_not_proof_depends` establishes only that the proof term does
+not transitively invoke the *named* declarations; binder use is not a declaration edge, and an
+ambient proof could in principle reconstruct a result by an unlisted route, so a negative gate
+is evidence about the listed constants, never a proof that the hypothesis is logically
+necessary; (3) *restricted replay or occurrence-level auditing* — the stronger future
+certificate, not yet implemented. The walking-slice gates combine (1) and (2).
 -/
 
 namespace ReverseMathlib.Meta

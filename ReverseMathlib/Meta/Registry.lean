@@ -173,11 +173,16 @@ structure EvidenceRecord where
   verification : Verification
   /-- The ambient system of its proof. -/
   ambient : ProofAmbient
-  /-- Semantic scope, when the evidence is model-relative. `none` for ambient-Lean evidence. -/
+  /-- Semantic scope; only `semanticImplication` evidence may carry one. -/
   scope? : Option SemanticScope := none
-  /-- The cited certificate or theorem, when verified in Lean. -/
+  /-- For `syntacticDerivation`: the object theory, through this dedicated field (never through
+  the scope). -/
+  theory? : Option TheoryId := none
+  /-- The cited certificate; only `kernelChecked` evidence may carry one (literature is cited
+  in the note). -/
   thm? : Option Name := none
-  /-- For `relativeProof`: the principle taken as hypothesis. -/
+  /-- For `relativeProof` (only): the principle taken as hypothesis — required even for
+  claimed records, so a malformed unverified record cannot be registered. -/
   assumes? : Option PrincipleId := none
   /-- Free-text qualifier. -/
   note : String := ""
@@ -340,9 +345,24 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
   unless ambientAgrees (requiredAmbient e.kind) e.ambient do
     throwError "registry: evidence kind '{repr e.kind}' requires ambient \
       '{repr (requiredAmbient e.kind)}', got '{repr e.ambient}'"
+  if e.scope?.isSome && e.kind != .semanticImplication then
+    throwError "registry: only semanticImplication evidence may carry a semantic scope"
   if e.kind == .semanticImplication && e.scope?.isNone then
     throwError "registry: semanticImplication evidence requires an explicit scope \
       (fullStandardModel | omegaModels | allModels); scope is never defaulted"
+  if e.kind == .relativeProof && e.assumes?.isNone then
+    throwError "registry: relativeProof evidence must name the assumed principle \
+      (assumes ...), even when merely claimed"
+  if e.assumes?.isSome && e.kind != .relativeProof then
+    throwError "registry: only relativeProof evidence may carry assumes"
+  if e.kind == .syntacticDerivation && e.theory?.isNone then
+    throwError "registry: syntacticDerivation evidence must name its object theory \
+      (theory ...), through the dedicated field rather than the scope"
+  if e.theory?.isSome && e.kind != .syntacticDerivation then
+    throwError "registry: only syntacticDerivation evidence may carry a theory"
+  if e.thm?.isSome && e.verification != .kernelChecked then
+    throwError "registry: via citations are only for kernelChecked evidence; cite literature \
+      in the note"
   if e.verification == .backendChecked then
     throwError "registry: no backend exists yet; backendChecked evidence cannot be registered"
   if e.verification == .kernelChecked then
@@ -417,10 +437,10 @@ def elabRmPrinciple : CommandElab := fun stx => do
     { id, description, interface? := some interface, claimedClassical? := claimed? }
 
 /-- One evidence line of a `revmath_port` command:
-`evidence <kind> <direction> <verification> <ambient> [scope <s>] [via <thm>] [assumes <p>]
-[note "…"]`. -/
+`evidence <kind> <direction> <verification> <ambient> [scope <s>] [theory <t>] [via <thm>]
+[assumes <p>] [note "…"]`. -/
 syntax rmEvidenceLine := &"evidence" ident ident ident ident (&"scope" ident)?
-  (&"via" ident)? (&"assumes" ident)? (&"note" str)?
+  (&"theory" ident)? (&"via" ident)? (&"assumes" ident)? (&"note" str)?
 
 /-- `revmath_port id where mathlib := … port := … relation := … …`: register a port with its
 evidence. All cited names must resolve; kernel-checked citations are axiom-swept; typed
@@ -507,12 +527,14 @@ def elabRevmathPort : CommandElab := fun stx => do
     let verification ← parseVerification ev[3]
     let ambient ← parseAmbient ev[4]
     let scope? ← (optArg ev[5] 1).mapM parseScope
-    let thm? ← (optArg ev[6] 1).mapM fun s => resolveConst ⟨s⟩
-    let assumes? : Option PrincipleId := (optArg ev[7] 1).map fun s => ⟨s.getId⟩
+    let theory? : Option TheoryId := (optArg ev[6] 1).map fun s => ⟨s.getId⟩
+    let thm? ← (optArg ev[7] 1).mapM fun s => resolveConst ⟨s⟩
+    let assumes? : Option PrincipleId := (optArg ev[8] 1).map fun s => ⟨s.getId⟩
     let evNote : String :=
-      ((optArg ev[8] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
+      ((optArg ev[9] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
     let rec' : EvidenceRecord :=
-      { kind, direction, verification, ambient, scope?, thm?, assumes?, note := evNote }
+      { kind, direction, verification, ambient, scope?, theory?, thm?, assumes?,
+        note := evNote }
     validateEvidence rec' (some portDecl)
     evidence := evidence.push rec'
   if (findPort? (← getEnv) id).isSome then
