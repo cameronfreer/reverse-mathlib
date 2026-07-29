@@ -3,6 +3,7 @@ Copyright (c) 2026 Cameron Freer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
+import Mathlib.Data.List.GetD
 import Mathlib.Data.List.Induction
 import Mathlib.Data.Set.Finite.Basic
 
@@ -85,5 +86,76 @@ theorem IsTree.take_mem {α : Type*} {T : Set (List α)} (hT : IsTree T) {l : Li
       rw [List.take_append_of_le_length hlen]
       exact ih (hT hl)
     · simpa [List.take_of_length_le h] using hl
+
+/-- A path proposition determines nodes: two bit lists of equal length whose entries both match
+`p` are equal. This is the unique-choice boundary of the ambient path representation — a path
+determines at most one node of each length. -/
+theorem eq_of_matches_path {p : Set ℕ} {l l' : List Bool} (hlen : l.length = l'.length)
+    (h : ∀ i, (hi : i < l.length) → (l[i] = true ↔ i ∈ p))
+    (h' : ∀ i, (hi : i < l'.length) → (l'[i] = true ↔ i ∈ p)) : l = l' := by
+  apply List.ext_getElem hlen
+  intro i hi hi'
+  have hiff := (h i hi).trans ((h' i hi').symm)
+  cases hb : l[i] <;> cases hb' : l'[i] <;> simp_all
+
+/-- Through a path there is exactly one matching node of each length. Note the caveat: ambient
+proofs may *select* these uniquely determined nodes inside a `Prop` proof (via choice), which
+is not yet an extracted path-decoding program — that distinction is the quantitative track's
+business. -/
+theorem IsBinaryPathThrough.existsUnique_node {p : Set ℕ} {T : Set (List Bool)}
+    (hp : IsBinaryPathThrough p T) (n : ℕ) :
+    ∃! l : List Bool, l ∈ T ∧ l.length = n ∧ ∀ i, (hi : i < l.length) → (l[i] = true ↔ i ∈ p) := by
+  obtain ⟨l, hlT, hlen, hmatch⟩ := hp n
+  refine ⟨l, ⟨hlT, hlen, hmatch⟩, ?_⟩
+  rintro l' ⟨-, hlen', hmatch'⟩
+  exact eq_of_matches_path (by omega) hmatch' hmatch
+
+/-- A coherent chain of tree nodes — one node of each length, each truncating to the previous —
+assembles into a path: the set of positions where the chain's bits are `true`. The chain itself
+supplies the witnesses, so no tree structure is needed beyond membership of the chain. -/
+theorem exists_path_of_coherent_chain {T : Set (List Bool)} (L : ℕ → List Bool)
+    (hmem : ∀ n, L n ∈ T) (hlen : ∀ n, (L n).length = n)
+    (htake : ∀ n, (L (n + 1)).take n = L n) : ∃ p : Set ℕ, IsBinaryPathThrough p T := by
+  have hLprefix : ∀ {n m : ℕ}, n ≤ m → (L m).take n = L n := by
+    intro n m hnm
+    induction m with
+    | zero =>
+      have : n = 0 := by omega
+      subst this
+      simp [List.take_of_length_le (by rw [hlen])]
+    | succ m ih =>
+      rcases Nat.lt_or_ge n (m + 1) with h | h
+      · have hnm' : n ≤ m := by omega
+        rw [← ih hnm', ← htake m, List.take_take, Nat.min_eq_left hnm']
+      · have : n = m + 1 := by omega
+        subst this
+        exact List.take_of_length_le (by rw [hlen])
+  have hget : ∀ {n m i : ℕ} (hnm : n ≤ m) (hi : i < n),
+      (L m)[i]'(by rw [hlen]; omega) = (L n)[i]'(by rw [hlen]; omega) := by
+    intro n m i hnm hi
+    have hw : i < ((L m).take n).length := by
+      rw [List.length_take, hlen]
+      omega
+    calc (L m)[i]'(by rw [hlen]; omega)
+        = ((L m).take n)[i]'hw := (List.getElem_take (h := hw)).symm
+      _ = (L n)[i]'(by rw [hlen]; omega) := by
+          have := List.getElem_of_eq (hLprefix hnm) hw
+          simpa using this
+  refine ⟨{k | (L (k + 1)).getD k false = true}, ?_⟩
+  intro n
+  refine ⟨L n, hmem n, hlen n, ?_⟩
+  intro i hi
+  have hi' : i < n := by rwa [hlen n] at hi
+  have h1 : (L n)[i]'hi = (L (i + 1))[i]'(by rw [hlen]; omega) := hget (by omega) (by omega)
+  have h2 : (L (i + 1)).getD i false = (L (i + 1))[i]'(by rw [hlen]; omega) :=
+    List.getD_eq_getElem _ _ _
+  constructor
+  · intro h
+    change (L (i + 1)).getD i false = true
+    rw [h2, ← h1, h]
+  · intro h
+    have h3 : (L (i + 1)).getD i false = true := h
+    rw [h2] at h3
+    rw [h1, h3]
 
 end ReverseMathlib.Standard

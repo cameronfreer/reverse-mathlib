@@ -29,6 +29,12 @@ RCA₀, ω-model, or subsystem claim is made or implied.
   is automatic); tree membership demands only coherence of adjacent decoded ranks under the
   bonding maps. Finite descending chains through the system supply nodes at every level; a
   path's decoded ranks form a section.
+
+Quantitative cost note: chunk width `c n = (F.fiber n).card` is deliberately simple, total,
+and auditable — and intentionally inefficient. The construction works verbatim for any widths
+`w` with `(F.fiber n).card ≤ 2 ^ w n` (e.g. `w n = ⌈log₂ card⌉`, or a supplied code-width
+bound); the current choice is the easy instance. The quantitative track (Q8/Q9) generalizes
+the width parameter rather than optimizing this proof.
 -/
 
 assert_not_exists nonempty_sections_of_finite_inverse_system
@@ -290,21 +296,13 @@ theorem efilc_of_weakKonig (hwk : WeakKonig) : ExplicitFiniteInverseLimitCompact
     have := le_widthSum c hcpos L
     omega
   obtain ⟨p, hp⟩ := hwk T hTtree hTlev
-  have huniq : ∀ {l l' : List Bool}, l.length = l'.length →
-      (∀ i, (hi : i < l.length) → (l[i] = true ↔ i ∈ p)) →
-      (∀ i, (hi : i < l'.length) → (l'[i] = true ↔ i ∈ p)) → l = l' := by
-    intro l l' hlen h h'
-    apply List.ext_getElem hlen
-    intro i hi hi'
-    have hiff := (h i hi).trans ((h' i hi').symm)
-    cases hb : l[i] <;> cases hb' : l'[i] <;> simp_all
   choose W hWT hWlen hWp using hp
   set s : ℕ → ℕ := fun n => elemVal n (rank (W (widthSum c (n + 2))) n) with hsdef
   have hs_mem : ∀ n, s n ∈ F.fiber n := fun n => elemVal_mem _ _
   have hWtake : ∀ n, W (widthSum c (n + 2)) =
       (W (widthSum c (n + 3))).take (widthSum c (n + 2)) := by
     intro n
-    apply huniq
+    apply eq_of_matches_path
     · rw [hWlen, List.length_take, hWlen]
       have := widthSum_mono c (show n + 2 ≤ n + 3 by omega)
       omega
@@ -408,46 +406,6 @@ theorem weakKonig_of_efilc (hc : ExplicitFiniteInverseLimitCompactness) : WeakKo
     have hcohn : Encodable.encode ((decodeBits (s (n + 1))).take n) = s n := hcoh n
     have h2 : Encodable.encode (L n) = s n := (hdec n).2
     exact Encodable.encode_injective (hcohn.trans h2.symm)
-  have hLprefix : ∀ {n m : ℕ}, n ≤ m → (L m).take n = L n := by
-    intro n m hnm
-    induction m with
-    | zero =>
-      have : n = 0 := by omega
-      subst this
-      simp [List.take_of_length_le (by rw [hLlen])]
-    | succ m ih =>
-      rcases Nat.lt_or_ge n (m + 1) with h | h
-      · have hnm' : n ≤ m := by omega
-        rw [← ih hnm', ← hLtake m, List.take_take, Nat.min_eq_left hnm']
-      · have : n = m + 1 := by omega
-        subst this
-        exact List.take_of_length_le (by rw [hLlen])
-  have hget : ∀ {n m i : ℕ} (hnm : n ≤ m) (hi : i < n),
-      (L m)[i]'(by rw [hLlen]; omega) = (L n)[i]'(by rw [hLlen]; omega) := by
-    intro n m i hnm hi
-    have hw : i < ((L m).take n).length := by
-      rw [List.length_take, hLlen]
-      omega
-    calc (L m)[i]'(by rw [hLlen]; omega)
-        = ((L m).take n)[i]'hw := (List.getElem_take (h := hw)).symm
-      _ = (L n)[i]'(by rw [hLlen]; omega) := by
-          have := List.getElem_of_eq (hLprefix hnm) hw
-          simpa using this
-  refine ⟨{k | (L (k + 1)).getD k false = true}, ?_⟩
-  intro n
-  refine ⟨L n, hLmem n, hLlen n, ?_⟩
-  intro i hi
-  have hi' : i < n := by rwa [hLlen n] at hi
-  have h1 : (L n)[i]'hi = (L (i + 1))[i]'(by rw [hLlen]; omega) := hget (by omega) (by omega)
-  have h2 : (L (i + 1)).getD i false = (L (i + 1))[i]'(by rw [hLlen]; omega) :=
-    List.getD_eq_getElem _ _ _
-  constructor
-  · intro h
-    change (L (i + 1)).getD i false = true
-    rw [h2, ← h1, h]
-  · intro h
-    have h3 : (L (i + 1)).getD i false = true := h
-    rw [h2] at h3
-    rw [h1, h3]
+  exact exists_path_of_coherent_chain L hLmem hLlen hLtake
 
 end ReverseMathlib.Slice
