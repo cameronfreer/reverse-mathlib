@@ -241,6 +241,28 @@ machinery (order-theoretic or topological) or the infinite Hall theorem. -/
    exists_seq_forall_proj_of_forall_finite,
    Finset.all_card_le_biUnion_card_iff_exists_injective]
 
+/-! ### End-to-end classical chain gates
+
+`Classical.weakKonig` is proved from mathlib's order-theoretic Kőnig lemma; everything below
+is derived through the relative bridges. `countableHall_nat` must reach both bridges and
+finite Hall, and never the infinite Hall theorem or the topological inverse-limit theorem. -/
+
+#rm_assert_proof_depends ReverseMathlib.Classical.weakKonig
+  exists_seq_forall_proj_of_forall_finite
+
+#rm_assert_proof_depends ReverseMathlib.Classical.countableHall_nat
+  ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+
+#rm_assert_proof_depends ReverseMathlib.Classical.countableHall_nat
+  ReverseMathlib.Slice.efilc_of_weakKonig
+
+#rm_assert_proof_depends ReverseMathlib.Classical.countableHall_nat
+  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+#rm_assert_not_proof_depends ReverseMathlib.Classical.countableHall_nat
+  [Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system]
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
@@ -258,6 +280,14 @@ Fail-closed behavior of the evidence registry: duplicate ids rejected, a bogus c
 the wrong type rejected (a bare kernel-checked reference must not masquerade as a certificate),
 ambient-Lean evidence cannot carry a semantic scope, and the Hall walking-slice port record
 renders its honest verdict. -/
+
+-- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
+-- below are registered. The fixture-inclusive statistic is pinned separately at the end.
+/--
+info: principles: 2; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
+-/
+#guard_msgs in
+#revmath_stats
 
 def smokeProp : Prop := True
 def otherProp : Prop := (2 : ℕ) = 2
@@ -310,7 +340,7 @@ revmath_port countableHall where
 /-! ### Hardening: typed, direction-aware, scope-preserving certificates -/
 
 -- Kernel-checked semantic/syntactic evidence is rejected until typed schemas exist: an axiom
--- audit alone (which True.intro passes) certifies nothing.
+-- audit alone certifies nothing — pinned with the literal `True.intro`.
 /--
 error: registry: no typed certificate schema exists yet for kernel-checked 'ReverseMathlib.Meta.EvidenceKind.semanticImplication' evidence; an axiom audit alone certifies nothing, so it is rejected until a typed schema exists
 -/
@@ -320,7 +350,7 @@ revmath_port semanticPort where
   port := RMSmoke.smokeProp
   relation := conceptualAnalogue
   evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
-    via RMSmoke.bogusCert
+    via True.intro
 
 -- Evidence kind and ambient must agree.
 /--
@@ -362,6 +392,50 @@ revmath_port lowerFixture where
     via RMSmoke.lowerShapedCert
     assumes smokeTestPrinciple
   evidence relativeProof lower claimed lean
+    assumes smokeTestPrinciple
+
+/-! ### Evidence-field compatibility matrix: malformed unverified records are rejected too -/
+
+/--
+error: registry: relativeProof evidence must name the assumed principle (assumes ...), even when merely claimed
+-/
+#guard_msgs in
+revmath_port noAssumesPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof lower claimed lean
+
+/-- error: registry: only relativeProof evidence may carry assumes -/
+#guard_msgs in
+revmath_port strayAssumesPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence dependencyAudit upper claimed lean
+    assumes smokeTestPrinciple
+
+/--
+error: registry: syntacticDerivation evidence must name its object theory (theory ...), through the dedicated field rather than the scope
+-/
+#guard_msgs in
+revmath_port noTheoryPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence syntacticDerivation upper claimed objectTheory
+
+/--
+error: registry: via citations are only for kernelChecked evidence; cite literature in the note
+-/
+#guard_msgs in
+revmath_port strayViaPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof lower claimed lean
+    via RMSmoke.bogusCert
+    assumes smokeTestPrinciple
 
 -- An ambient lower factorization (and a fortiori a claimed lower record) is NOT an RM lower
 -- bound: both pending lines must survive.
@@ -392,7 +466,7 @@ info: countableHall
     certificate: ReverseMathlib.Ports.countableHallRelativeCertificate (assumes explicitFiniteInverseLimitCompactness)
     ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
     note: Proof-only closure certified by CI (scripts/MetaSmoke.lean): contains finite Hall, excludes the infinite Hall theorem, the compactness boundary, and the selection scaffolding.
-  candidate classical classification: WKL₀ for this explicitly-Finset presentation (cf. Hirst, marriage theorems; presentation-sensitive) [claimed, UNVERIFIED]
+  candidate classical classification: future internally coded/model-relative analogue: WKL₀ candidate; the current ambient one-sided injective-choice variant has no certified RM classification; relationship to Simpson X.3.15/X.3.16: related statement variant, not identical [claimed, UNVERIFIED]
   backend RM certificate: pending
   exact lower bound: pending
   note: Mined from mathlib's proof: finite Hall reused for level nonemptiness; the topological compactness boundary (nonempty_sections_of_finite_inverse_system, ultimately Tychonoff) and the hallMatchingsOn selection scaffolding replaced by the EFILC hypothesis over explicitly enumerated Finset fibers — no Nonempty-instance extraction step remains (occurrence-level fact; see scripts/MetaSmoke.lean for the constant-level gates and the recorded indefiniteDescription granularity limitation).

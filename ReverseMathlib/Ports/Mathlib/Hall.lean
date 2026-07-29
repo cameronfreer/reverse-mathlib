@@ -50,8 +50,9 @@ revmath_port countableHall where
   mathlib := Finset.all_card_le_biUnion_card_iff_exists_injective
   port := ReverseMathlib.Standard.CountableHall
   relation := minedArchitecture
-  claimedClassical := "WKL₀ for this explicitly-Finset presentation (cf. Hirst, marriage \
-    theorems; presentation-sensitive)"
+  claimedClassical := "future internally coded/model-relative analogue: WKL₀ candidate; the \
+    current ambient one-sided injective-choice variant has no certified RM classification; \
+    relationship to Simpson X.3.15/X.3.16: related statement variant, not identical"
   note := "Mined from mathlib's proof: finite Hall reused for level nonemptiness; the \
     topological compactness boundary (nonempty_sections_of_finite_inverse_system, ultimately \
     Tychonoff) and the hallMatchingsOn selection scaffolding replaced by the EFILC hypothesis \

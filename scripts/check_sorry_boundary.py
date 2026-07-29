@@ -140,6 +140,18 @@ def main() -> int:
                   f"imported by the mathematical root", file=sys.stderr)
             status = 1
 
+    # (3b) principle statements and relative proofs never import the classical instances:
+    # Standard/ and Slice/ must stay hypothesis-relative so factorization audits stay clean
+    for mod in sorted(spine):
+        if mod.startswith("ReverseMathlib.Standard") or mod.startswith("ReverseMathlib.Slice"):
+            p = module_path(root, mod)
+            assert p is not None
+            for imp in imports_of(p):
+                if imp.startswith("ReverseMathlib.Classical"):
+                    print(f"{mod} imports {imp}: Standard/ and Slice/ modules must never "
+                          f"import the classical instances", file=sys.stderr)
+                    status = 1
+
     # (4) no orphans: every .lean file under ReverseMathlib/ is reachable from some root
     lib_dir = root / MATH_ROOT
     for p in sorted(lib_dir.rglob("*.lean")):

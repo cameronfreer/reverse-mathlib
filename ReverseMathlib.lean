@@ -9,3 +9,4 @@ import ReverseMathlib.Standard.Hall
 import ReverseMathlib.Standard.Trees
 import ReverseMathlib.Slice.HallFromCompactness
 import ReverseMathlib.Slice.WeakKonigEfilc
+import ReverseMathlib.Classical.KonigHall

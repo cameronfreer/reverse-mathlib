@@ -41,7 +41,11 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness,
    -- Tree bridges: the ambient WKL ↔ EFILC factorizations
    ``ReverseMathlib.Slice.efilc_of_weakKonig,
-   ``ReverseMathlib.Slice.weakKonig_of_efilc]
+   ``ReverseMathlib.Slice.weakKonig_of_efilc,
+   -- The end-to-end classical chain
+   ``ReverseMathlib.Classical.weakKonig,
+   ``ReverseMathlib.Classical.explicitFiniteInverseLimitCompactness,
+   ``ReverseMathlib.Classical.countableHall_nat]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

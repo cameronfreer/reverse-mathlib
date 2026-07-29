@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/header.png" alt="Robot miners with lanterns excavating glowing crystals from a night-time mine, its entrance stones carved with RCA₀, WKL₀, ACA₀, ATR₀, and Π¹₁-CA₀." width="820">
+</p>
+
 # reverse-mathlib
 
 Reverse mathematics for Lean: proof-strength analysis of mathlib via dependency mining,
@@ -54,6 +58,15 @@ One honest limitation, found while building the gates: `Classical.indefiniteDesc
 assertable at constant granularity — `Classical.em` itself reaches it, so every classical proof
 does. The selection-free repair is an occurrence-level fact (the construction never extracts
 from a `Nonempty` instance); occurrence-level auditing is future work.
+
+The slice now closes end-to-end (`ReverseMathlib/Classical/KonigHall.lean`): mathlib's
+order-theoretic Kőnig lemma → `Classical.weakKonig` → EFILC (via the relative bridge) →
+countable Hall (via the relative Hall theorem) → `Classical.countableHall_nat`, with gates
+certifying the chain reaches both bridges and finite Hall and never the infinite Hall theorem
+or the topological inverse-limit theorem. Statement-variant caveat, recorded in the port: our
+`CountableHall` is a *one-sided injective-choice* variant — related to, but not identical with,
+Simpson's perfect-matching theorems X.3.15/X.3.16, and the ambient variant has no certified RM
+classification.
 
 ## Structure
 
