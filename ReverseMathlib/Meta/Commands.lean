@@ -77,8 +77,8 @@ elab "#rm_deps " id:ident : command => do
   logInfo (r.summary "#rm_deps")
 
 /-- `#rm_deps thm json`: the machine-readable report, recording Lean version and mathlib
-revision. -/
-elab "#rm_deps " id:ident " json" : command => do
+revision. (`json` is a soft keyword: it stays usable as an ordinary identifier elsewhere.) -/
+elab "#rm_deps " id:ident &"json" : command => do
   let r ← mineForCommand id (useFrontier := false)
   let rev? ← readMathlibRev
   logInfo (toString (r.toJson rev?))

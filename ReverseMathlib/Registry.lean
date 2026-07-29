@@ -6,6 +6,8 @@ Authors: Cameron Freer
 import ReverseMathlib.Meta.DepGraph
 import ReverseMathlib.Meta.Report
 import ReverseMathlib.Meta.Commands
+import ReverseMathlib.Meta.Registry
+import ReverseMathlib.Ports.Mathlib.Hall
 
 /-!
 # Tooling and registry aggregate root

@@ -225,9 +225,8 @@ scaffolding that performs the selection. -/
    hallMatchingsFunctor,
    hallMatchingsOn.nonempty]
 
--- Frontier registration on an *imported* declaration, and the cut it produces.
-attribute [rm_frontier] nonempty_sections_of_finite_inverse_system
-
+-- The compactness boundary is registered as a frontier declaration (an *imported* one) in
+-- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
   let env ← getEnv
   let stopAt : NameSet := ({} : NameSet).insert ``nonempty_sections_of_finite_inverse_system
@@ -236,5 +235,84 @@ attribute [rm_frontier] nonempty_sections_of_finite_inverse_system
     | throwError "mine mathlib Hall failed"
   check (r.state.cuts.contains ``nonempty_sections_of_finite_inverse_system)
     "the compactness boundary must appear as a frontier cut in mathlib's infinite Hall"
+
+/-! ## Registry micro-tests
+
+Fail-closed behavior of the evidence registry: duplicate ids rejected, a bogus certificate with
+the wrong type rejected (a bare kernel-checked reference must not masquerade as a certificate),
+ambient-Lean evidence cannot carry a semantic scope, and the Hall walking-slice port record
+renders its honest verdict. -/
+
+def smokeProp : Prop := True
+def otherProp : Prop := (2 : ℕ) = 2
+
+/-- A kernel-checked theorem of certificate *shape* but the wrong *type*: its assumption is not
+the registered interface of the principle it will claim to assume. -/
+theorem bogusCert : ReverseMathlib.Meta.RelativeCertificate ((1 : ℕ) = 1) smokeProp :=
+  ⟨fun _ => trivial⟩
+
+rm_principle smokeTestPrinciple where
+  description := "test principle"
+  interface := RMSmoke.otherProp
+
+/-- error: registry: duplicate principle id 'smokeTestPrinciple' -/
+#guard_msgs in
+rm_principle smokeTestPrinciple where
+  description := "duplicate"
+  interface := RMSmoke.otherProp
+
+/--
+error: registry: certificate 'RMSmoke.bogusCert' assumes '1 =
+  1', which is not definitionally the registered interface 'RMSmoke.otherProp' of the cited principle
+-/
+#guard_msgs in
+revmath_port bogusPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof upper kernelChecked lean
+    via RMSmoke.bogusCert
+    assumes smokeTestPrinciple
+
+/--
+error: registry: ambient-Lean evidence carries no RM semantic scope; remove the scope or change the ambient
+-/
+#guard_msgs in
+revmath_port scopedPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof upper claimed lean scope omegaModels
+
+/-- error: registry: duplicate port id 'countableHall' -/
+#guard_msgs in
+revmath_port countableHall where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+
+-- The walking slice's honest verdict, pinned.
+/--
+info: countableHall
+  mathlib: Finset.all_card_le_biUnion_card_iff_exists_injective
+  port: ReverseMathlib.Standard.CountableHall
+  source relation: proof analogue / mined architecture
+  upper · relative Lean factorization: kernel checked
+    certificate: ReverseMathlib.Ports.countableHallRelativeCertificate (assumes explicitFiniteInverseLimitCompactness)
+    ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
+    note: Proof-only closure certified by CI (scripts/MetaSmoke.lean): contains finite Hall, excludes the infinite Hall theorem, the compactness boundary, and the selection scaffolding.
+  candidate classical classification: WKL₀ for this explicitly-Finset presentation (cf. Hirst, marriage theorems; presentation-sensitive) [claimed, UNVERIFIED]
+  backend RM certificate: pending
+  exact lower bound: pending
+  note: Mined from mathlib's proof: finite Hall reused for level nonemptiness; the topological compactness boundary (nonempty_sections_of_finite_inverse_system, ultimately Tychonoff) and the hallMatchingsOn selection scaffolding replaced by the EFILC hypothesis over explicitly enumerated Finset fibers — no Nonempty-instance extraction step remains (occurrence-level fact; see scripts/MetaSmoke.lean for the constant-level gates and the recorded indefiniteDescription granularity limitation).
+-/
+#guard_msgs in
+#revmath_port? countableHall
+
+/--
+info: principles: 2; ports: 1; evidence: 1 (1 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
+-/
+#guard_msgs in
+#revmath_stats
 
 end RMSmoke
