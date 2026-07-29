@@ -4,3 +4,5 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
 import ReverseMathlib.Basic
+import ReverseMathlib.Standard.InverseLimit
+import ReverseMathlib.Standard.Hall
