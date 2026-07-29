@@ -75,6 +75,43 @@ attributed importer plus a generated upstream PR is a direct contribution opport
   upstream → coordinate conventions with maintainers → submit a focused PR. The legacy export
   stays conservative; rich definitions/evidence live in reverse-mathlib's JSON.
 
+## Treatment axes and the concordance workbook
+
+A curated concordance workbook (`reverse_mathematics_concordance.xlsx`, local at
+`/home/freer/books/`; to be vendored with a content hash when the catalog seed lands) compares
+121 variant-fixed rows across **five treatment axes**, and the catalog schema should reflect
+all of them:
+
+1. **Simpson / second-order RM** — subsystem equivalences and coding practice;
+2. **Kohlenbach / proof mining** — extracted bounds, metastability, proof dependence (the
+   Q-track);
+3. **Sanders / higher-order RM** — RCA₀^ω and ECF conservation, the "Bigger Five", and the
+   coding-gap principles;
+4. **RMZoo** — the below-ACA implication/non-implication graph;
+5. **Weihrauch** — uniform input→output problems and their degrees.
+
+Rules the workbook gets right and the catalog must enforce:
+
+- **One result variant / output problem per row; extend by adding a row, never by merging
+  formulations** — exactly the statement-variant discipline (issue #4). The workbook even
+  splits extreme value into "compute only max f" vs "choose an argmax point".
+- **A subsystem equivalence never determines a Weihrauch degree.** Degree claims carry their
+  own status: `Exact` / `Representative` (standard analogue, not a theorem-equivalence claim) /
+  `Variant-sensitive` (representation, promise, output, or sequentialization must be fixed
+  first) / `Not assigned`. "ACA₀ is a theory, not one Weihrauch degree."
+- **A theorem provable in RCA₀ can still define a noncomputable uniform selector** if its
+  classical premise is not decidable — base-provability is not uniform computability.
+- The uniform-decomposition caution: RT²₂ ↔ SRT²₂+COH over RCA₀, but **RT²₂ is not
+  Weihrauch-equivalent to SRT²₂ × COH** — second-order equivalences must never silently imply
+  uniform facts (bears directly on tranche 5, item 36).
+- Per-row **confidence** and **source keys** (SIM/KOH/SAN/RMZ/WH-\*) with URLs — the evidence
+  and provenance model (issues #6, #10) should carry both.
+
+The workbook has 51 rows pre-mapped to RMZoo symbols (a ready alias table for issue #7) and is
+the primary literature seed for the catalog (issue #10) — richer than a Simpson-only
+transcription, since each row already fixes the variant and cites all five axes. It has no
+Hall/marriage row: the walking slice's matching ladder is complementary content we bring.
+
 ### What "subsuming RMZoo" could realistically mean
 
 1. **Compatibility**: read and write its facts.
@@ -170,9 +207,11 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
     conservation rules — certifies inferences, not citation leaves).
 13. RMZoo-compatible export and query (legacy `results.txt` where representable, rich JSON,
     DOT/Graphviz, `#rm_query`, derivation explanations).
-14. Simpson catalog seed (named results of I.8.3, I.9.3, I.9.4, I.10.3, I.11.5, and relevant
-    Appendix X sections as literature records with exact theorem numbers and statement-variant
-    placeholders).
+14. Literature catalog seed from the concordance workbook (121 variant-fixed rows citing
+    Simpson/Kohlenbach/Sanders/RMZoo/Weihrauch with confidence and URLs; vendored with a
+    content hash), subsuming the original Simpson-only seed (I.8.3, I.9.3, I.9.4, I.10.3,
+    I.11.5, Appendix X) — all literature records with exact references and statement-variant
+    placeholders.
 
 ### Tranche 3 — coding, trees, and matching vocabulary
 15. Pairing / finite-sequence / finite-set codes (single vocabulary reused everywhere).
@@ -216,7 +255,9 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 34. RT²₂ → SRT²₂ and RT²₂ → COH (Lean-backed replacements for imported RMZoo facts).
 35. SRT²₂ + COH → RT²₂ (first substantive compound-antecedent catalog result).
 36. Upgrade the RMZoo equivalence evidence for RT22 ↔ SRT22+COH (Cholak–Jockusch–Slaman /
-    Mileti citations + exact variants + scope).
+    Mileti citations + exact variants + scope). Caution from the concordance: RT²₂ is **not**
+    Weihrauch-equivalent to SRT²₂ × COH — the catalog must keep the second-order equivalence
+    and the failed uniform decomposition as distinct facts on distinct axes.
 37. WWKL and DNR statement families (without committing to the harder separations).
 38. First uniform reduction pilot (one known constructive reduction, after a feasibility
     spike; validates the reducibility API).
@@ -255,6 +296,19 @@ sequence). Then horizon issues forcing serious backend work: 71. Borel and analy
   measure-theoretic monotone convergence).
 - **Banach-space calibration**: X.2.1 (WKL-equivalent separation), X.2.9 (Π¹₁-CA-equivalent
   weak-* closure existence). Mathematically excellent, representation-heavy.
+- **Sanders' higher-order divergence family** ([San], via the concordance): NIN[0,1]/NBI[0,1]
+  ("Bigger Five" — no injection/bijection [0,1]→ℕ, not provable from the Big Five), countable
+  vs enumerable sets, the `open` coding principle ("every third-order open set has an RM-code"
+  — it *isolates the logical cost of Simpson's coding practice*, a direct formalization of
+  this project's presentation-sensitivity thesis), BOOT ↔ convergence of nets, Jordan
+  decomposition for bounded variation, unordered sums, PHP[0,1]. These need the higher-order
+  ambient (`RCA₀^ω`, ECF conservation — conservative over RCA₀ *only for second-order
+  sentences*) and are horizon work, but the catalog schema must not preclude them: statement
+  variants already carry a semantic layer, and `ProofAmbient`/`SemanticScope` extend.
+- **Weihrauch axis**: uniform input→output degrees (Brattka–Gherardi and successors; e.g.
+  BWT_ℝ ≡ jump of WKL, IVT ≡ CC₁, WKL ≡ C_{2^ℕ}). Enters the catalog as its own fact/evidence
+  axis with the Exact/Representative/Variant-sensitive/Not-assigned status discipline — never
+  inferred from subsystem equivalences.
 
 ## The quantitative proof-mining track (orthogonal: Q1, Q2, …)
 
@@ -320,9 +374,18 @@ possible.
   Perspectives in Logic, Cambridge University Press / Association for Symbolic Logic, 2009.
 - **[Koh08]** Ulrich Kohlenbach, *Applied Proof Theory: Proof Interpretations and their Use in
   Mathematics*, Springer Monographs in Mathematics, Springer, 2008.
+- **[San]** Sam Sanders, *Reverse Mathematics: there and back again*, book manuscript,
+  <https://sasander.wixsite.com/academic/book>.
 - **RMZoo**: E. P. Astor et al., *The Reverse Mathematics Zoo*,
   <https://github.com/ericastor/rmzoo> (MIT license); documentation at
   <https://rmzoo.math.uconn.edu/documentation/>.
+- **Weihrauch**: V. Brattka and G. Gherardi, *Weihrauch Degrees, Omniscience Principles and
+  Weak Computability*, <https://arxiv.org/abs/0905.4679>; V. Brattka, G. Gherardi, and
+  A. Marcone, *The Bolzano–Weierstrass Theorem is the Jump of Weak Kőnig's Lemma*,
+  <https://arxiv.org/abs/1101.0792>; further per-row citations in the concordance workbook.
+- **Concordance workbook**: `reverse_mathematics_concordance.xlsx` — 121 variant-fixed rows
+  across the five treatment axes with per-row confidence, source keys, and URLs; the primary
+  catalog seed (see "Treatment axes and the concordance workbook" above).
 
 ## Near-term sequence
 
