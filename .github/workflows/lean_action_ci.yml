@@ -1,0 +1,34 @@
+name: Lean Action CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      # Builds both default targets: the `ReverseMathlib` root spine (strict —
+      # `warningAsError` is on) and the `ReverseMathlibExperimental` staging library
+      # (sorries permitted, but it must still typecheck).
+      - uses: leanprover/lean-action@v1
+
+      # The sorry boundary: the root spine is sorry-free and never imports anything from
+      # the staging library. Pure source analysis, so it does not depend on build
+      # artefacts.
+      - name: Verify the sorry boundary
+        run: python3 scripts/check_sorry_boundary.py
+
+      # Axiom hygiene: an environment sweep over every declaration owned by a
+      # `ReverseMathlib` module — including private and compiler-generated ones — plus a
+      # headline regression list. `ReverseMathlibExperimental` is deliberately out of
+      # scope; work is audited when it is promoted into the spine.
+      - name: Verify axiom hygiene
+        run: lake env lean scripts/AxiomAudit.lean
