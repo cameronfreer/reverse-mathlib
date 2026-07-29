@@ -2,16 +2,29 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/cameronfreer/reverse-mathlib/schema/registry-v0.schema.json",
   "title": "reverse-mathlib direct catalog (v0)",
-  "description": "Canonical extraction of the registry's persistent extension state. Deterministic: string IDs, sorted arrays, no timestamps, evidence in full, display metadata separate from mathematical fields, module names instead of file paths. The ambientGraph section contains kernel-checked relative certificates in unrestricted Lean; nothing in it is a reverse-mathematics implication.",
+  "description": "DOCUMENTED schema (custom checks in rmlib-zoo validate invariants; full machine validation arrives with the first Python dependency). TRANSITIONAL and pre-conceptual: principle ids are today's registry/capability ids, not the layered conceptual ids of issue #3; catalog/v1 is published only after the #4 variant migration. Canonical extraction of the registry's persistent extension state. Set-like arrays are canonically sorted; order-bearing arrays (evidence) preserve declared order since evidenceIdx refers to it. Machine fields carry stable tags; human labels live in display objects. No timestamps. The ambientGraph section contains kernel-checked relative certificates in unrestricted Lean; nothing in it is a reverse-mathematics implication.",
   "type": "object",
-  "required": ["schema", "dependencies", "principles", "ports", "ambientGraph"],
+  "required": [
+    "schema",
+    "dependencies",
+    "principles",
+    "ports",
+    "ambientGraph"
+  ],
   "properties": {
-    "schema": { "const": "reverse-mathlib.catalog/v0" },
+    "schema": {
+      "const": "reverse-mathlib.catalog/v0"
+    },
     "dependencies": {
       "type": "object",
-      "required": ["leanVersion", "mathlibRevision"],
+      "required": [
+        "leanVersion",
+        "mathlibRevision"
+      ],
       "properties": {
-        "leanVersion": { "type": "string" },
+        "leanVersion": {
+          "type": "string"
+        },
         "mathlibRevision": {
           "type": "string",
           "description": "Pinned mathlib revision, or the explicit string \"unavailable\"."
@@ -22,85 +35,257 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "description", "interface", "display"],
+        "required": [
+          "id",
+          "description",
+          "interface",
+          "display"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "description": { "type": "string" },
-          "interface": { "type": ["string", "null"] },
-          "interfaceModule": { "type": ["string", "null"] },
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "interface": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interfaceModule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
           "literatureNote": {
-            "type": ["string", "null"],
+            "type": [
+              "string",
+              "null"
+            ],
             "description": "Free-text claimed classification; always UNVERIFIED, never machine-interpreted."
           },
-          "display": { "type": "object" }
-        }
+          "display": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
       }
     },
     "ports": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["id", "portDecl", "relation", "evidence"],
+        "required": [
+          "id",
+          "portDecl",
+          "relation",
+          "evidence"
+        ],
         "properties": {
-          "id": { "type": "string" },
-          "mathlibDecl": { "type": ["string", "null"] },
-          "mathlibModule": { "type": ["string", "null"] },
-          "portDecl": { "type": ["string", "null"] },
-          "relation": { "type": "string" },
-          "literatureNote": { "type": ["string", "null"] },
-          "note": { "type": "string" },
+          "id": {
+            "type": "string"
+          },
+          "mathlibDecl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "mathlibModule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "portDecl": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "relation": {
+            "enum": [
+              "proofAnalogue",
+              "minedArchitecture",
+              "exactSpecialization",
+              "conceptualAnalogue"
+            ]
+          },
+          "literatureNote": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "note": {
+            "type": "string"
+          },
           "evidence": {
             "type": "array",
             "items": {
               "type": "object",
-              "required": ["kind", "direction", "verification", "ambient", "scope"],
+              "required": [
+                "kind",
+                "direction",
+                "verification",
+                "ambient",
+                "semanticScope",
+                "display"
+              ],
               "properties": {
-                "kind": { "type": "string" },
-                "direction": { "enum": ["upper", "lower", "exact"] },
-                "verification": { "type": "string" },
-                "ambient": { "type": "string" },
-                "scope": { "type": "string" },
-                "theory": { "type": ["string", "null"] },
-                "certificate": { "type": ["string", "null"] },
-                "assumes": { "type": ["string", "null"] },
-                "note": { "type": "string" }
-              }
+                "kind": {
+                  "enum": [
+                    "dependencyAudit",
+                    "frontierSlice",
+                    "relativeProof",
+                    "fragmentCheck",
+                    "semanticImplication",
+                    "syntacticDerivation"
+                  ]
+                },
+                "direction": {
+                  "enum": [
+                    "upper",
+                    "lower",
+                    "exact"
+                  ]
+                },
+                "verification": {
+                  "enum": [
+                    "claimed",
+                    "kernelChecked",
+                    "backendChecked"
+                  ]
+                },
+                "ambient": {
+                  "enum": [
+                    "lean",
+                    "checkedFragment",
+                    "modelSemantics",
+                    "objectTheory"
+                  ]
+                },
+                "theory": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "certificate": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "assumes": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "note": {
+                  "type": "string"
+                },
+                "semanticScope": {
+                  "enum": [
+                    "fullStandardModel",
+                    "omegaModels",
+                    "allModels",
+                    null
+                  ]
+                },
+                "display": {
+                  "type": "object"
+                }
+              },
+              "additionalProperties": false
             }
+          },
+          "display": {
+            "type": "object"
           }
-        }
+        },
+        "additionalProperties": false
       }
     },
     "ambientGraph": {
       "type": "object",
-      "required": ["nodes", "edges"],
+      "required": [
+        "nodes",
+        "edges"
+      ],
       "properties": {
-        "comment": { "type": "string" },
+        "comment": {
+          "type": "string"
+        },
         "nodes": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["id", "display"],
+            "required": [
+              "id",
+              "display"
+            ],
             "properties": {
-              "id": { "type": "string" },
-              "module": { "type": ["string", "null"] },
-              "display": { "type": "object" }
-            }
+              "id": {
+                "type": "string"
+              },
+              "module": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "display": {
+                "type": "object"
+              }
+            },
+            "additionalProperties": false
           }
         },
         "edges": {
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["source", "target", "direction", "certificate", "port", "scope"],
+            "required": [
+              "source",
+              "target",
+              "direction",
+              "certificate",
+              "port",
+              "scope"
+            ],
             "properties": {
-              "source": { "type": "string" },
-              "target": { "type": "string" },
-              "direction": { "enum": ["upper", "lower", "exact"] },
-              "certificate": { "type": "string" },
-              "port": { "type": "string" },
-              "evidenceIdx": { "type": "integer" },
-              "scope": { "const": "ambientFactorization" }
-            }
+              "source": {
+                "type": "string"
+              },
+              "target": {
+                "type": "string"
+              },
+              "direction": {
+                "enum": [
+                  "upper",
+                  "lower",
+                  "exact"
+                ]
+              },
+              "certificate": {
+                "type": "string"
+              },
+              "port": {
+                "type": "string"
+              },
+              "evidenceIdx": {
+                "type": "integer"
+              },
+              "scope": {
+                "const": "ambientFactorization"
+              }
+            },
+            "additionalProperties": false
           }
         }
       }

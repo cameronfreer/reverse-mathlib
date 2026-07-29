@@ -53,7 +53,7 @@ jobs:
         run: |
           which dot >/dev/null || (sudo apt-get update -qq && sudo apt-get install -y -qq graphviz)
           python3 tools/zoo/rmlib_zoo.py build
-          python3 tools/zoo/rmlib_zoo.py check
+          python3 tools/zoo/rmlib_zoo.py check --require-pin
 
       - name: Upload zoo site artifact
         uses: actions/upload-artifact@v4

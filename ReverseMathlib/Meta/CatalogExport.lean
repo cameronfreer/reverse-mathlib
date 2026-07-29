@@ -14,16 +14,24 @@ extension state** — never by parsing Lean source or scraping human-readable co
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
 
-Canonical-file properties:
+Canonical-file properties (`reverse-mathlib.catalog/v0` is **transitional and pre-conceptual**:
+its principle ids are today's registry/capability ids, not the layered conceptual ids of
+issue #3; `catalog/v1` is published only after the #4 variant migration):
 
 * IDs are canonical strings (declaration and registry names), never generated numerics;
-* every array is deterministically sorted;
+* **set-like arrays are canonically sorted; order-bearing arrays preserve declared order** —
+  in particular each port's `evidence` array keeps registration order, because `evidenceIdx`
+  refers to it. Every ordering rule is explicit: principles by id, ports by id, ambient nodes
+  by name, ambient edges by (source, target, port, evidenceIdx), evidence in declared order;
+* machine-readable fields carry **stable tags** (`relativeProof`, `kernelChecked`, `lean`, …),
+  never rendered prose; human labels live in separate `display` objects, so editing display
+  wording is never a schema migration;
 * **no timestamp** — the canonical file depends only on the environment and pin;
 * evidence is exported in full, never collapsed to a maturity score;
-* display metadata (labels) is separate from mathematical fields;
-* source locations are module names, never absolute build-machine paths;
+* source locations are module names (declaration ranges are *not* promised in v0), never
+  absolute build-machine paths;
 * build provenance records the Lean version and the pinned mathlib revision (or the explicit
-  string `"unavailable"`).
+  string `"unavailable"`, which CI treats as a failure).
 
 The `ambientGraph` section is the honest **ambient-factorization view**: nodes are the Lean
 statements, edges are kernel-checked `RelativeCertificate`s in unrestricted Lean. Endpoints are
@@ -133,18 +141,62 @@ private def optStrJson : Option String → Json
   | some s => Json.str s
   | none => Json.null
 
-/-- Render an evidence record in full — never collapsed to a maturity score. -/
+/-! Stable machine tags. These are the schema; the `render` functions are display only. -/
+
+/-- Stable tag for an evidence kind. -/
+def EvidenceKind.tag : EvidenceKind → String
+  | .dependencyAudit => "dependencyAudit"
+  | .frontierSlice => "frontierSlice"
+  | .relativeProof => "relativeProof"
+  | .fragmentCheck => "fragmentCheck"
+  | .semanticImplication => "semanticImplication"
+  | .syntacticDerivation => "syntacticDerivation"
+
+/-- Stable tag for a verification. -/
+def Verification.tag : Verification → String
+  | .claimed => "claimed"
+  | .kernelChecked => "kernelChecked"
+  | .backendChecked => "backendChecked"
+
+/-- Stable tag for a proof ambient. -/
+def ProofAmbient.tag : ProofAmbient → String
+  | .lean => "lean"
+  | .checkedFragment _ => "checkedFragment"
+  | .modelSemantics => "modelSemantics"
+  | .objectTheory => "objectTheory"
+
+/-- Stable tag for a semantic scope, or `null` when absent. -/
+def scopeTagJson : Option SemanticScope → Json
+  | none => Json.null
+  | some .fullStandardModel => Json.str "fullStandardModel"
+  | some .omegaModels => Json.str "omegaModels"
+  | some .allModels => Json.str "allModels"
+
+/-- Stable tag for a port relation. -/
+def PortRelation.tag : PortRelation → String
+  | .proofAnalogue => "proofAnalogue"
+  | .minedArchitecture => "minedArchitecture"
+  | .exactSpecialization => "exactSpecialization"
+  | .conceptualAnalogue => "conceptualAnalogue"
+
+/-- Render an evidence record in full — never collapsed to a maturity score. Machine tags in
+the main fields; human labels in `display`. -/
 def evidenceJson (e : EvidenceRecord) : Json :=
   Json.mkObj
-    [("kind", Json.str e.kind.render),
+    [("kind", Json.str e.kind.tag),
      ("direction", Json.str e.direction.render),
-     ("verification", Json.str e.verification.render),
-     ("ambient", Json.str e.ambient.render),
-     ("scope", Json.str (renderScope e.scope?)),
+     ("verification", Json.str e.verification.tag),
+     ("ambient", Json.str e.ambient.tag),
+     ("semanticScope", scopeTagJson e.scope?),
      ("theory", optNameJson (e.theory?.map (·.name))),
      ("certificate", optNameJson e.thm?),
      ("assumes", optNameJson (e.assumes?.map (·.name))),
-     ("note", Json.str e.note)]
+     ("note", Json.str e.note),
+     ("display", Json.mkObj
+       [("kind", Json.str e.kind.render),
+        ("verification", Json.str e.verification.render),
+        ("ambient", Json.str e.ambient.render),
+        ("scope", Json.str (renderScope e.scope?))])]
 
 /-- Serialize the snapshot with provenance to canonical JSON. -/
 def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
@@ -163,9 +215,10 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("mathlibDecl", optNameJson p.mathlibDecl?),
        ("mathlibModule", (p.mathlibDecl?.map (moduleJson env)).getD Json.null),
        ("portDecl", optNameJson p.portDecl?),
-       ("relation", Json.str p.relation.render),
+       ("relation", Json.str p.relation.tag),
        ("literatureNote", optStrJson p.claimedClassical?),
        ("note", Json.str p.note),
+       ("display", Json.mkObj [("relation", Json.str p.relation.render)]),
        ("evidence", Json.arr (p.evidence.map evidenceJson))]
   let edgeJson (e : AmbientEdge) : Json :=
     Json.mkObj
@@ -177,7 +230,9 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("evidenceIdx", Json.num e.evidenceIdx),
        ("scope", Json.str "ambientFactorization")]
   let nodes := (snapshot.ambientEdges.flatMap fun e => #[e.source, e.target])
-  let nodes := (nodes.foldl (init := ({} : NameSet)) fun s n => s.insert n).toArray
+  -- explicitly sorted and deduplicated — never relying on set-iteration order
+  let nodes := ((nodes.foldl (init := ({} : NameSet)) fun s n => s.insert n).toArray).qsort
+    Name.lt
   let nodeJson (n : Name) : Json :=
     Json.mkObj
       [("id", nameJson n),

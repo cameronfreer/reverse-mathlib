@@ -9,10 +9,15 @@ human-readable command output, and never decides that a mathematical fact follow
 Commands:
   build   Run the Lean exporter, project views, render DOT (+SVG when Graphviz is present),
           and generate the static site under .lake/build/zoo/.
-  check   Validate canonical invariants of catalog.direct.json (schema id, sortedness,
-          direction-aware edge recomputation, no timestamps). Exit 1 on any violation.
+  check   Validate canonical invariants of catalog.direct.json (schema id, sortedness of
+          set-like arrays, direction-aware edge recomputation, no timestamps). Exit 1 on any
+          violation. These are custom checks; schema/registry-v0.schema.json is the DOCUMENTED
+          schema, not yet a machine-validated contract (real validation arrives with the first
+          Python dependency and a lockfile).
   serve   Serve the generated site locally.
   diff    Semantic diff of two catalog files (added/removed principles, ports, edges).
+
+Invocation: `python3 tools/zoo/rmlib_zoo.py ...` or `uv run --project tools/zoo rmlib-zoo ...`.
 
 The only graph generated today is the honest ambient-factorization view: kernel-checked
 relative certificates in unrestricted Lean. It is deliberately NOT named "implications" —
@@ -73,9 +78,9 @@ def recompute_edges(catalog: dict) -> list[dict]:
         if target is None:
             continue
         for i, e in enumerate(port["evidence"]):
-            if e["kind"] != "relative Lean factorization":
+            if e["kind"] != "relativeProof":
                 continue
-            if e["verification"] != "kernel checked":
+            if e["verification"] != "kernelChecked":
                 continue
             if e["certificate"] is None or e["assumes"] is None:
                 continue
@@ -119,6 +124,11 @@ def cmd_check(args: argparse.Namespace) -> None:
     for k in ("leanVersion", "mathlibRevision"):
         if not deps.get(k):
             problems.append(f"dependencies.{k} missing")
+    if args.require_pin and deps.get("mathlibRevision") == "unavailable":
+        problems.append("mathlibRevision is 'unavailable' (allowed locally, a failure in CI)")
+    node_ids = [n["id"] for n in catalog.get("ambientGraph", {}).get("nodes", [])]
+    if node_ids != sorted(node_ids):
+        problems.append("ambientGraph.nodes not sorted")
     for section, key in (("principles", "id"), ("ports", "id")):
         ids = [x[key] for x in catalog.get(section, [])]
         if ids != sorted(ids):
@@ -157,15 +167,21 @@ digraph ambient_factorizations {
 """
 
 
+def dot_escape(s: str) -> str:
+    return s.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def to_dot(catalog: dict) -> str:
     graph = catalog["ambientGraph"]
     lines = [DOT_HEADER]
     for n in graph["nodes"]:
-        label = n["display"]["label"]
-        lines.append(f'  "{n["id"]}" [label="{label}", tooltip="{n["id"]}"];')
+        label = dot_escape(n["display"]["label"])
+        lines.append(f'  "{dot_escape(n["id"])}" [label="{label}", '
+                     f'tooltip="{dot_escape(n["id"])}"];')
     for e in graph["edges"]:
-        lines.append(f'  "{e["source"]}" -> "{e["target"]}" '
-                     f'[label="ambient, kernel checked", tooltip="{e["certificate"]}"];')
+        lines.append(f'  "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
+                     f'[label="ambient, kernel checked", '
+                     f'tooltip="{dot_escape(e["certificate"])}"];')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -176,10 +192,13 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
         print("rmlib-zoo: graphviz `dot` not found; skipping SVG (DOT is the comparand anyway)")
         return False
     res = subprocess.run([dot, "-Tsvg", str(dot_path), "-o", str(svg_path)])
-    return res.returncode == 0
+    if res.returncode != 0:
+        # Graphviz being absent and Graphviz erroring are different outcomes: the latter fails.
+        sys.exit("rmlib-zoo: graphviz `dot` failed")
+    return True
 
 
-def site_html(catalog: dict, svg: str | None, dot_text: str) -> str:
+def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
     deps = catalog["dependencies"]
     e = html.escape
 
@@ -197,12 +216,13 @@ def site_html(catalog: dict, svg: str | None, dot_text: str) -> str:
     def evidence_list(port: dict) -> str:
         items = []
         for ev in port["evidence"]:
-            bits = [f"{e(ev['direction'])} · {e(ev['kind'])}: {e(ev['verification'])}"]
+            d = ev["display"]
+            bits = [f"{e(ev['direction'])} · {e(d['kind'])}: {e(d['verification'])}"]
             if ev["certificate"]:
                 bits.append(f"certificate <code>{e(ev['certificate'])}</code>")
             if ev["assumes"]:
                 bits.append(f"assumes <code>{e(ev['assumes'])}</code>")
-            bits.append(f"ambient: {e(ev['ambient'])}; scope: {e(ev['scope'])}")
+            bits.append(f"ambient: {e(d['ambient'])}; scope: {e(d['scope'])}")
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
 
@@ -215,11 +235,13 @@ def site_html(catalog: dict, svg: str | None, dot_text: str) -> str:
                 f"<tr><td><code>{e(p['id'])}</code></td>"
                 f"<td><code>{e(p['mathlibDecl'] or 'none')}</code></td>"
                 f"<td><code>{e(p['portDecl'] or 'none')}</code></td>"
-                f"<td>{e(p['relation'])}</td><td>{note}</td>"
+                f"<td>{e(p['display']['relation'])}</td><td>{note}</td>"
                 f"<td>{evidence_list(p)}</td></tr>")
         return "\n".join(rows)
 
-    graph_block = svg if svg is not None else f"<pre>{e(dot_text)}</pre>"
+    graph_block = ('<img src="ambient-factorizations.svg" '
+                   'alt="Ambient factorization graph: kernel-checked relative certificates">'
+                   if have_svg else f"<pre>{e(dot_text)}</pre>")
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <title>reverse-mathlib zoo — ambient factorizations</title>
@@ -273,16 +295,14 @@ def cmd_build(args: argparse.Namespace) -> None:
     dot_path = out / "ambient-factorizations.dot"
     dot_path.write_text(dot_text)
     svg_path = out / "ambient-factorizations.svg"
-    svg = None
-    if render_svg(dot_path, svg_path):
-        svg = svg_path.read_text()
+    have_svg = render_svg(dot_path, svg_path)
     site = out / "site"
     site.mkdir(parents=True, exist_ok=True)
-    (site / "index.html").write_text(site_html(catalog, svg, dot_text))
-    if svg is not None:
+    if have_svg:
         shutil.copy(svg_path, site / "ambient-factorizations.svg")
+    (site / "index.html").write_text(site_html(catalog, have_svg, dot_text))
     print(f"rmlib-zoo build: wrote {dot_path.name}"
-          f"{', ' + svg_path.name if svg else ''}, views/ambient-standard/graph.json, "
+          f"{', ' + svg_path.name if have_svg else ''}, views/ambient-standard/graph.json, "
           f"site/index.html under {out}")
 
 
@@ -332,6 +352,8 @@ def main() -> None:
                          help="reuse an existing catalog.direct.json")
     p_build.set_defaults(func=cmd_build)
     p_check = sub.add_parser("check", help="validate canonical catalog invariants")
+    p_check.add_argument("--require-pin", action="store_true",
+                         help="fail when mathlibRevision is 'unavailable' (used in CI)")
     p_check.set_defaults(func=cmd_check)
     p_serve = sub.add_parser("serve", help="serve the generated site")
     p_serve.add_argument("--port", type=int, default=8123)
