@@ -8,6 +8,7 @@ import ReverseMathlib.Meta.Report
 import ReverseMathlib.Meta.Commands
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Ports.Mathlib.Hall
+import ReverseMathlib.Ports.Mathlib.Konig
 
 /-!
 # Tooling and registry aggregate root

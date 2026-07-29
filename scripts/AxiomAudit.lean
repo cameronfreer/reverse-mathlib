@@ -38,7 +38,10 @@ def headlineDecls : List Name :=
   [-- Scaffold
    ``ReverseMathlib.exists_prime_gt_ten,
    -- Hall walking slice: the relative factorization theorem
-   ``ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness]
+   ``ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness,
+   -- Tree bridges: the ambient WKL ↔ EFILC factorizations
+   ``ReverseMathlib.Slice.efilc_of_weakKonig,
+   ``ReverseMathlib.Slice.weakKonig_of_efilc]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

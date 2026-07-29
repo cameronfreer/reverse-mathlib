@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
 import Mathlib.Combinatorics.Hall.Basic
+import Mathlib.Order.KonigLemma
 import ReverseMathlib
 import ReverseMathlib.Registry
 
@@ -225,6 +226,21 @@ scaffolding that performs the selection. -/
    hallMatchingsFunctor,
    hallMatchingsOn.nonempty]
 
+/-! ### Tree-bridge gates: the WKL ↔ EFILC factorizations
+
+Both directions must factor through their hypotheses, not through mathlib's classical Kőnig
+machinery (order-theoretic or topological) or the infinite Hall theorem. -/
+
+#rm_assert_not_proof_depends ReverseMathlib.Slice.efilc_of_weakKonig
+  [nonempty_sections_of_finite_inverse_system,
+   exists_seq_forall_proj_of_forall_finite,
+   Finset.all_card_le_biUnion_card_iff_exists_injective]
+
+#rm_assert_not_proof_depends ReverseMathlib.Slice.weakKonig_of_efilc
+  [nonempty_sections_of_finite_inverse_system,
+   exists_seq_forall_proj_of_forall_finite,
+   Finset.all_card_le_biUnion_card_iff_exists_injective]
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
@@ -291,6 +307,81 @@ revmath_port countableHall where
   port := RMSmoke.smokeProp
   relation := conceptualAnalogue
 
+/-! ### Hardening: typed, direction-aware, scope-preserving certificates -/
+
+-- Kernel-checked semantic/syntactic evidence is rejected until typed schemas exist: an axiom
+-- audit alone (which True.intro passes) certifies nothing.
+/--
+error: registry: no typed certificate schema exists yet for kernel-checked 'ReverseMathlib.Meta.EvidenceKind.semanticImplication' evidence; an axiom audit alone certifies nothing, so it is rejected until a typed schema exists
+-/
+#guard_msgs in
+revmath_port semanticPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    via RMSmoke.bogusCert
+
+-- Evidence kind and ambient must agree.
+/--
+error: registry: evidence kind 'ReverseMathlib.Meta.EvidenceKind.relativeProof' requires ambient 'ReverseMathlib.Meta.ProofAmbient.lean', got 'ReverseMathlib.Meta.ProofAmbient.modelSemantics'
+-/
+#guard_msgs in
+revmath_port mismatchPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof upper claimed modelSemantics scope omegaModels
+
+/-- A `P → T` certificate: acceptable only as *upper* evidence. -/
+theorem upperShapedCert : ReverseMathlib.Meta.RelativeCertificate RMSmoke.otherProp
+    RMSmoke.smokeProp := ⟨fun _ => trivial⟩
+
+-- Direction-aware matching: an upper-shaped certificate is rejected as lower evidence.
+/--
+error: registry: certificate 'RMSmoke.upperShapedCert' assumes 'otherProp', which is not definitionally the registered port statement 'RMSmoke.smokeProp' of the cited principle
+-/
+#guard_msgs in
+revmath_port wrongDirPort where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof lower kernelChecked lean
+    via RMSmoke.upperShapedCert
+    assumes smokeTestPrinciple
+
+/-- A correctly-shaped *lower* certificate: `T → P` (port statement implies interface). -/
+theorem lowerShapedCert : ReverseMathlib.Meta.RelativeCertificate RMSmoke.smokeProp
+    RMSmoke.otherProp := ⟨fun _ => rfl⟩
+
+revmath_port lowerFixture where
+  mathlib := RMSmoke.smokeProp
+  port := RMSmoke.smokeProp
+  relation := conceptualAnalogue
+  evidence relativeProof lower kernelChecked lean
+    via RMSmoke.lowerShapedCert
+    assumes smokeTestPrinciple
+  evidence relativeProof lower claimed lean
+
+-- An ambient lower factorization (and a fortiori a claimed lower record) is NOT an RM lower
+-- bound: both pending lines must survive.
+/--
+info: lowerFixture
+  mathlib: RMSmoke.smokeProp
+  port: RMSmoke.smokeProp
+  source relation: conceptual analogue
+  lower · relative Lean factorization: kernel checked
+    certificate: RMSmoke.lowerShapedCert (assumes smokeTestPrinciple)
+    ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
+  lower · relative Lean factorization: claimed (UNVERIFIED)
+    ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
+  candidate classical classification: unknown
+  backend RM certificate: pending
+  exact lower bound: pending
+-/
+#guard_msgs in
+#revmath_port? lowerFixture
+
 -- The walking slice's honest verdict, pinned.
 /--
 info: countableHall
@@ -310,7 +401,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: principles: 2; ports: 1; evidence: 1 (1 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
+info: principles: 3; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
