@@ -65,9 +65,16 @@ attributed importer plus a generated upstream PR is a direct contribution opport
 - **Direct and derived facts carry separate trust labels.** A checked graph inference over
   literature-only leaves is `derived-from-literature`, not certified; only when every leaf has a
   Lean/backend certificate is the result fully certified.
-- **Stable identity never depends on RMZoo's generated numeric UID.** Canonical ids like
-  `reverse-mathlib:wkl.binary-tree.omega-model`, with `rmzoo:RT22` / `simpson:I.10.3.1` as
-  aliases/external IDs that survive upstream reordering.
+- **Stable identity never depends on RMZoo's generated numeric UID.** Identity is layered —
+  the concept-vs-variant distinction is itself part of the ID scheme: a *concept* id like
+  `reverse-mathlib:wkl` has no privileged Lean proposition; *statement-variant* ids like
+  `reverse-mathlib:wkl.binaryTree.ambient` / `.omegaModel` / `.secondOrderSyntax` may own an
+  exact Lean interface; *uniform-problem* ids like
+  `reverse-mathlib:wkl.binaryPathChoice.cantorRepresentation` identify represented problems.
+  External references (`rmzoo:RT22`, `simpson:I.10.3`, `concordance:C017`) are **typed**: each
+  carries a target and a relation (exact alias | source location | imported correspondence |
+  related variant), and only exact aliases participate in identity resolution. Namespaces are
+  registered, never a hard-coded allowlist.
 - **Display choices stay display choices.** RMZoo's "is primary" designation is layout, not
   mathematics; store it separately from equivalence facts.
 - **Upstreaming is a generated artifact**: pin a snapshot → import direct facts → add exact
@@ -409,7 +416,15 @@ extractedTerm      ──majorizedBy─────► explicitBound
 
 Legacy RMZoo export omits these fields; rich JSON retains them. A small vertical experiment
 (Q2–Q5) should land after the conceptual-identity/statement-variant layer and inform the typed
-fact and evidence design before it is finalized.
+fact and evidence design before it is finalized. The experiment stays **out of the general
+fact registry initially** — it produces ordinary mathematical artifacts (Q2: precise
+metastability and interval/challenge-function definitions; Q3: the formalized Kohlenbach
+Prop. 2.27 bound; Q4: finite convergence with the exact [0,C]/rounding convention documented;
+Q5: an executable rational/dyadic function with a correctness theorem and evaluated examples)
+— and only then asks what the catalog must record: qualitative and metastable statement
+variants, uniform parameters, extracted-program identity, correctness evidence,
+majorant/bound relationships, intensional proof dependencies, residual oracles, and source
+edition + hash. That empirical pressure shapes #5/#6.
 
 ## Issue acceptance checklist
 
