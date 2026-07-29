@@ -3,15 +3,17 @@ Copyright (c) 2026 Cameron Freer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
+import Mathlib.Combinatorics.Hall.Basic
+import ReverseMathlib
 import ReverseMathlib.Registry
 
 /-!
 # Meta smoke tests
 
-Synthetic micro-tests for the dependency miner and hard-assertion commands, run in CI via
-`lake env lean scripts/MetaSmoke.lean`. Semantic checks (`#eval` + `check`) carry the invariants;
-`#guard_msgs` goldens are kept compact and only cover command-level output shape. The mathlib
-Hall demonstration is added alongside the relative Hall proof (Milestone 1, commit 3).
+Synthetic micro-tests for the dependency miner and hard-assertion commands, plus the Hall
+walking slice's hard dependency gates, run in CI via `lake env lean scripts/MetaSmoke.lean`.
+Semantic checks (`#eval` + `check` + `#rm_assert_*`) carry the invariants; `#guard_msgs`
+goldens are kept compact and only cover command-level output shape.
 -/
 
 namespace RMSmoke
@@ -183,5 +185,56 @@ error: rm_assert: dependency closure of 'RMSmoke.d1' is INCOMPLETE (truncated at
 #guard_msgs in
 set_option rm.maxNodes 2 in
 #rm_assert_not_proof_depends d1 [opq]
+
+/-! ## The Hall walking slice: hard dependency gates
+
+These are the milestone's semantic certificates, not demonstrations. Mathlib's infinite Hall
+theorem factors through the topological compactness boundary and the `hallMatchingsOn`
+matching-selection scaffolding; the relative theorem
+`countableHall_of_finiteInverseLimitCompactness` reuses mathlib's *finite* Hall theorem but
+factors through the `ExplicitFiniteInverseLimitCompactness` hypothesis instead — its proof-only
+closure contains none of that machinery. All assertions require complete closures.
+
+A limitation found while writing these gates, recorded honestly: `Classical.indefiniteDescription`
+is **not** assertable at constant granularity. `Classical.em` is itself proved via
+`Classical.choose`/`indefiniteDescription`, so every classical proof — including ours — reaches
+the constant transitively, and it already sits in the *statement* closures through decidability
+instance values. "Mathlib selects a matching with `Classical.indefiniteDescription` at
+`Hall/Basic.lean:73` and our construction has no counterpart of that step" is an
+*occurrence-level* fact, visible in source and recorded in the port record; occurrence-level
+auditing is future work. The constant-level gates below instead target the specific mathlib
+scaffolding that performs the selection. -/
+
+-- The mined architecture: mathlib's infinite Hall proof crosses the compactness boundary
+-- and the matching-selection scaffolding.
+#rm_assert_proof_depends Finset.all_card_le_biUnion_card_iff_exists_injective
+  nonempty_sections_of_finite_inverse_system
+
+#rm_assert_proof_depends Finset.all_card_le_biUnion_card_iff_exists_injective
+  hallMatchingsOn.nonempty
+
+-- The relative proof reuses finite Hall — proof reuse, not reinvention.
+#rm_assert_proof_depends ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+-- The factorization certificate: the compactness boundary and the selection scaffolding
+-- are absent from the relative proof.
+#rm_assert_not_proof_depends ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  [Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system,
+   hallMatchingsFunctor,
+   hallMatchingsOn.nonempty]
+
+-- Frontier registration on an *imported* declaration, and the cut it produces.
+attribute [rm_frontier] nonempty_sections_of_finite_inverse_system
+
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let stopAt : NameSet := ({} : NameSet).insert ``nonempty_sections_of_finite_inverse_system
+  let .ok r := mineTarget env { stopAt }
+      ``Finset.all_card_le_biUnion_card_iff_exists_injective
+    | throwError "mine mathlib Hall failed"
+  check (r.state.cuts.contains ``nonempty_sections_of_finite_inverse_system)
+    "the compactness boundary must appear as a frontier cut in mathlib's infinite Hall"
 
 end RMSmoke

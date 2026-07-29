@@ -6,3 +6,4 @@ Authors: Cameron Freer
 import ReverseMathlib.Basic
 import ReverseMathlib.Standard.InverseLimit
 import ReverseMathlib.Standard.Hall
+import ReverseMathlib.Slice.HallFromCompactness

@@ -36,7 +36,9 @@ def allowedAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 /-- Headline declarations to audit; extended with each milestone. -/
 def headlineDecls : List Name :=
   [-- Scaffold
-   ``ReverseMathlib.exists_prime_gt_ten]
+   ``ReverseMathlib.exists_prime_gt_ten,
+   -- Hall walking slice: the relative factorization theorem
+   ``ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
