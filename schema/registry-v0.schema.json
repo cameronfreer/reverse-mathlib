@@ -7,6 +7,9 @@
   "required": [
     "schema",
     "dependencies",
+    "concepts",
+    "externalNamespaces",
+    "externalRefs",
     "principles",
     "ports",
     "ambientGraph"
@@ -288,6 +291,100 @@
             "additionalProperties": false
           }
         }
+      }
+    },
+    "concepts": {
+      "type": "array",
+      "description": "Conceptual families (issue #3). Additive over principles until the #4 migration; concepts own no Lean proposition.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description",
+          "display"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:"
+          },
+          "description": {
+            "type": "string"
+          },
+          "display": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "externalNamespaces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "externalRefs": {
+      "type": "array",
+      "description": "Typed external references. Only relation=exactAlias participates in identity resolution.",
+      "items": {
+        "type": "object",
+        "required": [
+          "namespace",
+          "key",
+          "relation",
+          "target"
+        ],
+        "properties": {
+          "namespace": {
+            "type": "string"
+          },
+          "key": {
+            "type": "string"
+          },
+          "relation": {
+            "enum": [
+              "exactAlias",
+              "sourceLocation",
+              "importedCorrespondence",
+              "relatedVariant"
+            ]
+          },
+          "target": {
+            "type": "object",
+            "required": [
+              "kind",
+              "id"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "concept",
+                  "statement",
+                  "uniformProblem"
+                ]
+              },
+              "id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
       }
     }
   }

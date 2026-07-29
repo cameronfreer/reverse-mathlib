@@ -1,0 +1,49 @@
+/-
+Copyright (c) 2026 Cameron Freer. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Cameron Freer
+-/
+import ReverseMathlib.Meta.Concepts
+
+/-!
+# Conceptual catalog seed
+
+The walking slice's conceptual families and their typed external references. Additive over the
+capability registry (`Ports/Mathlib/*.lean`): concepts own no Lean propositions; the exact
+Lean interfaces stay on today's capability entries until issue #4 migrates them to statement
+variants. Only `exactAlias` references resolve; the Simpson/concordance entries here are
+provenance.
+-/
+
+namespace ReverseMathlib.Ports
+
+rm_namespace rmzoo "Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned \
+  import arrives with issue #7)"
+rm_namespace simpson "[Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — \
+  section and theorem references"
+rm_namespace concordance "reverse_mathematics_concordance.xlsx row identifiers — external \
+  provenance, never canonical identity"
+rm_namespace sanders "[San] Sanders, Reverse Mathematics: there and back again — references"
+
+rm_concept wkl where
+  description := "Weak Kőnig's lemma as a conceptual family: variants differ by tree \
+    presentation (binary / explicitly bounded / finitely branching) and semantic layer \
+    (ambient / ω-model / second-order syntax), and differ in strength"
+
+rm_concept explicitFiniteInverseLimitCompactness where
+  description := "Explicit finite inverse-limit compactness as a conceptual family: \
+    sequential systems of explicitly enumerated finite fibers with adjacent bonding maps"
+  label := "EFILC"
+
+rm_concept countableHall where
+  description := "Countable Hall / marriage as a conceptual family: the one-sided \
+    injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but \
+    not identical, and no RMZoo symbol exists for this family"
+
+rm_external_ref rmzoo "WKL" exactAlias concept wkl
+rm_external_ref simpson "I.10" sourceLocation concept wkl
+rm_external_ref concordance "C085" importedCorrespondence concept wkl
+rm_external_ref simpson "X.3.16" relatedVariant concept countableHall
+rm_external_ref simpson "X.3.15" relatedVariant concept countableHall
+
+end ReverseMathlib.Ports

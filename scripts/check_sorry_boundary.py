@@ -126,10 +126,14 @@ def main() -> int:
                   file=sys.stderr)
             status = 1
 
-    # (2) no Experimental module is in either spine
+    # (2) no Experimental or Fixtures module is in either spine
     for mod in sorted(spine):
         if mod == EXPERIMENTAL_PREFIX or mod.startswith(EXPERIMENTAL_PREFIX + "."):
             print(f"{mod} is reachable from a production root: experimental modules must "
+                  f"not be imported by the production roots", file=sys.stderr)
+            status = 1
+        if mod == "ReverseMathlibFixtures" or mod.startswith("ReverseMathlibFixtures."):
+            print(f"{mod} is reachable from a production root: collision-test fixtures must "
                   f"not be imported by the production roots", file=sys.stderr)
             status = 1
 

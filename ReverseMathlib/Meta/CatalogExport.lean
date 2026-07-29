@@ -3,7 +3,7 @@ Copyright (c) 2026 Cameron Freer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
-import ReverseMathlib.Meta.Registry
+import ReverseMathlib.Meta.Concepts
 
 /-!
 # Deterministic catalog export
@@ -84,6 +84,9 @@ structure CatalogSnapshot where
   ports : Array PortEntry
   /-- Ambient-factorization edges, sorted by (source, target, port, evidenceIdx). -/
   ambientEdges : Array AmbientEdge
+  /-- The conceptual catalog (concepts, namespaces, typed external references). The exporter
+  refuses to run on a conflicted state. -/
+  conceptCatalog : ConceptCatalog
 
 /-- Derive the ambient-factorization edges of one port. Direction-aware: `upper` maps
 interface → port statement, `lower` maps port statement → interface, `exact` contributes both
@@ -111,7 +114,8 @@ def ambientEdgesOf (principles : Array PrincipleEntry) (p : PortEntry) :
     i := i + 1
   return edges
 
-/-- Extract the snapshot from an elaborated environment. Deterministic: all arrays sorted. -/
+/-- Extract the snapshot from an elaborated environment. Deterministic: set-like arrays
+sorted, order-bearing (evidence) arrays preserved. -/
 def CatalogSnapshot.ofEnv (env : Environment) : CatalogSnapshot :=
   let principles := (principleExt.getState env).qsort fun a b => Name.lt a.id.name b.id.name
   let ports := (portExt.getState env).qsort fun a b => Name.lt a.id b.id
@@ -120,7 +124,7 @@ def CatalogSnapshot.ofEnv (env : Environment) : CatalogSnapshot :=
       (a.source == b.source && (Name.lt a.target b.target ||
         (a.target == b.target && (Name.lt a.port b.port ||
           (a.port == b.port && a.evidenceIdx < b.evidenceIdx)))))
-  { principles, ports, ambientEdges := edges }
+  { principles, ports, ambientEdges := edges, conceptCatalog := ConceptCatalog.ofEnv env }
 
 /-- Owning module of a declaration, or `null` for current-file declarations. Module names,
 never file paths. -/
@@ -238,11 +242,37 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
       [("id", nameJson n),
        ("module", moduleJson env n),
        ("display", Json.mkObj [("label", Json.str (toString (n.componentsRev.headD n)))])]
+  let cat := snapshot.conceptCatalog
+  let conceptJson (c : ConceptEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str c.id.serialized),
+       ("description", Json.str c.description),
+       ("display", Json.mkObj [("label", Json.str c.displayLabel)])]
+  let nsJson (n : ExternalNamespaceEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str (toString n.id.name)),
+       ("description", Json.str n.description)]
+  let refJson (r : ExternalRef) : Json :=
+    Json.mkObj
+      [("namespace", Json.str (toString r.ns.name)),
+       ("key", Json.str r.key),
+       ("relation", Json.str r.relation.tag),
+       ("target", Json.mkObj
+         [("kind", Json.str r.target.kindTag),
+          ("id", Json.str s!"reverse-mathlib:{r.target.name}")])]
+  let concepts := cat.concepts.qsort fun a b => Name.lt a.id.name b.id.name
+  let namespaces := cat.namespaces.qsort fun a b => Name.lt a.id.name b.id.name
+  let refs := cat.refs.qsort fun a b =>
+    Name.lt a.ns.name b.ns.name || (a.ns.name == b.ns.name && (a.key < b.key ||
+      (a.key == b.key && Name.lt a.target.name b.target.name)))
   Json.mkObj
     [("schema", Json.str "reverse-mathlib.catalog/v0"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
+     ("concepts", Json.arr (concepts.map conceptJson)),
+     ("externalNamespaces", Json.arr (namespaces.map nsJson)),
+     ("externalRefs", Json.arr (refs.map refJson)),
      ("principles", Json.arr (snapshot.principles.map principleJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
      ("ambientGraph", Json.mkObj
@@ -254,6 +284,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
 /-- `#rm_export_catalog "path"`: write the canonical direct-catalog JSON. Parent directories
 are created; the file ends with a newline. -/
 elab "#rm_export_catalog " path:str : command => do
+  discard requireCleanCatalog  -- a conflicted conceptual catalog must never export
   let snapshot := CatalogSnapshot.ofEnv (← getEnv)
   let provenance ← BuildProvenance.read
   let p := System.FilePath.mk path.getString

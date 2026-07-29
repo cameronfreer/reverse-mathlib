@@ -308,6 +308,86 @@ info: principles: 2; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backe
       `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
     "no spurious reversed Hall edge"
 
+/-! ### Conceptual catalog (production seed + acceptance tests)
+
+Concept registration requires no Lean proposition; only exact aliases resolve; provenance
+relations may legitimately appear on several targets; unknown namespaces and duplicates are
+rejected; punctuated external keys survive. The cross-module collision tests (sibling modules
+that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
+
+/--
+info: concepts (3):
+  reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
+    simpson:"X.3.15" [relatedVariant]
+    simpson:"X.3.16" [relatedVariant]
+  reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
+  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: variants differ by tree presentation (binary / explicitly bounded / finitely branching) and semantic layer (ambient / ω-model / second-order syntax), and differ in strength
+    concordance:"C085" [importedCorrespondence]
+    rmzoo:"WKL" [exactAlias]
+    simpson:"I.10" [sourceLocation]
+namespaces (4):
+  concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
+  rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
+  sanders — [San] Sanders, Reverse Mathematics: there and back again — references
+  simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
+-/
+#guard_msgs in
+#rm_concepts
+
+/-- info: rmzoo:"WKL" = reverse-mathlib:wkl -/
+#guard_msgs in
+#rm_resolve rmzoo "WKL"
+
+-- Provenance relations never resolve.
+/--
+error: concept catalog: no exact alias for simpson:"I.10" (provenance relations do not resolve)
+-/
+#guard_msgs in
+#rm_resolve simpson "I.10"
+
+-- Same-module duplicates and unknown namespaces are rejected at registration.
+/-- error: concept catalog: duplicate concept id 'wkl' -/
+#guard_msgs in
+rm_concept wkl where
+  description := "duplicate"
+
+/--
+error: concept catalog: namespace 'nosuchns' is not registered (rm_namespace first; namespaces are extensible by registration)
+-/
+#guard_msgs in
+rm_external_ref nosuchns "K" exactAlias concept wkl
+
+/-- error: concept catalog: unknown concept 'nosuchconcept' -/
+#guard_msgs in
+rm_external_ref rmzoo "K2" exactAlias concept nosuchconcept
+
+/--
+error: concept catalog: exact alias rmzoo:"WKL" already resolves to 'wkl'
+-/
+#guard_msgs in
+rm_external_ref rmzoo "WKL" exactAlias concept countableHall
+
+-- Statement/uniform-problem targets arrive with issue #4.
+/-- error: concept catalog: statement-variant targets arrive with issue #4 -/
+#guard_msgs in
+rm_external_ref rmzoo "K3" exactAlias statement wkl
+
+-- A sourceLocation may legitimately appear on several targets; punctuated keys round-trip.
+rm_namespace fixdoi "fixture namespace for punctuation round-trip"
+rm_external_ref fixdoi "10.1017/jsl.2020.68(a)+x" exactAlias concept wkl
+rm_external_ref simpson "X.3" sourceLocation concept wkl
+rm_external_ref simpson "X.3" sourceLocation concept countableHall
+
+/-- info: fixdoi:"10.1017/jsl.2020.68(a)+x" = reverse-mathlib:wkl -/
+#guard_msgs in
+#rm_resolve fixdoi "10.1017/jsl.2020.68(a)+x"
+
+#eval show CoreM Unit from do
+  let cat := ConceptCatalog.ofEnv (← getEnv)
+  check cat.conflicts.isEmpty "repeated sourceLocation on two targets must not conflict"
+  check (cat.aliasMap[(`simpson, "X.3")]?.isNone) "sourceLocation never enters the alias map"
+  check (cat.aliasMap[(`rmzoo, "WKL")]?.isSome) "exact alias present in the alias map"
+
 def smokeProp : Prop := True
 def otherProp : Prop := (2 : ℕ) = 2
 

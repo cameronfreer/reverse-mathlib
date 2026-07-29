@@ -2,7 +2,7 @@ name = "reverse-mathlib"
 version = "0.1.0"
 license = "Apache-2.0"
 keywords = ["math"]
-defaultTargets = ["ReverseMathlib", "ReverseMathlibExperimental"]
+defaultTargets = ["ReverseMathlib", "ReverseMathlibExperimental", "ReverseMathlibFixtures"]
 
 # Pinned to the mathlib revision at the v4.32.0 tag, matching the other projects
 # in this workspace so everything builds against exactly one mathlib.
@@ -27,6 +27,13 @@ leanOptions = { autoImplicit = false, weak.linter.mathlibStandardSet = true, wea
 # `sorry` is permitted here and only here. It is still a default target, so CI requires
 # it to typecheck; `warningAsError` is off because `declaration uses 'sorry'` is a
 # warning and would otherwise fail the build.
+# Compile-time collision-test fixtures for the conceptual catalog (sibling modules that must
+# conflict only when merged). Never imported by the production roots — the boundary checker
+# enforces that.
+[[lean_lib]]
+name = "ReverseMathlibFixtures"
+leanOptions = { autoImplicit = false, warningAsError = true }
+
 [[lean_lib]]
 name = "ReverseMathlibExperimental"
 leanOptions = { autoImplicit = false, weak.linter.mathlibStandardSet = true, weak.linter.style.longFile = 1500, weak.linter.style.longFileDefValue = 1500, warningAsError = false }
