@@ -112,6 +112,47 @@ the primary literature seed for the catalog (issue #10) — richer than a Simpso
 transcription, since each row already fixes the variant and cites all five axes. It has no
 Hall/marriage row: the walking slice's matching ladder is complementary content we bring.
 
+Seeding discipline: the workbook is a **research concordance and issue-seeding source, not
+importable evidence**. It seeds candidate records and review queues; every exact mathematical
+claim must be checked against its primary source before any status above claimed/UNVERIFIED;
+"Representative"/"expected"/medium-confidence entries stay editorial notes; current manuscripts
+and recent preprints are pinned by version/date; a `concordance:Cnnn` row ID is external
+provenance, never canonical principle identity and never certification. Simpson references
+should carry both the summary theorem list and the substantive development (e.g. II.8/IV.3 for
+completeness, not only the I.x entry points).
+
+### The uniformity axis, and variants vs uniform problems
+
+Framed as four architectural axes: **Simpson** (nonuniform theorem strength and reversals),
+**RMZoo** (horizontal implications/separations), **Kohlenbach** (extracted terms, bounds,
+rates, moduli, metastability), and **higher-order RM / Weihrauch** (representation,
+uniformization, exact computational strength). The workbook's Sanders rows show how innocent
+changes move strength: coded vs arbitrary higher-type open sets; countable-as-injection vs
+explicit enumeration; sequential vs ε–δ continuity; sequences vs arbitrary nets; countable vs
+enumerable sets; coded gauges vs unrestricted functionals.
+
+Schema consequence (amends issue #4): `StatementVariant` and **`UniformProblem`** are separate
+objects — a theorem variant may be RCA₀-provable while uniformly *selecting* its witness is a
+noncomputable choice problem (IVT existence vs zero-selection; maximum value vs argmax;
+point-producing vs contrapositive Baire category; one-step vs full Hahn–Banach). A
+`UniformProblem` carries input/output types, instance/solution predicates, and input/output
+representations; a `uniformizes : StatementVariant → UniformProblem → Prop` relationship links
+them. Weihrauch degrees attach to precisely represented uniform problems, never to theorem
+nodes. Sequentialization/parallelization are explicit problem operations
+(`ProblemOp.single | finiteParallelization | sequentialization` — metadata first, reduction
+rules later): one instance and a sequence of instances differ, because sequentialization
+introduces countable-choice or bar-recursive content.
+
+Status semantics (amends issues #5/#6): `Exact` may become a typed reducibility/equivalence
+claim with evidence; `Representative` is a descriptive comparison only — never an inference
+edge; `Variant-sensitive` is a review marker meaning the problem is not yet specified enough;
+`Not assigned` is absence of classification, not evidence of computability or weakness.
+Workbook `Confidence` is editorial workflow metadata and never affects trust or certification
+status. No inference rule crosses from RM implication to Weihrauch reducibility without a
+registered bridge theorem; reducibility facts relate exact uniform-problem variants, not
+acronym-level principles; nonuniform implication and uniform reducibility are different fact
+families.
+
 ### What "subsuming RMZoo" could realistically mean
 
 1. **Compatibility**: read and write its facts.
@@ -133,7 +174,7 @@ knowledge.
 | Matching | finite Hall | 2-regular countable perfect matching (X.3.16) | locally finite Hall ↔ perfect matching (X.3.15) | countable König covering ↔ ATR₀ (X.3.12) |
 | Analysis | IVT | Heine–Borel, Heine–Cantor, maximum principle | monotone convergence/LUB, Bolzano–Weierstrass | perfect-set and Cantor–Bendixson results |
 | Logic | a restricted completeness formulation (I.8.3) | ordinary countable completeness (I.10.3) | — | determinacy-related principles |
-| Algebra | existence of algebraic closures | prime ideals, uniqueness of algebraic/real closure | maximal ideals, vector-space bases | Abelian-group classification |
+| Algebra | existence of algebraic closures; existence and uniqueness of real closures for countable ordered fields | uniqueness of algebraic closures; prime ideals; real closures/orderings for countable formally real fields | maximal ideals, vector-space bases, transcendence bases | Abelian-group classification |
 | WQO | elementary coding | — | Higman (X.3.22) | minimal bad sequences (X.3.24), Nash–Williams (X.3.29–30) |
 
 Intermediate and non-Big-Five systems do not fit this table. In particular, WWKL₀ lies strictly
@@ -267,7 +308,9 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 ### Tranche 6 — the analysis ladder
 40. Fast Cauchy real codes and correctness map to ℝ. 41. Coded real sequences. 42. Coded
 continuous functions and moduli. 43. IVT in the RCA interface. 44. Heine–Borel from WKL.
-45. WKL from Heine–Borel. 46. Heine–Cantor/boundedness/maximum principle from compactness.
+45. WKL from Heine–Borel. 46. Heine–Cantor/boundedness/maximum principle from compactness —
+with the maximum principle **split into two variants** (existence/computation of the maximum
+*value* vs production of a maximizing *point*; different uniform content per the concordance).
 47. Reversals for selected WKL function principles. 48. Bounded monotone ⇒ coded LUB from ACA.
 49. ACA from monotone convergence/LUB. 50. Bolzano–Weierstrass from ACA. 51. ACA from
 Bolzano–Weierstrass. 52. Mathlib port comparison (`CompactSpace.uniformContinuous_of_continuous`,
@@ -279,8 +322,10 @@ generic theorem receives as a structure or hypothesis).
 existing Lean/Foundation completeness proof. 56. RCA-level restricted completeness. 57.
 WKL-level countable completeness. 58. Countable ring and ideal codes. 59. Prime ideal theorem
 from WKL and reversal. 60. Maximal ideal theorem from ACA and reversal. 61. Countable
-vector-space basis from ACA and reversal. 62. Field closure ladder (algebraic closure existence
-in RCA₀; uniqueness in WKL₀; transcendence basis in ACA₀).
+vector-space basis from ACA and reversal. 62. Field closure ladder (existence of algebraic
+closure in RCA₀; existence *and uniqueness* of real closure for countable ordered fields in
+RCA₀; **uniqueness of algebraic closure** in WKL₀, alongside orderings/real closures of
+countable formally real fields; transcendence basis in ACA₀ — cf. concordance C053–C057).
 
 ### Tranche 8 — WQO, ATR, and Π¹₁-CA
 63. Adapters to mathlib's WQO/Higman API. 64. Dickson's lemma ↔ WO(ω^ω) (X.3.20). 65. Hilbert
@@ -309,6 +354,19 @@ sequence). Then horizon issues forcing serious backend work: 71. Borel and analy
   BWT_ℝ ≡ jump of WKL, IVT ≡ CC₁, WKL ≡ C_{2^ℕ}). Enters the catalog as its own fact/evidence
   axis with the Exact/Representative/Variant-sensitive/Not-assigned status discipline — never
   inferred from subsystem equivalences.
+- **Baire category as a schema stress test** (calibration family near the completeness matrix):
+  coded point-producing form, contrapositive/index-output form, and arbitrary higher-order
+  open-set form occupy strikingly different computational/foundational positions while all
+  sounding like "the Baire category theorem".
+- **Weak Bolzano–Weierstrass / strong cohesiveness bridge**: the concordance connects weak BW
+  (Cauchy subsequence without a rate) with StCOH — a later benchmark tying together analysis,
+  COH/StCOH combinatorics, quantitative/metastable formulations, and uniform computation. Add
+  StCOH alongside COH when tranche 5 lands.
+- **Later benchmark ladders** (roadmap families, not issues yet): Hahn–Banach (full
+  infinite-dimensional / finite-dimensional / one-step extension); fixed points (dimension one /
+  fixed dimension ≥ 2 / compact infinite-dimensional); ODEs (Banach contraction and
+  Picard–Lindelöf vs Peano existence); Baire category (above); compactness (single instance vs
+  sequentialized).
 
 ## The quantitative proof-mining track (orthogonal: Q1, Q2, …)
 
@@ -330,8 +388,12 @@ for tranche 8.
 - Q8. Herbrand/ε-weakening of WKL and EFILC.
 - Q9. Finite-query quantitative Hall.
 - Q10. Modulus-of-uniqueness pilot.
-- Q11. Quantitative IVT and Heine–Cantor.
-- Q12. Monotone convergence and Bolzano–Weierstrass metastability.
+- Q11. Quantitative IVT and Heine–Cantor — distinguishing approximate zeros, quantitative
+  interval localization, metastable/finite formulations, and a uniform exact-zero selector
+  (four different targets; the issue must not silently aim at the strongest).
+- Q12. Monotone convergence and Bolzano–Weierstrass metastability — distinguishing a full
+  convergent-subsequence/cluster-point selector, weak BW (Cauchy subsequence without a rate),
+  finite convergence principles, and metastable BW bounds.
 - Q13. System-T IR, evaluation, and majorization.
 - Q14. Negative translation and monotone functional interpretation.
 - Q15. Mean ergodic theorem metastability comparison with mathlib.
