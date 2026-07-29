@@ -20,9 +20,11 @@ jobs:
       # (sorries permitted, but it must still typecheck).
       - uses: leanprover/lean-action@v1
 
-      # The sorry boundary: the root spine is sorry-free and never imports anything from
-      # the staging library. Pure source analysis, so it does not depend on build
-      # artefacts.
+      # The sorry boundary and root separation: both production roots (`ReverseMathlib`
+      # mathematical, `ReverseMathlib.Registry` tooling) are sorry-free, the mathematical
+      # root never imports tooling modules, no file under `ReverseMathlib/` is orphaned,
+      # and neither root imports the staging library. Pure source analysis, so it does not
+      # depend on build artefacts.
       - name: Verify the sorry boundary
         run: python3 scripts/check_sorry_boundary.py
 
@@ -32,3 +34,13 @@ jobs:
       # scope; work is audited when it is promoted into the spine.
       - name: Verify axiom hygiene
         run: lake env lean scripts/AxiomAudit.lean
+
+      # The same standard-axiom policy for the tooling root (`ReverseMathlib.Meta.*`,
+      # `ReverseMathlib.Ports.*`, `ReverseMathlib.Registry`). No exemption mechanism.
+      - name: Verify tooling axiom hygiene
+        run: lake env lean scripts/MetaAxiomAudit.lean
+
+      # Dependency-miner micro-tests and the hard dependency assertions (semantic CI
+      # gates: assertions require complete closures and fail on truncated graphs).
+      - name: Meta smoke tests and dependency assertions
+        run: lake env lean scripts/MetaSmoke.lean

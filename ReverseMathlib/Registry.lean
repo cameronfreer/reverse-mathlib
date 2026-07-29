@@ -1,0 +1,22 @@
+/-
+Copyright (c) 2026 Cameron Freer. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Cameron Freer
+-/
+import ReverseMathlib.Meta.DepGraph
+import ReverseMathlib.Meta.Report
+import ReverseMathlib.Meta.Commands
+
+/-!
+# Tooling and registry aggregate root
+
+The second build root of this repository, alongside `ReverseMathlib.lean`. It aggregates the
+dependency-mining commands, the evidence registry, and the mathlib port records
+(`ReverseMathlib.Meta.*`, `ReverseMathlib.Ports.*`).
+
+The mathematical root `ReverseMathlib.lean` **never** imports this module — ordinary users of
+the mathematical library should not load metaprogramming machinery, and the mathematical axiom
+audit stays interpretable. `scripts/check_sorry_boundary.py` enforces the separation;
+`scripts/MetaAxiomAudit.lean` audits this root's declarations with the same standard-axiom
+policy.
+-/
