@@ -289,6 +289,25 @@ info: principles: 2; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backe
 #guard_msgs in
 #revmath_stats
 
+-- Catalog export: the production ambient-factorization graph has exactly the three
+-- direction-aware edges. The easy endpoint bug — treating `assumes` as the source
+-- unconditionally — would flip the lower edge; both orientations are pinned here.
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let snap := CatalogSnapshot.ofEnv env
+  check (snap.ambientEdges.size == 3) "production ambient graph must have exactly 3 edges"
+  let has (s t : Name) : Bool := snap.ambientEdges.any fun e => e.source == s && e.target == t
+  check (has `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness
+      `ReverseMathlib.Standard.CountableHall) "upper: EFILC -> CountableHall"
+  check (has `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness
+      `ReverseMathlib.Standard.WeakKonig) "upper: EFILC -> WeakKonig"
+  check (has `ReverseMathlib.Standard.WeakKonig
+      `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
+    "lower: WeakKonig -> EFILC (port statement is the source)"
+  check (!has `ReverseMathlib.Standard.CountableHall
+      `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
+    "no spurious reversed Hall edge"
+
 def smokeProp : Prop := True
 def otherProp : Prop := (2 : ℕ) = 2
 
@@ -455,6 +474,15 @@ info: lowerFixture
 -/
 #guard_msgs in
 #revmath_port? lowerFixture
+
+-- The fixture's lower certificate exports with the port statement as the SOURCE.
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let snap := CatalogSnapshot.ofEnv env
+  check (snap.ambientEdges.any fun e =>
+      e.source == `RMSmoke.smokeProp && e.target == `RMSmoke.otherProp &&
+        e.direction == .lower)
+    "fixture lower edge must map port statement -> principle interface"
 
 -- The walking slice's honest verdict, pinned.
 /--

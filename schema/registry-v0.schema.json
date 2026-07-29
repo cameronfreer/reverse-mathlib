@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/cameronfreer/reverse-mathlib/schema/registry-v0.schema.json",
+  "title": "reverse-mathlib direct catalog (v0)",
+  "description": "Canonical extraction of the registry's persistent extension state. Deterministic: string IDs, sorted arrays, no timestamps, evidence in full, display metadata separate from mathematical fields, module names instead of file paths. The ambientGraph section contains kernel-checked relative certificates in unrestricted Lean; nothing in it is a reverse-mathematics implication.",
+  "type": "object",
+  "required": ["schema", "dependencies", "principles", "ports", "ambientGraph"],
+  "properties": {
+    "schema": { "const": "reverse-mathlib.catalog/v0" },
+    "dependencies": {
+      "type": "object",
+      "required": ["leanVersion", "mathlibRevision"],
+      "properties": {
+        "leanVersion": { "type": "string" },
+        "mathlibRevision": {
+          "type": "string",
+          "description": "Pinned mathlib revision, or the explicit string \"unavailable\"."
+        }
+      }
+    },
+    "principles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "description", "interface", "display"],
+        "properties": {
+          "id": { "type": "string" },
+          "description": { "type": "string" },
+          "interface": { "type": ["string", "null"] },
+          "interfaceModule": { "type": ["string", "null"] },
+          "literatureNote": {
+            "type": ["string", "null"],
+            "description": "Free-text claimed classification; always UNVERIFIED, never machine-interpreted."
+          },
+          "display": { "type": "object" }
+        }
+      }
+    },
+    "ports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "portDecl", "relation", "evidence"],
+        "properties": {
+          "id": { "type": "string" },
+          "mathlibDecl": { "type": ["string", "null"] },
+          "mathlibModule": { "type": ["string", "null"] },
+          "portDecl": { "type": ["string", "null"] },
+          "relation": { "type": "string" },
+          "literatureNote": { "type": ["string", "null"] },
+          "note": { "type": "string" },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["kind", "direction", "verification", "ambient", "scope"],
+              "properties": {
+                "kind": { "type": "string" },
+                "direction": { "enum": ["upper", "lower", "exact"] },
+                "verification": { "type": "string" },
+                "ambient": { "type": "string" },
+                "scope": { "type": "string" },
+                "theory": { "type": ["string", "null"] },
+                "certificate": { "type": ["string", "null"] },
+                "assumes": { "type": ["string", "null"] },
+                "note": { "type": "string" }
+              }
+            }
+          }
+        }
+      }
+    },
+    "ambientGraph": {
+      "type": "object",
+      "required": ["nodes", "edges"],
+      "properties": {
+        "comment": { "type": "string" },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "display"],
+            "properties": {
+              "id": { "type": "string" },
+              "module": { "type": ["string", "null"] },
+              "display": { "type": "object" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["source", "target", "direction", "certificate", "port", "scope"],
+            "properties": {
+              "source": { "type": "string" },
+              "target": { "type": "string" },
+              "direction": { "enum": ["upper", "lower", "exact"] },
+              "certificate": { "type": "string" },
+              "port": { "type": "string" },
+              "evidenceIdx": { "type": "integer" },
+              "scope": { "const": "ambientFactorization" }
+            }
+          }
+        }
+      }
+    }
+  }
+}

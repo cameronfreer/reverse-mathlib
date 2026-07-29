@@ -7,6 +7,7 @@ import ReverseMathlib.Meta.DepGraph
 import ReverseMathlib.Meta.Report
 import ReverseMathlib.Meta.Commands
 import ReverseMathlib.Meta.Registry
+import ReverseMathlib.Meta.CatalogExport
 import ReverseMathlib.Ports.Mathlib.Hall
 import ReverseMathlib.Ports.Mathlib.Konig
 

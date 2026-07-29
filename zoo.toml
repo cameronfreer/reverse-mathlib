@@ -1,0 +1,11 @@
+# View configurations for rmlib-zoo. A view is a projection of the catalog, not another
+# database. Only the ambient-factorization view exists today; context-filtered subsystem views
+# (rca0-all-models, rca0-omega-models, weihrauch, certified-only, ...) arrive with the typed
+# catalog (issues #13-#14), where the order is: filter by axis/base theory/scope/evidence
+# policy -> implication SCCs -> context-specific display representatives -> transitive
+# reduction of the quotient DAG -> non-implication and strictness decorations.
+
+[views.ambient-standard]
+axis = "ambientFactorization"
+include = ["relativeCertificate"]
+trust = ["kernelChecked"]

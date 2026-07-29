@@ -64,7 +64,7 @@ theorem weakKonig : WeakKonig := by
     intro i
     obtain ⟨l, hl, hlen⟩ := hlev i
     exact ⟨⟨l, hl, hlen⟩⟩
-  have := hfinite 0
+  letI : Finite (α 0) := hfinite 0
   obtain ⟨f, hf⟩ := exists_seq_forall_proj_of_forall_finite
     (α := α)
     (fun {i j} hij l => ⟨l.val.take i, hT.take_mem l.property.1 i, by
