@@ -19,19 +19,22 @@ Honesty rules, enforced at registration or rendering:
 * **Proof ambient ≠ semantic scope.** An ambient-Lean relative proof carries *no* RM semantic
   scope (registration rejects a scope on ambient-`lean` evidence); `semanticImplication`
   evidence requires an explicit scope. Scope is never defaulted or silently escalated.
-* **Certificates carry their meaning in their type.** A `relativeProof` evidence record cites a
-  `RelativeCertificate assumption conclusion`; registration checks, up to definitional
-  equality, that `assumption` is the registered principle's interface and `conclusion` is the
-  port's statement — a bare axiom-audited reference (which `True.intro` would pass) is not a
-  certificate. Kernel-checked citations are additionally swept by `collectAxioms` against the
-  standard three axioms.
-* **Rendering condition for a certified RM bound** (nothing in Milestone 1 reaches it):
-  `syntacticDerivation` directly supports the corresponding subsystem claim;
-  `semanticImplication` requires scope `omegaModels` or `allModels` — `fullStandardModel`
-  never suffices for a subsystem bound by itself; `fragmentCheck` alone only establishes
-  membership in a fragment and renders as an RM bound only when paired with a backend-checked
-  fragment-to-subsystem interpretation certificate (not yet representable, hence never
-  rendered). Everything else prints `pending`/`UNVERIFIED`, and unknown prints `unknown`.
+* **Certificates carry their meaning in their type, direction-aware.** A kernel-checked
+  `relativeProof` record cites a typed certificate matched up to definitional equality:
+  `RelativeCertificate interface port` for `upper` evidence, `RelativeCertificate port
+  interface` for `lower`, `interface ↔ port` for `exact` — a bare axiom-audited reference
+  (which `True.intro` would pass) is never a certificate. Kernel-checked citations of any
+  *other* kind (semantic, syntactic, fragment, audit) are rejected outright until typed schemas
+  exist for them. Kernel-checked citations are additionally swept by `collectAxioms` against
+  the standard three axioms, and evidence kind must agree with its ambient.
+* **Certified claims carry an explicit scope** (`CertifiedClaimScope`): ambient factorization,
+  checked-fragment membership, ω-models, all models, and syntactic derivation render
+  separately, and no scope is ever escalated automatically — an all-ω-model theorem is not a
+  syntactic subsystem theorem, and even an all-model semantic result stays distinct until an
+  explicit soundness/completeness bridge upgrades it. Only ω-model, all-model, and syntactic
+  claims count as RM bounds (nothing in Milestone 1 produces one); claimed/literature evidence
+  never produces a claim, so it can never suppress a `pending` line. Everything else prints
+  `pending`/`UNVERIFIED`, and unknown prints `unknown`.
 -/
 
 namespace ReverseMathlib.Meta
@@ -111,10 +114,54 @@ inductive SemanticScope where
   deriving Inhabited, Repr, BEq
 
 /-- A typed relative certificate: the claimed relationship is part of the checked type, so an
-unrelated kernel-checked theorem cannot masquerade as a certificate. -/
+unrelated kernel-checked theorem cannot masquerade as a certificate. Direction-aware use:
+`RelativeCertificate P T` (principle implies port statement) is accepted only as an **upper**
+certificate; lower evidence requires `RelativeCertificate T P`; exact evidence requires an
+`Iff` between the two. -/
 structure RelativeCertificate (assumption conclusion : Prop) : Prop where
   /-- The factorization itself. -/
   proof : assumption → conclusion
+
+/-- An open theory identifier (for future syntactic-derivation claims), open for the same
+reason as `PrincipleId`. -/
+structure TheoryId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+/-- The scope of a *certified* claim. Scopes are never escalated automatically: a theorem valid
+in all ω-models is a certified ω-model result, not a syntactic subsystem theorem; even a valid
+all-model semantic result stays distinct until an explicit soundness/completeness bridge
+upgrades it. -/
+inductive CertifiedClaimScope where
+  /-- An ambient-Lean factorization (a `RelativeCertificate`). Not an RM bound. -/
+  | ambientFactorization
+  /-- Membership in a checked fragment. Not an RM bound without a fragment-to-subsystem
+  certificate. -/
+  | checkedFragment
+  /-- Valid in all ω-models. -/
+  | omegaModels
+  /-- Valid in all models of the base theory. -/
+  | allModels
+  /-- A syntactic derivation in the named theory. -/
+  | syntacticDerivation (theory : TheoryId)
+  deriving Inhabited, Repr, BEq
+
+/-- Whether a certified claim scope supports a reverse-mathematics bound. -/
+def CertifiedClaimScope.isRMBound : CertifiedClaimScope → Bool
+  | .omegaModels | .allModels | .syntacticDerivation _ => true
+  | .ambientFactorization | .checkedFragment => false
+
+/-- A certified claim extracted from validated evidence: scope × direction × the index of the
+evidence record it came from. -/
+structure CertifiedClaim where
+  /-- The claim's scope. -/
+  scope : CertifiedClaimScope
+  /-- The bound direction the claim addresses. -/
+  direction : BoundDirection
+  /-- Index of the originating record in the port's evidence array. -/
+  evidence : Nat
+  deriving Inhabited, Repr, BEq
 
 /-- One piece of evidence attached to a port. -/
 structure EvidenceRecord where
@@ -204,9 +251,12 @@ def checkStandardAxioms (n : Name) : CommandElabM Unit := do
       throwError "registry: '{n}' depends on non-standard axiom '{a}'"
 
 /-- Check that `cert` has type `RelativeCertificate assumption conclusion` (up to definitional
-equality) for the registered principle interface and port statement. This is what makes a
-citation a *certificate*: the relationship is part of the checked type. -/
-def checkCertificateType (cert assumption conclusion : Name) : CommandElabM Unit := do
+equality). This is what makes a citation a *certificate*: the relationship is part of the
+checked type. `describeA`/`describeC` name the roles in error messages, since upper and lower
+evidence swap them. -/
+def checkCertificateType (cert assumption conclusion : Name)
+    (describeA : String := "the registered interface")
+    (describeC : String := "the registered port statement") : CommandElabM Unit := do
   liftTermElabM do
     let info ← getConstInfo cert
     let ty ← Meta.whnfR info.type
@@ -219,10 +269,32 @@ def checkCertificateType (cert assumption conclusion : Name) : CommandElabM Unit
       throwError "registry: unexpected arity in certificate type '{ty}'"
     unless ← Meta.isDefEq args[0]! (mkConst assumption) do
       throwError "registry: certificate '{cert}' assumes '{args[0]!}', which is not \
-        definitionally the registered interface '{assumption}' of the cited principle"
+        definitionally {describeA} '{assumption}' of the cited principle"
     unless ← Meta.isDefEq args[1]! (mkConst conclusion) do
       throwError "registry: certificate '{cert}' concludes '{args[1]!}', which is not \
-        definitionally the registered port statement '{conclusion}'"
+        definitionally {describeC} '{conclusion}'"
+
+/-- Check that `cert` has type `A ↔ C` (in either orientation) for the registered principle
+interface and port statement — required for `exact`-direction relative evidence. -/
+def checkIffCertificateType (cert assumption conclusion : Name) : CommandElabM Unit := do
+  liftTermElabM do
+    let info ← getConstInfo cert
+    let ty ← Meta.whnfR info.type
+    let fn := ty.getAppFn
+    unless fn.isConstOf ``Iff do
+      throwError "registry: exact-direction relativeProof evidence requires a certificate of \
+        type '{assumption} ↔ {conclusion}'; '{cert}' has type '{ty}'"
+    let args := ty.getAppArgs
+    unless args.size == 2 do
+      throwError "registry: unexpected arity in certificate type '{ty}'"
+    let straight ← Meta.isDefEq args[0]! (mkConst assumption) <&&>
+      Meta.isDefEq args[1]! (mkConst conclusion)
+    let flipped ← Meta.isDefEq args[0]! (mkConst conclusion) <&&>
+      Meta.isDefEq args[1]! (mkConst assumption)
+    unless straight || flipped do
+      throwError "registry: certificate '{cert}' is an Iff, but its sides are not \
+        definitionally the registered interface '{assumption}' and port statement \
+        '{conclusion}'"
 
 /-- Look up a registered principle by id. -/
 def findPrinciple? (env : Environment) (id : PrincipleId) : Option PrincipleEntry :=
@@ -232,23 +304,55 @@ def findPrinciple? (env : Environment) (id : PrincipleId) : Option PrincipleEntr
 def findPort? (env : Environment) (id : Name) : Option PortEntry :=
   (portExt.getState env).find? (·.id == id)
 
-/-- Validate one evidence record against the registry and the cited port statement. -/
+/-- The ambient a given evidence kind must live in. Kind and ambient must agree: a relative
+factorization is ambient-Lean, a semantic implication lives in model semantics, a syntactic
+derivation in an object theory. -/
+def requiredAmbient : EvidenceKind → ProofAmbient
+  | .dependencyAudit | .frontierSlice | .relativeProof => .lean
+  | .fragmentCheck => .checkedFragment ⟨.anonymous⟩
+  | .semanticImplication => .modelSemantics
+  | .syntacticDerivation => .objectTheory
+
+/-- Whether an ambient agrees with the required one (any fragment id matches
+`checkedFragment`). -/
+def ambientAgrees (required actual : ProofAmbient) : Bool :=
+  match required, actual with
+  | .checkedFragment _, .checkedFragment _ => true
+  | r, a => r == a
+
+/-- Validate one evidence record against the registry and the cited port statement.
+
+Hardening invariants (each rejection is a hard error, never a silent downgrade):
+
+* ambient-Lean evidence carries no RM semantic scope, and no scope is ever escalated;
+* evidence kind and ambient must agree;
+* `semanticImplication` requires an explicit scope;
+* `backendChecked` is unregisterable while no backend exists;
+* `kernelChecked` is accepted **only** for `relativeProof`, whose citation must be a typed,
+  direction-aware certificate: `RelativeCertificate interface port` for `upper`,
+  `RelativeCertificate port interface` for `lower`, and `interface ↔ port` for `exact`. Until
+  typed schemas exist for semantic/syntactic evidence, kernel-checked citations of those kinds
+  are rejected outright — an axiom audit alone (which `True.intro` passes) certifies nothing. -/
 def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandElabM Unit := do
   if e.ambient == .lean && e.scope?.isSome then
     throwError "registry: ambient-Lean evidence carries no RM semantic scope; remove the \
       scope or change the ambient"
+  unless ambientAgrees (requiredAmbient e.kind) e.ambient do
+    throwError "registry: evidence kind '{repr e.kind}' requires ambient \
+      '{repr (requiredAmbient e.kind)}', got '{repr e.ambient}'"
   if e.kind == .semanticImplication && e.scope?.isNone then
     throwError "registry: semanticImplication evidence requires an explicit scope \
       (fullStandardModel | omegaModels | allModels); scope is never defaulted"
-  if e.verification == .kernelChecked then
-    let some thm := e.thm?
-      | throwError "registry: kernelChecked evidence must cite a theorem (via ...)"
-    checkStandardAxioms thm
   if e.verification == .backendChecked then
     throwError "registry: no backend exists yet; backendChecked evidence cannot be registered"
-  if e.kind == .relativeProof && e.verification == .kernelChecked then
+  if e.verification == .kernelChecked then
+    unless e.kind == .relativeProof do
+      throwError "registry: no typed certificate schema exists yet for kernel-checked \
+        '{repr e.kind}' evidence; an axiom audit alone certifies nothing, so it is rejected \
+        until a typed schema exists"
     let some thm := e.thm?
-      | throwError "registry: relativeProof evidence must cite its certificate"
+      | throwError "registry: relativeProof evidence must cite its certificate (via ...)"
+    checkStandardAxioms thm
     let some assumes := e.assumes?
       | throwError "registry: relativeProof evidence must name the assumed principle \
         (assumes ...)"
@@ -259,7 +363,27 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
     let some portDecl := portDecl?
       | throwError "registry: relativeProof evidence requires the port to have a registered \
         statement"
-    checkCertificateType thm interface portDecl
+    match e.direction with
+    | .upper => checkCertificateType thm interface portDecl
+    | .lower =>
+      checkCertificateType thm portDecl interface
+        (describeA := "the registered port statement")
+        (describeC := "the registered interface")
+    | .exact => checkIffCertificateType thm interface portDecl
+
+/-- The certified claims of a port, derived from its (already-validated) evidence. Only
+kernel-checked `relativeProof` records produce claims today, and they are
+`ambientFactorization`-scoped — never an RM bound. Claimed/literature evidence never produces a
+claim, so a bogus lower literature record cannot suppress "exact lower bound: pending". -/
+def PortEntry.certifiedClaims (p : PortEntry) : Array CertifiedClaim := Id.run do
+  let mut claims := #[]
+  let mut i := 0
+  for e in p.evidence do
+    if e.kind == .relativeProof && e.verification == .kernelChecked then
+      claims :=
+        claims.push { scope := .ambientFactorization, direction := e.direction, evidence := i }
+    i := i + 1
+  return claims
 
 /-! ## Registration commands -/
 
@@ -399,15 +523,14 @@ def elabRevmathPort : CommandElab := fun stx => do
 
 /-! ## Rendering (fail-closed) -/
 
-/-- Whether an evidence record qualifies, by the rendering condition, to support a certified RM
-bound. `fragmentCheck` alone never qualifies (it needs a backend-checked fragment-to-subsystem
-certificate, which is not yet representable), `semanticImplication` needs a non-trivial scope,
-and nothing `claimed` ever qualifies. -/
-def EvidenceRecord.supportsCertifiedBound (e : EvidenceRecord) : Bool :=
-  e.verification != .claimed &&
-    (e.kind == .syntacticDerivation ||
-      (e.kind == .semanticImplication &&
-        (e.scope? == some .omegaModels || e.scope? == some .allModels)))
+/-- Render a certified claim scope. ω-model, all-model, and syntactic results render
+separately; no scope is ever displayed as another. -/
+def CertifiedClaimScope.render : CertifiedClaimScope → String
+  | .ambientFactorization => "ambient Lean factorization"
+  | .checkedFragment => "checked fragment membership"
+  | .omegaModels => "all ω-models"
+  | .allModels => "all models"
+  | .syntacticDerivation t => s!"syntactic derivation in {t.name}"
 
 /-- Render an ambient. -/
 def ProofAmbient.render : ProofAmbient → String
@@ -476,12 +599,14 @@ def PortEntry.render (p : PortEntry) : String := Id.run do
   match p.claimedClassical? with
   | some c => lines := lines.push s!"  candidate classical classification: {c} [claimed, UNVERIFIED]"
   | none => lines := lines.push s!"  candidate classical classification: unknown"
-  if p.evidence.any (·.supportsCertifiedBound) then
-    lines := lines.push s!"  certified RM bound: see qualifying evidence above"
-  else
+  let claims := p.certifiedClaims
+  let rmClaims := claims.filter (·.scope.isRMBound)
+  if rmClaims.isEmpty then
     lines := lines.push s!"  backend RM certificate: pending"
-  unless p.evidence.any fun e =>
-      (e.direction == .lower || e.direction == .exact) && e.verification != .claimed do
+  else
+    for c in rmClaims do
+      lines := lines.push s!"  certified RM bound ({c.scope.render}, {c.direction.render})"
+  unless rmClaims.any fun c => c.direction == .lower || c.direction == .exact do
     lines := lines.push s!"  exact lower bound: pending"
   unless p.note.isEmpty do
     lines := lines.push s!"  note: {p.note}"
@@ -529,7 +654,7 @@ elab "#revmath_stats" : command => do
   let ports := portExt.getState env
   let evs := ports.flatMap (·.evidence)
   let count (v : Verification) := evs.filter (·.verification == v) |>.size
-  let certified := evs.filter (·.supportsCertifiedBound) |>.size
+  let certified := (ports.flatMap (·.certifiedClaims)).filter (·.scope.isRMBound) |>.size
   logInfo <| s!"principles: {principles.size}; ports: {ports.size}; evidence: {evs.size} \
     ({count .kernelChecked} kernel checked, {count .claimed} claimed, \
     {count .backendChecked} backend checked); certified RM bounds: {certified}"
