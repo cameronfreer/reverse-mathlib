@@ -41,10 +41,11 @@ RMZoo (<https://github.com/ericastor/rmzoo>, MIT) is already a specialized infer
 over facts such as implication, non-implication, conservation, and several computable/Weihrauch
 reducibilities; it supports conjunctions (`SRT22+COH`), distinguishes ordinary RCA₀ consequence
 from ω-model consequence, and records direct versus inferred justifications
-(<https://rmzoo.math.uconn.edu/documentation/>). Its public diagrams say "last updated April
-2018" (<https://rmzoo.math.uconn.edu/diagrams/>) while the repository received small updates in
-March 2024 — treat it as an important existing standard and bibliography, not an actively
-maintained presentation.
+(<https://rmzoo.math.uconn.edu/documentation/>). At the RMZoo snapshot inspected for this
+roadmap, the public diagrams say "last updated April 2018"
+(<https://rmzoo.math.uconn.edu/diagrams/>); the exact upstream commit is recorded when the
+importer is built (issue #7). Treat RMZoo as an important existing standard and bibliography,
+not an actively maintained presentation.
 
 What reverse-mathlib can add that RMZoo lacks: exact formal definitions of principles; distinct
 statement variants and presentations (RMZoo's `KL` does not say *which* König's lemma — binary,
@@ -97,7 +98,10 @@ knowledge.
 | Logic | a restricted completeness formulation (I.8.3) | ordinary countable completeness (I.10.3) | — | determinacy-related principles |
 | Algebra | existence of algebraic closures | prime ideals, uniqueness of algebraic/real closure | maximal ideals, vector-space bases | Abelian-group classification |
 | WQO | elementary coding | — | Higman (X.3.22) | minimal bad sequences (X.3.24), Nash–Williams (X.3.29–30) |
-| Measure | basic special cases | — | — | WWKL sits strictly between RCA and WKL |
+
+Intermediate and non-Big-Five systems do not fit this table. In particular, WWKL₀ lies strictly
+between RCA₀ and WKL₀ and will be represented in the horizontal principle graph, not forced
+into a Big-Five column.
 
 The **matching ladder stays first**: X.3.16 (WKL₀ ↔ 2-regular perfect matching), X.3.15 (ACA₀ ↔
 locally finite Hall/perfect matching), X.3.12 (ATR₀ ↔ König covering) — one domain spanning
@@ -126,9 +130,23 @@ relative Hall proof; artifact-shaped registry). Items in *tranche 1 remainder* a
 are open GitHub issues; later tranches are ordered entries only.
 
 ### Tranche 1 remainder — finish the Hall walking slice
-5. Binary/bounded/finitely-branching tree distinctions and EFILC bridges.
+5. Binary/bounded/finitely-branching tree distinctions and EFILC bridges — **minimal, readable,
+   ambient-Lean surface**, distinct from tranche 3's coding layer. Representation contract:
+   `BinaryTree := Set (List Bool)`; `BoundedTree := Set (List ℕ)` + supplied coordinate bounds;
+   `FinitelyBranchingTree := Set (List ℕ)` + a finite-successor proposition. Ordinary finite
+   lists at the mathematical surface; encoding into naturals only inside the EFILC bridge where
+   needed (this avoids prematurely blessing mathlib's `Encodable` representation as the
+   eventual RCA₀ coding). Paths: binary ambient path = `Set ℕ` interpreted as positions
+   containing 1; natural-valued ambient path = an ordinary function or bundled sequence; future
+   ω-model path = an internal graph set with totality and single-valuedness proofs.
 6. Classical wrappers, `countableHall_nat`, honest case-study report (including the Simpson
    X.3.15/X.3.16 variant relationship in the port record).
+6a. Registry hardening: typed, direction-aware, scope-preserving certificates (see the
+   Milestone 1 issue) — semantic/syntactic citations must not pass on an axiom audit alone;
+   `RelativeCertificate P T` is an upper certificate only, lower requires `T → P`, exact
+   requires `P ↔ T`; certified claims carry an explicit scope
+   (`ambientFactorization | checkedFragment | omegaModels | allModels | syntacticDerivation`)
+   and no scope is ever escalated automatically.
 
 Registry future-proofing constraint: identifiers, evidence kinds, contexts, and external
 mappings must be extensible. No RMZoo importer inside Milestone 1.
@@ -160,12 +178,14 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 15. Pairing / finite-sequence / finite-set codes (single vocabulary reused everywhere).
 16. Internal function and enumeration graphs (internal graph sets vs arbitrary Lean functions
     vs program codes).
-17. Tree presentation matrix (subtree of 2^<ℕ; coordinatewise explicitly bounded; merely
-    finitely branching; at-most-two-successor on arbitrary labels).
+17. Canonical numeric and internal adapters for the Standard tree presentations (number
+    codings, internal graph/set presentations, at-most-two-successor on arbitrary labels;
+    migration of the tranche-1 list-based surface into the coding layer).
 18. Bipartite graph and matching presentation matrix (one-sided injective choice; left/right
     saturating; perfect; local finiteness with explicit neighborhood enumeration; n-regularity;
     König covering).
-19. WKL/EFILC relative equivalence (ambient capability level; no RCA₀ claim).
+19. Migrate the WKL/EFILC factorizations into typed `StatementVariant` facts (the ambient
+    equivalence is proved in tranche 1; this item catalogs it, not re-proves it).
 20. Map the current Hall port (implication/adaptation records among mathlib's Hall,
     `CountableHall`, left-saturating matchings, Simpson's perfect-matching variants).
 21. Relative matching forward proofs (WKL/EFILC ⇒ regular-graph matching; ACA/range-search ⇒
@@ -236,6 +256,45 @@ sequence). Then horizon issues forcing serious backend work: 71. Borel and analy
 - **Banach-space calibration**: X.2.1 (WKL-equivalent separation), X.2.9 (Π¹₁-CA-equivalent
   weak-* closure existence). Mathematically excellent, representation-heavy.
 
+## The quantitative proof-mining track (orthogonal: Q1, Q2, …)
+
+Kohlenbach supplies the quantitative axis. Simpson classifies theorem strength; RMZoo records
+the horizontal implication graph; quantitative proof mining records what bounds, moduli, finite
+approximations, or oracle-relative programs can be recovered from a proof. This track cuts
+across several tranches and is deliberately numbered separately (Q1, Q2, …) — it does not wait
+for tranche 8.
+
+- Q1. Quantitative normal forms: witness, bound, rate, metastability, modulus, finite
+  approximation, oracle-relative program.
+- Q2. Metastability vocabulary and interval/challenge-function API.
+- Q3. Kohlenbach Proposition 2.27: explicit metastability for bounded monotone sequences.
+- Q4. Finite convergence principle, including the [0,C] bound.
+- Q5. Executable rational/dyadic bounded-search realizer.
+- Q6. Occurrence/effect audit: Prop → Prop, Prop → Type, finite-search repair, residual oracle.
+- Q7. Quantitative certificate registry: uniform parameters, intensional dependencies, term
+  class, residual oracles, source hash.
+- Q8. Herbrand/ε-weakening of WKL and EFILC.
+- Q9. Finite-query quantitative Hall.
+- Q10. Modulus-of-uniqueness pilot.
+- Q11. Quantitative IVT and Heine–Cantor.
+- Q12. Monotone convergence and Bolzano–Weierstrass metastability.
+- Q13. System-T IR, evaluation, and majorization.
+- Q14. Negative translation and monotone functional interpretation.
+- Q15. Mean ergodic theorem metastability comparison with mathlib.
+- Q16. Bar-recursive/oracle-relative extraction horizon.
+
+In the rich catalog, quantitative relations appear as:
+
+```
+qualitativeVariant ──herbrandizesTo──► metastableVariant
+metastableVariant  ──realizedBy──────► extractedTerm
+extractedTerm      ──majorizedBy─────► explicitBound
+```
+
+Legacy RMZoo export omits these fields; rich JSON retains them. A small vertical experiment
+(Q2–Q5) should land after the conceptual-identity/statement-variant layer and inform the typed
+fact and evidence design before it is finalized.
+
 ## Issue acceptance checklist
 
 Every theorem/principle issue finishes with: an exact statement variant; presentation
@@ -243,6 +302,27 @@ assumptions; a Simpson/RMZoo/literature citation; semantic scope; an honest evid
 Lean proof or an explicit pending field; dependency/frontier audit output; an RMZoo alias or an
 explicit statement that none exists; separate upper-bound and reversal status; no `sorry` in
 the stable mathematical root.
+
+Source stability: pinned mathlib revision and declaration/body hash for mined ports; exact
+upstream commit and source line for imported RMZoo records; edition and theorem number for
+books; source identity kept separate from the current display name.
+
+Quantitative issues (Q-track) additionally finish with: the exact quantitative normal form; an
+explicit input presentation; the parameters in which the output is uniform; the supplied
+moduli/bounds on which it depends; the output term and its soundness theorem; the computational
+class; residual oracle/principle effects; the distinction between a bound and a
+witness-producing program; and no "rate of convergence" claim where only metastability is
+possible.
+
+## References
+
+- **[Sim09]** Stephen G. Simpson, *Subsystems of Second Order Arithmetic*, 2nd edition,
+  Perspectives in Logic, Cambridge University Press / Association for Symbolic Logic, 2009.
+- **[Koh08]** Ulrich Kohlenbach, *Applied Proof Theory: Proof Interpretations and their Use in
+  Mathematics*, Springer Monographs in Mathematics, Springer, 2008.
+- **RMZoo**: E. P. Astor et al., *The Reverse Mathematics Zoo*,
+  <https://github.com/ericastor/rmzoo> (MIT license); documentation at
+  <https://rmzoo.math.uconn.edu/documentation/>.
 
 ## Near-term sequence
 
