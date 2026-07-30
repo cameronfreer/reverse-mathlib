@@ -119,6 +119,28 @@ WeakKonig ⇄ EFILC → CountableHall
 All three arrows are kernel-checked relative factorizations in unrestricted Lean. They do
 **not** yet say `WKL₀ ⊢ CountableHall`.
 
+The three principles, briefly:
+
+- **WeakKonig** — every prefix-closed binary tree (coded) with a node at every level has an
+  infinite path.
+- **EFILC** — *explicit finite inverse-limit compactness*: every sequential inverse system
+  of **explicitly enumerated**, nonempty finite sets with adjacent bonding maps has a
+  coherent section. "Compactness for systems of finite approximations" — the boundary the
+  refactored Hall proof factors through: finite Hall makes each level of coded partial
+  transversals nonempty, EFILC threads a coherent infinite transversal through them. The
+  word *explicit* is doing reverse-mathematical work: supplied enumerations keep the
+  principle at the intended WKL₀ calibration, where a merely-asserted-finite version would
+  force the weak system to recover enumeration data (ACA-level behavior).
+- **CountableHall** — the one-sided injective-transversal Hall statement (related to, not
+  identical with, Simpson's perfect-matching X.3.15/X.3.16).
+
+Each principle also has a **Turing-ideal ω form** (`WeakKonigAt`, `EFILCAt` in
+`ReverseMathlib/Omega/`): the same statement internalized to a second-order part `Ω`, with
+inputs presented by internal sets and graph-coded internal functions and outputs required to
+belong to `Ω`. Proving `WKLω ↔ EFILCω` over Turing ideals — the transformations as genuine
+Turing reductions — is the planned first exact certified ω-model calibration, reported as
+`WKL₀ ⊨ω …`, never as `⊢`.
+
 ## 2. How this relates to existing reverse mathematics
 
 Classical reverse mathematics asks, over a weak base such as RCA₀, whether

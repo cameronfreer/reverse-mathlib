@@ -20,6 +20,30 @@ finite data, not a bare `Finite` instance — because reverse-mathematical stren
 to exactly this difference. Bonding maps are given for **adjacent** levels only; iterating them
 supplies all longer restrictions, so no identity or composition laws are needed and no
 categorical plumbing arises.
+
+**What the principle says.** EFILC — *explicit finite inverse-limit compactness* — asserts
+that every sequential inverse system of explicitly enumerated, nonempty finite sets with
+adjacent bonding maps has a coherent section: a choice of one element per level, each
+restricting to the previous. It is "compactness for systems of finite approximations", and
+it is the exact boundary the refactored Hall proof factors through: finite Hall shows every
+level of coded partial transversals is nonempty; EFILC threads a coherent infinite
+transversal through them (`Slice/HallFromCompactness.lean`). Kernel-checked ambient facts:
+`WeakKonig ⇄ EFILC` (both directions, via the chunk-coding bridges in
+`Slice/WeakKonigEfilc.lean`) and `EFILC → CountableHall`.
+
+**Why "explicit" carries the strength.** The supplied enumerations are what keep the
+principle at the WKL₀ level of the intended calibration: a version whose fibers are merely
+asserted finite would force the weak system to *recover* enumeration data, drifting toward
+ACA₀-level behavior — the same phenomenon as bounded vs merely finitely-branching Kőnig
+(`Standard/Trees.lean`).
+
+**The ω form.** `Omega/InverseSystem.lean` defines `EFILCAt : OmegaPart → Prop`, the
+Turing-ideal internalization: the system is presented by graph-coded internal functions
+(fiber enumerations as nodup finite-list codes, bonding maps relationally), and the section
+must itself be an internal graph-coded function of the second-order part. The planned first
+exact certified ω-model calibration is `WKLω ↔ EFILCω` (`WKL₀ ⊨ω`, never `⊢`) — proving
+the walking-slice transformations are Turing reductions, so tree, path, and section stay
+inside the model.
 -/
 
 namespace ReverseMathlib.Standard
