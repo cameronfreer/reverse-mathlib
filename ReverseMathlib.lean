@@ -20,3 +20,4 @@ import ReverseMathlib.Omega.Coding
 import ReverseMathlib.Omega.Graph
 import ReverseMathlib.Omega.Tree
 import ReverseMathlib.Omega.InverseSystem
+import ReverseMathlib.Omega.Bridge
