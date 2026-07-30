@@ -553,9 +553,48 @@ def validateEvidence (e : EvidenceRecord) (target : StatementVariantId)
   if e.factLink?.isSome && e.kind != .semanticImplication then
     throwError "registry: only semanticImplication evidence may cross-link a fact"
   if let some fl := e.factLink? then
+    -- The link stays display-only and never affects counts, but display metadata must not
+    -- be able to lie: the fact's scope, base, endpoints, and orientation must all match.
     let cat := ConceptCatalog.ofEnv (← getEnv)
-    unless cat.facts.any (·.id == fl) do
-      throwError "registry: evidence cross-links unknown fact '{fl}'"
+    let some f := cat.facts.find? (·.id == fl)
+      | throwError "registry: evidence cross-links unknown fact '{fl}'"
+    let (fbase, fscope) ← match f.context with
+      | .theoryContext b s => pure (b, s)
+      | .uniformContext _ =>
+        throwError "registry: evidence cannot cross-link a uniform fact"
+    if let some s := e.scope? then
+      unless contextScopeMatches fscope s do
+        throwError "registry: evidence scope does not match the scope \
+          '{fscope.tag}' of cross-linked fact '{fl}'"
+    if let some ctxId := e.context? then
+      if let some ctx := cat.semanticContexts.find? (·.id == ctxId) then
+        unless ctx.base == fbase do
+          throwError "registry: evidence context base '{ctx.base.name}' does not match the \
+            base '{fbase.name}' of cross-linked fact '{fl}'"
+    let some assumes := e.assumes?
+      | throwError "registry: fact-cross-linking evidence must name its assumed variant"
+    let (l, r, isEquiv) ← match f.statement with
+      | .implication l r => pure (l, r, false)
+      | .equivalence l r => pure (l, r, true)
+      | _ => throwError "registry: evidence can only cross-link implication or equivalence \
+          facts"
+    let #[lv] := l.variants
+      | throwError "registry: cross-linked fact '{fl}' has conjunction endpoints"
+    let #[rv] := r.variants
+      | throwError "registry: cross-linked fact '{fl}' has conjunction endpoints"
+    let ok :=
+      if isEquiv then
+        e.direction == .exact &&
+          ((assumes == lv && target == rv) || (assumes == rv && target == lv))
+      else
+        match e.direction with
+        | .upper => assumes == lv && target == rv
+        | .lower => target == lv && assumes == rv
+        | .exact => false
+    unless ok do
+      throwError "registry: evidence direction/endpoints do not match cross-linked fact \
+        '{fl}' (an implication link must respect orientation; an equivalence link must be \
+        exact-direction over the fact's endpoint pair)"
   if e.route?.isSome && e.kind != .syntacticDerivation then
     throwError "registry: only syntacticDerivation evidence may carry a proof route"
   if e.artifact?.isSome && e.kind != .syntacticDerivation then
@@ -996,14 +1035,20 @@ elab "#revmath_facts" : command => do
       lines := lines.push
         s!"  {f.id.name} [{f.statement.kindTag} | {f.context.render}] \
           {f.statement.render} — CERTIFIED"
+      -- Per-certificate realization lines, data-driven: the kind word comes from the fact's
+      -- statement, and the realization status is the registered context's own description —
+      -- no universal status is manufactured here.
+      let kindWord := match f.statement with
+        | .implication .. => "implication"
+        | .equivalence .. => "equivalence"
+        | _ => "fact"
       for c in certs do
         lines := lines.push s!"    via {c.thm} [context {c.context}]"
         unless c.note.isEmpty do
           lines := lines.push s!"      note: {c.note}"
-      if let some ctx := cat.semanticContexts.find? (·.id == (certs[0]!).context) then
-        lines := lines.push s!"    context realization: implication kernel-checked over \
-          '{ctx.contextDecl}'; identification of that context with the \
-          {ctx.scope.tag} of '{ctx.base.name}': literature-backed, backend adequacy pending"
+        if let some ctx := cat.semanticContexts.find? (·.id == c.context) then
+          lines := lines.push s!"      realization: {kindWord} kernel-checked over \
+            '{ctx.contextDecl}'; context status: {ctx.description}"
   logInfo ("\n".intercalate lines.toList)
 
 /-- `#revmath_stats`: the honest scoreboard — evidence counts by verification, and the

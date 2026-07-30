@@ -1126,19 +1126,92 @@ revmath_port linkedOmegaPort where
     assumes smokeModelVarP
     fact fixOmegaFact
 
+/-! #### The equivalence path (production will certify an equivalence, so it is pinned) -/
+
+/-- A defeq-distinct but equivalent model predicate, for the equivalence-certificate path. -/
+def SmokeModelP' : SmokeModel → Prop := fun M => M.sets 0 ∧ True
+
+rm_statement_variant smokeModelVarPAlt where
+  concept := smokeConcept
+  layer := smokemodellayer
+  interface := RMSmoke.SmokeModelP'
+  description := "fixture model-indexed principle, equivalent alternative form"
+
+rm_fact fixEqFact equivalence where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeModelVarP]
+  rhs := [smokeModelVarPAlt]
+
+/-- The exact equivalence certificate, sides in the fact's order. -/
+theorem smokeSemEqCert : ReverseMathlib.Meta.SemanticEquivalenceCertificate
+    SmokeBaseCtx SmokeModelP SmokeModelP' :=
+  ⟨fun _ _ => ⟨fun h => ⟨h, trivial⟩, fun h => h.1⟩⟩
+
+/-- The same equivalence with flipped sides — must also be accepted. -/
+theorem smokeSemEqCertFlipped : ReverseMathlib.Meta.SemanticEquivalenceCertificate
+    SmokeBaseCtx SmokeModelP' SmokeModelP :=
+  ⟨fun _ _ => ⟨fun h => h.1, fun h => ⟨h, trivial⟩⟩⟩
+
+/-- An implication-shaped certificate with the right endpoints — still rejected for an
+equivalence fact. -/
+theorem smokeSemCertPAlt : ReverseMathlib.Meta.SemanticImplicationCertificate
+    SmokeBaseCtx SmokeModelP SmokeModelP' :=
+  ⟨fun _ _ h => ⟨h, trivial⟩⟩
+
+/--
+error: registry: 'RMSmoke.smokeSemCertPAlt' does not have type 'ReverseMathlib.Meta.SemanticEquivalenceCertificate _ _ _' (found 'SemanticImplicationCertificate
+  SmokeBaseCtx SmokeModelP
+  SmokeModelP''); a kernel-checked semanticImplication citation must be a typed semantic certificate
+-/
+#guard_msgs in
+revmath_certify_fact fixEqFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCertPAlt
+
+-- ACCEPT: exact certificate, then the flipped-side certificate on the same fact.
+revmath_certify_fact fixEqFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemEqCert
+
+revmath_certify_fact fixEqFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemEqCertFlipped
+
+-- A port cross-link whose endpoints do not match the fact is rejected — display metadata
+-- must not be able to lie.
+/--
+error: registry: evidence direction/endpoints do not match cross-linked fact 'fixOmegaFact' (an implication link must respect orientation; an equivalence link must be exact-direction over the fact's endpoint pair)
+-/
+#guard_msgs in
+revmath_port mismatchedLinkPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarP
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarQ
+    fact fixOmegaFact
+
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (7):
+info: facts (8):
   fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
+  fixEqFact [equivalence | theory fixRca0 omegaModels] smokeModelVarP <=> smokeModelVarPAlt — CERTIFIED
+    via RMSmoke.smokeSemEqCert [context smokeCtx]
+      realization: equivalence kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
+    via RMSmoke.smokeSemEqCertFlipped [context smokeCtx]
+      realization: equivalence kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixOmegaConj [implication | theory fixRca0 omegaModels] smokeModelVarP+smokeModelVarQ => smokeModelVarQ — recorded, no evidence linked
   fixOmegaFact [implication | theory fixRca0 omegaModels] smokeModelVarP => smokeModelVarQ — CERTIFIED
     via RMSmoke.smokeSemCert [context smokeCtx]
       note: fixture certification
-    context realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; identification of that context with the omegaModels of 'fixRca0': literature-backed, backend adequacy pending
+      realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
 -/
 #guard_msgs in
@@ -1147,7 +1220,7 @@ info: facts (7):
 -- The headline counts UNIQUE certified facts: one ω-model fact, despite two ports carrying
 -- semantic evidence for the same content.
 /--
-info: concepts: 4; variants: 9; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 10; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
