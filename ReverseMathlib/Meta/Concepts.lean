@@ -269,6 +269,228 @@ initialize problemExt : SimplePersistentEnvExtension UniformProblemEntry
     addImportedFn := mkStateFromImportedEntries Array.push #[]
   }
 
+/-! ## Typed facts and contexts (issue #5)
+
+Facts are **catalog data with fail-closed rendering**: a registered fact renders
+recorded-but-unsupported until issue #6 links typed evidence; nothing here is inferred true.
+Two fact families that never mix: RM facts (implication, equivalence, non-implication,
+conservation) whose endpoints are normalized conjunctions of **exact statement variants** and
+whose context is a base theory plus a fact scope (distinct fields, never conflated with the
+statement's semantic layer); and uniform facts (reducibility, non-reducibility) whose
+endpoints are exact uniform problems and whose context is a reducibility notion. No inference
+crosses from RM implication to uniform reducibility without a registered bridge theorem. -/
+
+/-- A registered base theory (`rca0`, `rcaOmegaHat`, …) — the theory a theory-context fact is
+relative to. Distinct from the statement's semantic layer and from the fact's scope. -/
+structure BaseTheoryId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+/-- A registered base theory. -/
+structure BaseTheoryEntry where
+  /-- The identifier. -/
+  id : BaseTheoryId
+  /-- What theory this denotes, with citation. -/
+  description : String
+  deriving Inhabited, Repr, BEq
+
+/-- A registered formula class (`pi11`, `sigma03`, …) parametrizing conservation facts. -/
+structure FormulaClassId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+/-- A registered formula class. -/
+structure FormulaClassEntry where
+  /-- The identifier. -/
+  id : FormulaClassId
+  /-- Which sentences belong to the class. -/
+  description : String
+  deriving Inhabited, Repr, BEq
+
+/-- A registered reducibility notion (`weihrauch`, `strongWeihrauch`, `computable`, …) —
+extensible by registration, never a closed enum. -/
+structure ReducibilityNotionId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+/-- A registered reducibility notion. -/
+structure ReducibilityNotionEntry where
+  /-- The identifier. -/
+  id : ReducibilityNotionId
+  /-- Which reducibility this denotes, with citation. -/
+  description : String
+  deriving Inhabited, Repr, BEq
+
+/-- A typed-fact identifier. -/
+structure FactId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+instance : ToString BaseTheoryId := ⟨fun b => toString b.name⟩
+instance : ToString FactId := ⟨fun f => toString f.name⟩
+
+/-- Where a theory-context fact is asserted to hold: ordinary provability over the base
+theory, ω-model consequence, or all-model consequence — **distinct relations, never
+conflated**, and kept separate both from the base theory and from the statements' semantic
+layers. -/
+inductive FactScope where
+  /-- Ordinary provability/consequence over the base theory. -/
+  | provability
+  /-- Consequence in every ω-model of the base theory. -/
+  | omegaModels
+  /-- Consequence in every (Henkin/two-sorted) model of the base theory. -/
+  | allModels
+  deriving Inhabited, Repr, BEq
+
+/-- Stable tag for a fact scope. -/
+def FactScope.tag : FactScope → String
+  | .provability => "provability"
+  | .omegaModels => "omegaModels"
+  | .allModels => "allModels"
+
+/-- Mandatory status of a uniform fact (the concordance discipline): `exact` is a genuine
+degree claim; `representative` is a descriptive comparison only — never an inference edge;
+`variantSensitive` marks a problem not yet specified enough; `notAssigned` is absence of
+classification, not evidence of computability or weakness. -/
+inductive DegreeStatus where
+  /-- A genuine degree/reducibility claim about the exact represented problem. -/
+  | exact
+  /-- A standard analogue, descriptive only. -/
+  | representative
+  /-- Representation, promise, output, or sequentialization must be fixed first. -/
+  | variantSensitive
+  /-- No classification recorded. -/
+  | notAssigned
+  deriving Inhabited, Repr, BEq
+
+/-- Stable tag for a degree status. -/
+def DegreeStatus.tag : DegreeStatus → String
+  | .exact => "exact"
+  | .representative => "representative"
+  | .variantSensitive => "variantSensitive"
+  | .notAssigned => "notAssigned"
+
+/-- A normalized conjunction of exact statement variants: sorted by name and deduplicated —
+`RT22+COH` is an AST with canonical identity, never a magic string. Endpoints are exact
+`StatementVariantId`s; concepts and dotted-name parents are unrepresentable here. -/
+structure VariantConjunction where
+  /-- The conjuncts — sorted by name, deduplicated (the normalization invariant; construct
+  through `normalize`). -/
+  variants : Array StatementVariantId
+  deriving Inhabited, Repr, BEq
+
+/-- The only intended constructor: sort by name, deduplicate. -/
+def VariantConjunction.normalize (vs : Array StatementVariantId) : VariantConjunction :=
+  let sorted := vs.qsort fun a b => Name.lt a.name b.name
+  ⟨sorted.foldl (init := #[]) fun acc v =>
+    if acc.back?.any (· == v) then acc else acc.push v⟩
+
+/-- Canonical rendering: `a+b+c` in normalized order. -/
+def VariantConjunction.serialized (c : VariantConjunction) : String :=
+  "+".intercalate (c.variants.toList.map (toString ·.name))
+
+/-- The context of a fact. The two families never mix: pairing an RM statement with a uniform
+context (or conversely) is a registration error and a fold conflict. -/
+inductive FactContext where
+  /-- RM-fact context: a base theory and a fact scope, as distinct fields. -/
+  | theoryContext (base : BaseTheoryId) (scope : FactScope)
+  /-- Uniform-fact context: a reducibility notion. -/
+  | uniformContext (notion : ReducibilityNotionId)
+  deriving Inhabited, Repr, BEq
+
+/-- Render a fact context compactly. -/
+def FactContext.render : FactContext → String
+  | .theoryContext b s => s!"theory {b.name} {s.tag}"
+  | .uniformContext n => s!"uniform {n.name}"
+
+/-- A typed fact statement. RM endpoints are normalized conjunctions of exact statement
+variants; uniform endpoints are exact uniform problems. -/
+inductive FactStatement where
+  /-- The lhs conjunction implies the rhs conjunction. -/
+  | implication (lhs rhs : VariantConjunction)
+  /-- The two conjunctions are equivalent. -/
+  | equivalence (lhs rhs : VariantConjunction)
+  /-- The lhs conjunction does **not** imply the rhs conjunction. -/
+  | nonImplication (lhs rhs : VariantConjunction)
+  /-- `strong` is `formulaClass`-conservative over `weak`. -/
+  | conservation (strong weak : VariantConjunction) (formulaClass : FormulaClassId)
+  /-- `strong` is **not** `formulaClass`-conservative over `weak`. -/
+  | nonConservation (strong weak : VariantConjunction) (formulaClass : FormulaClassId)
+  /-- `lhs` reduces to `rhs` under the context's notion, with mandatory status. -/
+  | reducibility (lhs rhs : UniformProblemId) (status : DegreeStatus)
+  /-- `lhs` does **not** reduce to `rhs`, with mandatory status. -/
+  | nonReducibility (lhs rhs : UniformProblemId) (status : DegreeStatus)
+  deriving Inhabited, Repr, BEq
+
+/-- Stable kind tag of a fact statement. -/
+def FactStatement.kindTag : FactStatement → String
+  | .implication .. => "implication"
+  | .equivalence .. => "equivalence"
+  | .nonImplication .. => "nonImplication"
+  | .conservation .. => "conservation"
+  | .nonConservation .. => "nonConservation"
+  | .reducibility .. => "reducibility"
+  | .nonReducibility .. => "nonReducibility"
+
+/-- Whether the statement belongs to the uniform family. -/
+def FactStatement.isUniform : FactStatement → Bool
+  | .reducibility .. | .nonReducibility .. => true
+  | _ => false
+
+/-- Render a fact statement compactly. -/
+def FactStatement.render : FactStatement → String
+  | .implication l r => s!"{l.serialized} => {r.serialized}"
+  | .equivalence l r => s!"{l.serialized} <=> {r.serialized}"
+  | .nonImplication l r => s!"{l.serialized} =/=> {r.serialized}"
+  | .conservation s w c => s!"{s.serialized} conservative[{c.name}] over {w.serialized}"
+  | .nonConservation s w c => s!"{s.serialized} not-conservative[{c.name}] over {w.serialized}"
+  | .reducibility l r st => s!"{l.name} <= {r.name} [{st.tag}]"
+  | .nonReducibility l r st => s!"{l.name} </= {r.name} [{st.tag}]"
+
+/-- A registered typed fact: plain catalog data. **Fail-closed**: without linked evidence
+(issue #6) a fact renders recorded-but-unsupported and never participates in inference. -/
+structure FactEntry where
+  /-- The fact identifier. -/
+  id : FactId
+  /-- The context (theory + scope, or reducibility notion). -/
+  context : FactContext
+  /-- The typed statement. -/
+  statement : FactStatement
+  /-- Free-form note (citations live here until #6 links typed provenance). -/
+  note : String := ""
+  deriving Inhabited, Repr, BEq
+
+initialize baseTheoryExt : SimplePersistentEnvExtension BaseTheoryEntry
+    (Array BaseTheoryEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
+initialize formulaClassExt : SimplePersistentEnvExtension FormulaClassEntry
+    (Array FormulaClassEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
+initialize reducibilityNotionExt : SimplePersistentEnvExtension ReducibilityNotionEntry
+    (Array ReducibilityNotionEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
+initialize factExt : SimplePersistentEnvExtension FactEntry (Array FactEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
 /-- The indexed conceptual catalog with accumulated conflicts. Built by folding every entry
 visible in the environment — imported and local — so collisions between independently
 developed sibling modules surface in any module that imports both. -/
@@ -285,6 +507,14 @@ structure ConceptCatalog where
   problems : Array UniformProblemEntry := #[]
   /-- All external references, in fold order. -/
   refs : Array ExternalRef := #[]
+  /-- All base theories, in fold order. -/
+  baseTheories : Array BaseTheoryEntry := #[]
+  /-- All formula classes, in fold order. -/
+  formulaClasses : Array FormulaClassEntry := #[]
+  /-- All reducibility notions, in fold order. -/
+  reducibilityNotions : Array ReducibilityNotionEntry := #[]
+  /-- All typed facts, in fold order. -/
+  facts : Array FactEntry := #[]
   /-- The exact-alias resolution map: `(namespace, key) ↦ target`. Direct — no chains. -/
   aliasMap : Std.HashMap (Name × String) CatalogObjectRef := {}
   /-- Lean-interface ownership: each declaration is owned by at most one variant. -/
@@ -399,6 +629,77 @@ def ConceptCatalog.ofEnv (env : Environment) : ConceptCatalog := Id.run do
           cat := { cat with conflicts := cat.conflicts.push msg }
       | none =>
         cat := { cat with aliasMap := cat.aliasMap.insert (r.ns.name, r.key) r.target }
+  let mut baseIds : NameSet := {}
+  for b in baseTheoryExt.getState env do
+    if baseIds.contains b.id.name then
+      cat := { cat with conflicts := cat.conflicts.push s!"duplicate base theory '{b.id.name}'" }
+    else
+      baseIds := baseIds.insert b.id.name
+      cat := { cat with baseTheories := cat.baseTheories.push b }
+  let mut classIds : NameSet := {}
+  for c in formulaClassExt.getState env do
+    if classIds.contains c.id.name then
+      cat := { cat with conflicts := cat.conflicts.push s!"duplicate formula class '{c.id.name}'" }
+    else
+      classIds := classIds.insert c.id.name
+      cat := { cat with formulaClasses := cat.formulaClasses.push c }
+  let mut notionIds : NameSet := {}
+  for n in reducibilityNotionExt.getState env do
+    if notionIds.contains n.id.name then
+      let msg := s!"duplicate reducibility notion '{n.id.name}'"
+      cat := { cat with conflicts := cat.conflicts.push msg }
+    else
+      notionIds := notionIds.insert n.id.name
+      cat := { cat with reducibilityNotions := cat.reducibilityNotions.push n }
+  let mut factIds : NameSet := {}
+  for f in factExt.getState env do
+    if factIds.contains f.id.name then
+      cat := { cat with conflicts := cat.conflicts.push s!"duplicate fact id '{f.id.name}'" }
+    else
+      factIds := factIds.insert f.id.name
+      if let some prior := cat.facts.find? fun g =>
+          g.context == f.context && g.statement == f.statement then
+        let msg := s!"duplicate fact content: '{f.id.name}' repeats '{prior.id.name}'"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+      cat := { cat with facts := cat.facts.push f }
+      match f.context with
+      | .theoryContext b _ =>
+        if !baseIds.contains b.name then
+          let msg := s!"fact '{f.id.name}' uses unregistered base theory '{b.name}'"
+          cat := { cat with conflicts := cat.conflicts.push msg }
+        if f.statement.isUniform then
+          let msg := s!"fact '{f.id.name}' pairs a uniform statement with a theory context"
+          cat := { cat with conflicts := cat.conflicts.push msg }
+      | .uniformContext n =>
+        if !notionIds.contains n.name then
+          let msg := s!"fact '{f.id.name}' uses unregistered reducibility notion '{n.name}'"
+          cat := { cat with conflicts := cat.conflicts.push msg }
+        if !f.statement.isUniform then
+          let msg := s!"fact '{f.id.name}' pairs an RM statement with a uniform context"
+          cat := { cat with conflicts := cat.conflicts.push msg }
+      let checkVariants (side : String) (c : VariantConjunction) :
+          Array String := Id.run do
+        let mut msgs := #[]
+        if c.variants.isEmpty then
+          msgs := msgs.push s!"fact '{f.id.name}' has an empty {side} conjunction"
+        for v in c.variants do
+          if !variantIds.contains v.name then
+            msgs := msgs.push
+              s!"fact '{f.id.name}' references unknown statement variant '{v.name}'"
+        return msgs
+      let checkProblem (q : UniformProblemId) : Array String :=
+        if problemIds.contains q.name then #[]
+        else #[s!"fact '{f.id.name}' references unknown uniform problem '{q.name}'"]
+      let msgs := match f.statement with
+        | .implication l r | .equivalence l r | .nonImplication l r =>
+          checkVariants "lhs" l ++ checkVariants "rhs" r
+        | .conservation s w fc | .nonConservation s w fc =>
+          checkVariants "lhs" s ++ checkVariants "rhs" w ++
+            (if classIds.contains fc.name then #[]
+             else #[s!"fact '{f.id.name}' uses unregistered formula class '{fc.name}'"])
+        | .reducibility l r _ | .nonReducibility l r _ =>
+          checkProblem l ++ checkProblem r
+      cat := { cat with conflicts := cat.conflicts ++ msgs }
   return cat
 
 /-- Reject a conflicted catalog. Every query and export command goes through this gate. -/
@@ -591,6 +892,161 @@ def elabRmProblem : CommandElab := fun stx => do
     { id := ⟨id⟩, concept := ⟨conceptName⟩, inputRepresentation := inputRep,
       outputRepresentation := outputRep, operation, uniformizes? }
 
+/-- `rm_base_theory id "description"`: register a base theory for theory-context facts.
+Extensible by registration. -/
+elab "rm_base_theory " id:ident descr:str : command => do
+  let n := id.getId
+  if (baseTheoryExt.getState (← getEnv)).any (·.id.name == n) then
+    throwErrorAt id "concept catalog: duplicate base theory '{n}'"
+  modifyEnv fun env => baseTheoryExt.addEntry env ⟨⟨n⟩, descr.getString⟩
+
+/-- `rm_formula_class id "description"`: register a formula class for conservation facts.
+Extensible by registration. -/
+elab "rm_formula_class " id:ident descr:str : command => do
+  let n := id.getId
+  if (formulaClassExt.getState (← getEnv)).any (·.id.name == n) then
+    throwErrorAt id "concept catalog: duplicate formula class '{n}'"
+  modifyEnv fun env => formulaClassExt.addEntry env ⟨⟨n⟩, descr.getString⟩
+
+/-- `rm_reducibility_notion id "description"`: register a reducibility notion for uniform
+facts. Extensible by registration. -/
+elab "rm_reducibility_notion " id:ident descr:str : command => do
+  let n := id.getId
+  if (reducibilityNotionExt.getState (← getEnv)).any (·.id.name == n) then
+    throwErrorAt id "concept catalog: duplicate reducibility notion '{n}'"
+  modifyEnv fun env => reducibilityNotionExt.addEntry env ⟨⟨n⟩, descr.getString⟩
+
+private def parseFactScope (stx : Syntax) : CommandElabM FactScope :=
+  match stx.getId with
+  | `provability => pure .provability
+  | `omegaModels => pure .omegaModels
+  | `allModels => pure .allModels
+  | s => throwErrorAt stx "concept catalog: unknown fact scope '{s}' (expected provability | \
+      omegaModels | allModels)"
+
+private def parseDegreeStatus (stx : Syntax) : CommandElabM DegreeStatus :=
+  match stx.getId with
+  | `exact => pure .exact
+  | `representative => pure .representative
+  | `variantSensitive => pure .variantSensitive
+  | `notAssigned => pure .notAssigned
+  | s => throwErrorAt stx "concept catalog: unknown degree status '{s}' (expected exact | \
+      representative | variantSensitive | notAssigned)"
+
+/-- `rm_fact id kind where [base := b scope := s] [notion := n status := d]
+[formulaClass := c] lhs := [v, …] rhs := [v, …] [note := "…"]`: register a typed fact.
+
+RM kinds (`implication | equivalence | nonImplication | conservation | nonConservation`)
+require `base`/`scope` and take normalized conjunctions of **exact statement variants** as
+endpoints; conservation kinds additionally require `formulaClass`. Uniform kinds
+(`reducibility | nonReducibility`) require `notion`/`status` and take exactly one registered
+uniform problem on each side. The two families never mix — stray fields are rejected, not
+ignored. Facts are fail-closed data: they render recorded-but-unsupported until issue #6
+links typed evidence. -/
+syntax (name := rmFactCmd) "rm_fact " ident ident " where "
+  (&"base" " := " ident &"scope" " := " ident)?
+  (&"notion" " := " ident &"status" " := " ident)?
+  (&"formulaClass" " := " ident)?
+  &"lhs" " := " "[" ident,* "]"
+  &"rhs" " := " "[" ident,* "]"
+  (&"note" " := " str)? : command
+
+@[command_elab rmFactCmd]
+def elabRmFact : CommandElab := fun stx => do
+  let cat := ConceptCatalog.ofEnv (← getEnv)
+  let id := stx[1].getId
+  let kindStx := stx[2]
+  let base? := if stx[4].getNumArgs == 0 then none else some (stx[4][2], stx[4][5])
+  let notion? := if stx[5].getNumArgs == 0 then none else some (stx[5][2], stx[5][5])
+  let classStx? := if stx[6].getNumArgs == 0 then none else some stx[6][2]
+  let lhsStxs := stx[10].getSepArgs
+  let rhsStxs := stx[15].getSepArgs
+  let note := if stx[17].getNumArgs == 0 then ""
+    else (⟨stx[17][2]⟩ : TSyntax `str).getString
+  if cat.facts.any (·.id.name == id) then
+    throwErrorAt stx[1] "concept catalog: duplicate fact id '{id}'"
+  let kind := kindStx.getId
+  let isUniformKind := kind == `reducibility || kind == `nonReducibility
+  let isConservationKind := kind == `conservation || kind == `nonConservation
+  -- Context: exactly the fields the family needs; stray fields are cross-axis errors.
+  let context ← do
+    if isUniformKind then
+      if base?.isSome then
+        throwErrorAt kindStx "concept catalog: uniform fact kind '{kind}' takes notion/status, \
+          not base/scope — the RM and uniform fact families never mix"
+      let some (nstx, _) := notion?
+        | throwErrorAt kindStx "concept catalog: uniform fact kind '{kind}' requires \
+            notion := … status := …"
+      let nname := nstx.getId
+      unless cat.reducibilityNotions.any (·.id.name == nname) do
+        throwErrorAt nstx "concept catalog: unregistered reducibility notion '{nname}'"
+      pure (FactContext.uniformContext ⟨nname⟩)
+    else
+      if notion?.isSome then
+        throwErrorAt kindStx "concept catalog: RM fact kind '{kind}' takes base/scope, not \
+          notion/status — the RM and uniform fact families never mix"
+      let some (bstx, sstx) := base?
+        | throwErrorAt kindStx "concept catalog: RM fact kind '{kind}' requires \
+            base := … scope := …"
+      let bname := bstx.getId
+      unless cat.baseTheories.any (·.id.name == bname) do
+        throwErrorAt bstx "concept catalog: unregistered base theory '{bname}'"
+      pure (FactContext.theoryContext ⟨bname⟩ (← parseFactScope sstx))
+  let mkConj (stxs : Array Syntax) (side : String) :
+      CommandElabM VariantConjunction := do
+    if stxs.isEmpty then
+      throwErrorAt kindStx "concept catalog: the {side} conjunction must name at least one \
+        exact statement variant"
+    for vstx in stxs do
+      unless cat.variants.any (·.id.name == vstx.getId) do
+        throwErrorAt vstx "concept catalog: unknown statement variant '{vstx.getId}' — fact \
+          endpoints are exact statement variants, never concepts"
+    pure (VariantConjunction.normalize (stxs.map fun s => ⟨s.getId⟩))
+  let mkProblem (stxs : Array Syntax) (side : String) :
+      CommandElabM UniformProblemId := do
+    let #[qstx] := stxs
+      | throwErrorAt kindStx "concept catalog: the {side} of a uniform fact is exactly one \
+          registered uniform problem"
+    unless cat.problems.any (·.id.name == qstx.getId) do
+      throwErrorAt qstx "concept catalog: unknown uniform problem '{qstx.getId}' — uniform \
+        facts relate exact represented problems, never statement variants or concepts"
+    pure ⟨qstx.getId⟩
+  let mkClass : CommandElabM FormulaClassId := do
+    let some cstx := classStx?
+      | throwErrorAt kindStx "concept catalog: conservation facts require formulaClass := …"
+    unless cat.formulaClasses.any (·.id.name == cstx.getId) do
+      throwErrorAt cstx "concept catalog: unregistered formula class '{cstx.getId}'"
+    pure ⟨cstx.getId⟩
+  if classStx?.isSome && !isConservationKind then
+    throwErrorAt kindStx "concept catalog: only conservation facts take formulaClass"
+  let statement ← match kind with
+    | `implication => pure (FactStatement.implication (← mkConj lhsStxs "lhs")
+        (← mkConj rhsStxs "rhs"))
+    | `equivalence => pure (FactStatement.equivalence (← mkConj lhsStxs "lhs")
+        (← mkConj rhsStxs "rhs"))
+    | `nonImplication => pure (FactStatement.nonImplication (← mkConj lhsStxs "lhs")
+        (← mkConj rhsStxs "rhs"))
+    | `conservation => pure (FactStatement.conservation (← mkConj lhsStxs "lhs")
+        (← mkConj rhsStxs "rhs") (← mkClass))
+    | `nonConservation => pure (FactStatement.nonConservation (← mkConj lhsStxs "lhs")
+        (← mkConj rhsStxs "rhs") (← mkClass))
+    | `reducibility => do
+        let some (_, dstx) := notion? | throwErrorAt kindStx "unreachable: notion checked"
+        pure (FactStatement.reducibility (← mkProblem lhsStxs "lhs")
+          (← mkProblem rhsStxs "rhs") (← parseDegreeStatus dstx))
+    | `nonReducibility => do
+        let some (_, dstx) := notion? | throwErrorAt kindStx "unreachable: notion checked"
+        pure (FactStatement.nonReducibility (← mkProblem lhsStxs "lhs")
+          (← mkProblem rhsStxs "rhs") (← parseDegreeStatus dstx))
+    | k => throwErrorAt kindStx "concept catalog: unknown fact kind '{k}' (expected \
+        implication | equivalence | nonImplication | conservation | nonConservation | \
+        reducibility | nonReducibility)"
+  if let some prior := cat.facts.find? fun g =>
+      g.context == context && g.statement == statement then
+    throwErrorAt stx[1] "concept catalog: duplicate fact content: this fact is already \
+      registered as '{prior.id.name}' (conjunctions compare in normalized form)"
+  modifyEnv fun env => factExt.addEntry env { id := ⟨id⟩, context, statement, note }
+
 /-! ## Queries (all reject a conflicted state) -/
 
 /-- The canonical serialized form of a concept id. -/
@@ -642,5 +1098,28 @@ elab "#rm_resolve " ns:ident key:str : command => do
   | some t => logInfo s!"{ns.getId}:\"{key.getString}\" = [{t.kindTag}] {t.name}"
   | none => throwErrorAt key "concept catalog: no exact alias for \
       {ns.getId}:\"{key.getString}\" (provenance relations do not resolve)"
+
+/-- `#rm_facts`: list the typed facts, sorted by id, with contexts and fail-closed evidence
+status — every fact renders `recorded, no evidence linked` until issue #6 links typed
+evidence. Rejects a conflicted state. -/
+elab "#rm_facts" : command => do
+  let cat ← requireCleanCatalog
+  let facts := cat.facts.qsort fun a b => Name.lt a.id.name b.id.name
+  let mut lines := #[s!"facts ({facts.size}):"]
+  for f in facts do
+    lines := lines.push
+      s!"  {f.id.name} [{f.statement.kindTag} | {f.context.render}] \
+        {f.statement.render} — recorded, no evidence linked"
+    unless f.note.isEmpty do
+      lines := lines.push s!"    note: {f.note}"
+  let vocab (label : String) (names : Array Name) : String :=
+    let sorted := names.qsort Name.lt
+    s!"{label} ({sorted.size}): " ++
+      (if sorted.isEmpty then "(none)"
+       else ", ".intercalate (sorted.toList.map toString))
+  lines := lines.push (vocab "base theories" (cat.baseTheories.map (·.id.name)))
+  lines := lines.push (vocab "formula classes" (cat.formulaClasses.map (·.id.name)))
+  lines := lines.push (vocab "reducibility notions" (cat.reducibilityNotions.map (·.id.name)))
+  logInfo ("\n".intercalate lines.toList)
 
 end ReverseMathlib.Meta

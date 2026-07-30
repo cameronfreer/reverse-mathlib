@@ -23,6 +23,10 @@ import ReverseMathlibFixtures.SchemaFix
 import ReverseMathlibFixtures.SchemaA
 import ReverseMathlibFixtures.SchemaB
 import ReverseMathlibFixtures.MergeSchema
+import ReverseMathlibFixtures.FactBase
+import ReverseMathlibFixtures.FactA
+import ReverseMathlibFixtures.FactB
+import ReverseMathlibFixtures.MergeFact
 
 /-!
 # Collision-test fixtures

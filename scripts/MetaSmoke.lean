@@ -619,4 +619,144 @@ info: concepts: 4; variants: 5; ports: 3; evidence: 5 (4 kernel checked, 1 claim
 #guard_msgs in
 #revmath_stats
 
+/-! ### Typed facts and contexts (#5)
+
+Conjunction ASTs normalize (permuted duplicates collide); base theory, fact scope, and
+statement layer stay distinct (the same statement at another scope is another fact); RM and
+uniform fact families never mix; endpoints are exact statement variants or exact uniform
+problems, never concepts; rendering is fail-closed — recorded, no evidence linked. -/
+
+#eval show CoreM Unit from do
+  let a : StatementVariantId := ⟨`aVar⟩
+  let b : StatementVariantId := ⟨`bVar⟩
+  check (VariantConjunction.normalize #[b, a, a] == VariantConjunction.normalize #[a, b])
+    "conjunction normalization must sort and deduplicate"
+  check ((VariantConjunction.normalize #[b, a, a]).serialized == "aVar+bVar")
+    "canonical serialization is the normalized order"
+
+rm_base_theory fixRca0 "fixture base theory"
+rm_formula_class fixPi11 "fixture formula class"
+rm_reducibility_notion fixWeihrauch "fixture reducibility notion"
+
+rm_uniform_problem smokeProblemA where
+  concept := smokeConcept
+  input := "fixture input"
+  output := "fixture output"
+  operation := single
+
+rm_uniform_problem smokeProblemB where
+  concept := smokeConcept
+  input := "fixture input"
+  output := "fixture output"
+  operation := sequentialization
+
+-- An RM fact; the lhs conjunction arrives unnormalized.
+rm_fact fixImp implication where
+  base := fixRca0
+  scope := provability
+  lhs := [smokePropVariant, smokeVariant, smokeVariant]
+  rhs := [smokePropVariant]
+
+-- The same statement at a different scope is a DIFFERENT fact.
+rm_fact fixImpOmega implication where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeVariant, smokePropVariant]
+  rhs := [smokePropVariant]
+
+-- Duplicate content under a fresh id is rejected — normalization makes permuted duplicates
+-- collide.
+/--
+error: concept catalog: duplicate fact content: this fact is already registered as 'fixImp' (conjunctions compare in normalized form)
+-/
+#guard_msgs in
+rm_fact fixImpAgain implication where
+  base := fixRca0
+  scope := provability
+  lhs := [smokeVariant, smokePropVariant]
+  rhs := [smokePropVariant]
+
+-- Endpoints are exact statement variants — a concept id is rejected, never coerced.
+/--
+error: concept catalog: unknown statement variant 'smokeConcept' — fact endpoints are exact statement variants, never concepts
+-/
+#guard_msgs in
+rm_fact fixBadEndpoint implication where
+  base := fixRca0
+  scope := provability
+  lhs := [smokeConcept]
+  rhs := [smokePropVariant]
+
+-- Cross-axis: RM kinds never take notion/status …
+/--
+error: concept catalog: RM fact kind 'implication' takes base/scope, not notion/status — the RM and uniform fact families never mix
+-/
+#guard_msgs in
+rm_fact fixCrossA implication where
+  notion := fixWeihrauch
+  status := exact
+  lhs := [smokeVariant]
+  rhs := [smokePropVariant]
+
+-- … and uniform kinds never take base/scope.
+/--
+error: concept catalog: uniform fact kind 'reducibility' takes notion/status, not base/scope — the RM and uniform fact families never mix
+-/
+#guard_msgs in
+rm_fact fixCrossB reducibility where
+  base := fixRca0
+  scope := provability
+  lhs := [smokeProblemA]
+  rhs := [smokeProblemB]
+
+-- Uniform endpoints are represented problems, never statement variants.
+/--
+error: concept catalog: unknown uniform problem 'smokeVariant' — uniform facts relate exact represented problems, never statement variants or concepts
+-/
+#guard_msgs in
+rm_fact fixBadUniform reducibility where
+  notion := fixWeihrauch
+  status := exact
+  lhs := [smokeVariant]
+  rhs := [smokeProblemB]
+
+-- A uniform fact with its mandatory degree status.
+rm_fact fixRed reducibility where
+  notion := fixWeihrauch
+  status := representative
+  lhs := [smokeProblemA]
+  rhs := [smokeProblemB]
+
+-- Conservation requires its formula class.
+/-- error: concept catalog: conservation facts require formulaClass := … -/
+#guard_msgs in
+rm_fact fixConsMissing conservation where
+  base := fixRca0
+  scope := provability
+  lhs := [smokeVariant]
+  rhs := [smokePropVariant]
+
+rm_fact fixCons conservation where
+  base := fixRca0
+  scope := provability
+  formulaClass := fixPi11
+  lhs := [smokeVariant]
+  rhs := [smokePropVariant]
+  note := "fixture conservation record"
+
+-- Fail-closed rendering, pinned: every fact is recorded, none is supported.
+/--
+info: facts (4):
+  fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
+    note: fixture conservation record
+  fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+base theories (1): fixRca0
+formula classes (1): fixPi11
+reducibility notions (1): fixWeihrauch
+-/
+#guard_msgs in
+#rm_facts
+
 end RMSmoke
