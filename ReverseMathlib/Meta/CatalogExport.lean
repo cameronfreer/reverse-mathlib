@@ -25,8 +25,9 @@ issue #3; `catalog/v1` is published only after the #4 variant migration):
   namespaces, ports, base theories, formula classes, reducibility notions, and facts by id,
   refs by (namespace, key, target), ambient nodes
   by name, ambient edges by (source, target, port, evidenceIdx), evidence in declared order;
-* typed facts export **fail-closed**: every fact carries `"evidence": []` until issue #6
-  links typed evidence — a recorded fact is never rendered as supported;
+* typed facts export **fail-closed**: a fact's `evidence` array contains exactly its
+  registered certifications (`revmath_certify_fact`, #24) — context, certificate, note;
+  uncertified facts export `"evidence": []` and are never rendered as supported;
 * machine-readable fields carry **stable tags** (`relativeProof`, `kernelChecked`, `lean`, …),
   never rendered prose; human labels live in separate `display` objects, so editing display
   wording is never a schema migration;
@@ -89,6 +90,8 @@ structure CatalogSnapshot where
   /-- The conceptual catalog (concepts, namespaces, typed external references). The exporter
   refuses to run on a conflicted state. -/
   conceptCatalog : ConceptCatalog
+  /-- Fact certifications (#24), sorted by (fact, certificate). -/
+  factEvidence : Array FactEvidenceEntry
 
 /-- Derive the ambient-factorization edges of one port. Direction-aware: `upper` maps
 the assumed variant's interface → the target's interface, `lower` maps target → assumed,
@@ -121,12 +124,15 @@ sorted, order-bearing (evidence) arrays preserved. -/
 def CatalogSnapshot.ofEnv (env : Environment) : CatalogSnapshot :=
   let cat := ConceptCatalog.ofEnv env
   let ports := (portExt.getState env).qsort fun a b => toString a.id < toString b.id
+  let factEvidence := (factEvidenceExt.getState env).qsort fun a b =>
+    toString a.fact.name < toString b.fact.name ||
+      (a.fact == b.fact && toString a.thm < toString b.thm)
   let edges := (ports.flatMap (ambientEdgesOf cat)).qsort fun a b =>
     Name.lt a.source b.source ||
       (a.source == b.source && (Name.lt a.target b.target ||
         (a.target == b.target && (Name.lt a.port b.port ||
           (a.port == b.port && a.evidenceIdx < b.evidenceIdx)))))
-  { ports, ambientEdges := edges, conceptCatalog := cat }
+  { ports, ambientEdges := edges, conceptCatalog := cat, factEvidence }
 
 /-- Owning module of a declaration, or `null` for current-file declarations. Module names,
 never file paths. -/
@@ -288,7 +294,11 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("formulaClass", formulaClass),
        ("degreeStatus", degreeStatus),
        ("note", Json.str f.note),
-       ("evidence", Json.arr #[])]
+       ("evidence", Json.arr ((snapshot.factEvidence.filter (·.fact == f.id)).map
+         fun c => Json.mkObj
+           [("context", Json.str (toString c.context.name)),
+            ("certificate", nameJson c.thm),
+            ("note", Json.str c.note)]))]
   let variantJson (v : StatementVariantEntry) : Json :=
     Json.mkObj
       [("id", Json.str v.id.serialized),

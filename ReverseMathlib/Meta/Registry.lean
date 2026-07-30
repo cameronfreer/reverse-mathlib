@@ -277,6 +277,10 @@ structure EvidenceRecord where
   even for claimed records, so a malformed unverified record cannot be registered. The cited
   variant must own a Prop-valued Lean interface for kernel-checked evidence. -/
   assumes? : Option StatementVariantId := none
+  /-- For `semanticImplication` (only): a cross-link to the typed fact this evidence
+  supports, for proof/provenance display. The fact's own certification lives in the
+  fact-evidence registry (#24); this link never inflates the fact-level headline. -/
+  factLink? : Option FactId := none
   /-- Free-text qualifier. -/
   note : String := ""
   deriving Inhabited, Repr, BEq
@@ -315,6 +319,29 @@ structure PortEntry where
   deriving Inhabited, Repr, BEq
 
 initialize portExt : SimplePersistentEnvExtension PortEntry (Array PortEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
+/-- A certification linking a typed **fact** to a semantic certificate (issue #24). The
+semantic certificate is fundamentally evidence for the fact, not for a port; base theory,
+scope, direction, and endpoints are **derived from the fact** — never repeated freely.
+The headline scoreboard counts unique certified facts by scope, so multiple ports can
+never inflate it. -/
+structure FactEvidenceEntry where
+  /-- The certified fact. -/
+  fact : FactId
+  /-- The registered semantic context the certificate quantifies over. -/
+  context : SemanticContextId
+  /-- The typed certificate declaration. -/
+  thm : Name
+  /-- Free-text qualifier. -/
+  note : String := ""
+  deriving Inhabited, Repr, BEq
+
+initialize factEvidenceExt : SimplePersistentEnvExtension FactEvidenceEntry
+    (Array FactEvidenceEntry) ←
   registerSimplePersistentEnvExtension {
     addEntryFn := Array.push
     addImportedFn := mkStateFromImportedEntries Array.push #[]
@@ -425,6 +452,60 @@ def checkSemanticCertificateType (cert base p q : Name) (equiv : Bool) :
 def findPort? (env : Environment) (id : Name) : Option PortEntry :=
   (portExt.getState env).find? (·.id == id)
 
+/-- Validate a fact certification (issue #24). Everything is **derived from the fact**:
+its theory context must match the registered semantic context's base and scope exactly
+(never escalated); only singleton implication/equivalence facts are certifiable —
+conjunctions, non-implications, conservation, and uniform facts are rejected fail-closed
+until their schemas exist; both endpoint variants must live at the context's layer and own
+interfaces; and the cited certificate must have the exact typed shape for the fact's kind
+(`SemanticImplicationCertificate Base P Q` for implication,
+`SemanticEquivalenceCertificate` for equivalence), axiom-swept. -/
+def validateFactCertification (cat : ConceptCatalog) (fid : FactId)
+    (ctxId : SemanticContextId) (thm : Name) : CommandElabM Unit := do
+  let some f := cat.facts.find? (·.id == fid)
+    | throwError "registry: unknown fact '{fid}'"
+  let some ctx := cat.semanticContexts.find? (·.id == ctxId)
+    | throwError "registry: unknown semantic context '{ctxId}'"
+  let (base, scope) ← match f.context with
+    | .theoryContext b s => pure (b, s)
+    | .uniformContext _ => throwError "registry: uniform facts have no semantic-certificate \
+        schema; only theory-context facts can be certified"
+  unless base == ctx.base do
+    throwError "registry: fact '{fid}' is over base theory '{base.name}', not the semantic \
+      context's base '{ctx.base.name}'"
+  unless scope == ctx.scope do
+    throwError "registry: fact '{fid}' has scope '{scope.tag}', which is not the semantic \
+      context's scope '{ctx.scope.tag}'; scopes are never escalated or defaulted"
+  let (lhs, rhs, equiv) ← match f.statement with
+    | .implication l r => pure (l, r, false)
+    | .equivalence l r => pure (l, r, true)
+    | s => throwError "registry: no certificate schema exists for '{s.kindTag}' facts; only \
+        singleton implication and equivalence facts can be certified today"
+  let #[pv] := lhs.variants
+    | throwError "registry: conjunction certificates are rejected fail-closed until \
+        conjunction semantics exists (the lhs of '{fid}' has {lhs.variants.size} conjuncts)"
+  let #[qv] := rhs.variants
+    | throwError "registry: conjunction certificates are rejected fail-closed until \
+        conjunction semantics exists (the rhs of '{fid}' has {rhs.variants.size} conjuncts)"
+  let some pe := cat.findVariant? pv.name
+    | throwError "registry: unknown statement variant '{pv.name}'"
+  let some qe := cat.findVariant? qv.name
+    | throwError "registry: unknown statement variant '{qv.name}'"
+  unless pe.layer == ctx.layer do
+    throwError "registry: endpoint variant '{pv.name}' is at layer '{pe.layer.name}', not \
+      the semantic context's layer '{ctx.layer.name}'; an ambient variant is never \
+      substituted for a model-indexed one"
+  unless qe.layer == ctx.layer do
+    throwError "registry: endpoint variant '{qv.name}' is at layer '{qe.layer.name}', not \
+      the semantic context's layer '{ctx.layer.name}'; an ambient variant is never \
+      substituted for a model-indexed one"
+  let some pIface := pe.interface?
+    | throwError "registry: statement variant '{pv.name}' has no Lean interface"
+  let some qIface := qe.interface?
+    | throwError "registry: statement variant '{qv.name}' has no Lean interface"
+  checkStandardAxioms thm
+  checkSemanticCertificateType thm ctx.contextDecl pIface qIface equiv
+
 /-- The ambient a given evidence kind must live in. Kind and ambient must agree: a relative
 factorization is ambient-Lean, a semantic implication lives in model semantics, a syntactic
 derivation in an object theory. -/
@@ -469,6 +550,12 @@ def validateEvidence (e : EvidenceRecord) (target : StatementVariantId)
       (fullStandardModel | omegaModels | allModels); scope is never defaulted"
   if e.context?.isSome && e.kind != .semanticImplication then
     throwError "registry: only semanticImplication evidence may carry a semantic context"
+  if e.factLink?.isSome && e.kind != .semanticImplication then
+    throwError "registry: only semanticImplication evidence may cross-link a fact"
+  if let some fl := e.factLink? then
+    let cat := ConceptCatalog.ofEnv (← getEnv)
+    unless cat.facts.any (·.id == fl) do
+      throwError "registry: evidence cross-links unknown fact '{fl}'"
   if e.route?.isSome && e.kind != .syntacticDerivation then
     throwError "registry: only syntacticDerivation evidence may carry a proof route"
   if e.artifact?.isSome && e.kind != .syntacticDerivation then
@@ -599,7 +686,7 @@ private def resolveConst (id : TSyntax `ident) : CommandElabM Name :=
 [route <r>] [artifact <a>] [via <thm>] [assumes <p>] [note "…"]`. -/
 syntax rmEvidenceLine := &"evidence" ident ident ident ident (&"scope" ident)?
   (&"context" ident)? (&"theory" ident)? (&"route" ident)? (&"artifact" ident)?
-  (&"via" ident)? (&"assumes" ident)? (&"note" str)?
+  (&"via" ident)? (&"assumes" ident)? (&"fact" ident)? (&"note" str)?
 
 /-- `revmath_port id where mathlib := … target := … relation := … …`: register a port with
 its evidence. The target is an exact statement variant; the port statement is **derived from
@@ -714,11 +801,12 @@ def elabRevmathPort : CommandElab := fun stx => do
     let artifact? ← (optArg ev[9] 1).mapM parseArtifact
     let thm? ← (optArg ev[10] 1).mapM fun s => resolveConst ⟨s⟩
     let assumes? : Option StatementVariantId := (optArg ev[11] 1).map fun s => ⟨s.getId⟩
+    let factLink? : Option FactId := (optArg ev[12] 1).map fun s => ⟨s.getId⟩
     let evNote : String :=
-      ((optArg ev[12] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
+      ((optArg ev[13] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
     let rec' : EvidenceRecord :=
       { kind, direction, verification, ambient, scope?, context?, theory?, route?, artifact?,
-        thm?, assumes?, note := evNote }
+        thm?, assumes?, factLink?, note := evNote }
     validateEvidence rec' target portDecl?
     evidence := evidence.push rec'
   if (findPort? (← getEnv) id).isSome then
@@ -726,6 +814,31 @@ def elabRevmathPort : CommandElab := fun stx => do
   modifyEnv fun env => portExt.addEntry env
     { id, mathlibDecl? := some mathlibDecl, target, portDecl?, relation,
       claimedClassical? := claimed?, note, evidence }
+
+/-- `revmath_certify_fact id where context := c via := thm [note := "…"]`: certify a typed
+fact against a registered semantic context (issue #24). Base theory, scope, direction, and
+endpoints are derived from the fact; see `validateFactCertification` for the full matrix. -/
+syntax (name := revmathCertifyFactCmd) "revmath_certify_fact " ident " where "
+  &"context" " := " ident
+  &"via" " := " ident
+  (&"note" " := " str)? : command
+
+@[command_elab revmathCertifyFactCmd]
+def elabRevmathCertifyFact : CommandElab := fun stx => do
+  let cat := ConceptCatalog.ofEnv (← getEnv)
+  unless cat.conflicts.isEmpty do
+    let lines := "\n  ".intercalate cat.conflicts.toList
+    throwError "registry: conceptual catalog is conflicted; resolve before certifying \
+      facts:\n  {lines}"
+  let fid : FactId := ⟨stx[1].getId⟩
+  let ctxId : SemanticContextId := ⟨stx[5].getId⟩
+  let thm ← resolveConst ⟨stx[8]⟩
+  let note : String :=
+    ((optArg stx[9] 2).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
+  if (factEvidenceExt.getState (← getEnv)).any fun e => e.fact == fid && e.thm == thm then
+    throwError "registry: fact '{fid}' is already certified via '{thm}'"
+  validateFactCertification cat fid ctxId thm
+  modifyEnv fun env => factEvidenceExt.addEntry env { fact := fid, context := ctxId, thm, note }
 
 /-! ## Rendering (fail-closed) -/
 
@@ -791,6 +904,8 @@ def EvidenceRecord.render (e : EvidenceRecord) : Array String := Id.run do
   lines := lines.push s!"    ambient: {e.ambient.render}; RM semantic scope: {renderScope e.scope?}"
   if let some c := e.context? then
     lines := lines.push s!"    semantic context: {c}"
+  if let some fl := e.factLink? then
+    lines := lines.push s!"    supports fact: {fl}"
   if e.route?.isSome || e.artifact?.isSome then
     let route := (e.route?.map (·.tag)).getD "unrecorded"
     let artifact := (e.artifact?.map (·.tag)).getD "unrecorded"
@@ -850,23 +965,66 @@ elab "#revmath_port? " id:ident : command => do
   | some p => logInfo p.render
   | none => throwErrorAt id "registry: no port registered under '{n}'"
 
+/-- The unique certified facts at a scope: distinct fact ids with at least one registered
+certification, filtered by the fact's own scope. Multiple certificates — and any number of
+port evidence records — never inflate this count (#24). -/
+def certifiedFactsAt (cat : ConceptCatalog) (factEvs : Array FactEvidenceEntry)
+    (s : FactScope) : Array FactEntry :=
+  cat.facts.filter fun f =>
+    (match f.context with
+      | .theoryContext _ fs => fs == s
+      | .uniformContext _ => false) &&
+    factEvs.any (·.fact == f.id)
+
+/-- `#revmath_facts`: the evidence-aware fact view (the catalog-data view is `#rm_facts`).
+Certified facts render their certificates and the context-realization status — the
+kernel-checked claim (over the registered context predicate) is never conflated with the
+literature-backed identification of that predicate with the base theory's model class,
+whose backend adequacy is pending. Uncertified facts stay "recorded, no evidence linked". -/
+elab "#revmath_facts" : command => do
+  let cat ← requireCleanCatalog
+  let factEvs := factEvidenceExt.getState (← getEnv)
+  let facts := cat.facts.qsort fun a b => toString a.id.name < toString b.id.name
+  let mut lines := #[s!"facts ({facts.size}):"]
+  for f in facts do
+    let certs := factEvs.filter (·.fact == f.id)
+    if certs.isEmpty then
+      lines := lines.push
+        s!"  {f.id.name} [{f.statement.kindTag} | {f.context.render}] \
+          {f.statement.render} — recorded, no evidence linked"
+    else
+      lines := lines.push
+        s!"  {f.id.name} [{f.statement.kindTag} | {f.context.render}] \
+          {f.statement.render} — CERTIFIED"
+      for c in certs do
+        lines := lines.push s!"    via {c.thm} [context {c.context}]"
+        unless c.note.isEmpty do
+          lines := lines.push s!"      note: {c.note}"
+      if let some ctx := cat.semanticContexts.find? (·.id == (certs[0]!).context) then
+        lines := lines.push s!"    context realization: implication kernel-checked over \
+          '{ctx.contextDecl}'; identification of that context with the \
+          {ctx.scope.tag} of '{ctx.base.name}': literature-backed, backend adequacy pending"
+  logInfo ("\n".intercalate lines.toList)
+
 /-- `#revmath_stats`: the honest scoreboard — evidence counts by verification, and the
-**per-scope** certified counts. Never a single undifferentiated "certified RM bounds"
-number: an ω-model implication is reported as exactly that, not as a subsystem bound. -/
+**unique certified facts per scope** (#24): distinct certified facts, so neither multiple
+certificates nor multiple ports inflate the headline. Never a single undifferentiated
+"certified RM bounds" number: an ω-model fact is reported as exactly that, not as a
+subsystem bound. -/
 elab "#revmath_stats" : command => do
   let env ← getEnv
   let cat := ConceptCatalog.ofEnv env
   let ports := portExt.getState env
+  let factEvs := factEvidenceExt.getState env
   let evs := ports.flatMap (·.evidence)
   let count (v : Verification) := evs.filter (·.verification == v) |>.size
-  let claims := ports.flatMap (·.certifiedClaims)
-  let omega := claims.filter (·.scope.supportsOmegaModelClaim) |>.size
-  let allM := claims.filter (·.scope.supportsAllModelConsequence) |>.size
-  let syn := claims.filter (·.scope.supportsSyntacticUpperBound) |>.size
+  let omega := (certifiedFactsAt cat factEvs .omegaModels).size
+  let allM := (certifiedFactsAt cat factEvs .allModels).size
+  let syn := (certifiedFactsAt cat factEvs .provability).size
   logInfo <| s!"concepts: {cat.concepts.size}; variants: {cat.variants.size}; \
     ports: {ports.size}; evidence: {evs.size} \
     ({count .kernelChecked} kernel checked, {count .claimed} claimed, \
-    {count .backendChecked} backend checked); certified ω-model implications: {omega}; \
-    all-model implications: {allM}; syntactic RM bounds: {syn}"
+    {count .backendChecked} backend checked); certified unique facts — ω-model: {omega}; \
+    all-model: {allM}; syntactic: {syn}"
 
 end ReverseMathlib.Meta

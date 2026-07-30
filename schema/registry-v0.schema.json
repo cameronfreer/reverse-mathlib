@@ -181,6 +181,13 @@
                   ],
                   "description": "Serialized statement-variant id taken as hypothesis."
                 },
+                "fact": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "semanticImplication only: cross-link to the typed fact this evidence supports (display/provenance; never inflates the fact-level headline)."
+                },
                 "note": {
                   "type": "string"
                 },
@@ -613,8 +620,28 @@
           },
           "evidence": {
             "type": "array",
-            "maxItems": 0,
-            "description": "Always empty in v0 — typed evidence linkage arrives with issue #6."
+            "description": "Registered fact certifications (revmath_certify_fact, #24). Base theory, scope, direction, and endpoints are derived from the fact itself; empty = recorded-but-unsupported, never rendered as certified.",
+            "items": {
+              "type": "object",
+              "required": [
+                "context",
+                "certificate",
+                "note"
+              ],
+              "properties": {
+                "context": {
+                  "type": "string",
+                  "description": "The registered semantic context the certificate quantifies over."
+                },
+                "certificate": {
+                  "type": "string"
+                },
+                "note": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": false
+            }
           }
         },
         "additionalProperties": false

@@ -272,7 +272,8 @@ initialize problemExt : SimplePersistentEnvExtension UniformProblemEntry
 /-! ## Typed facts and contexts (issue #5)
 
 Facts are **catalog data with fail-closed rendering**: a registered fact renders
-recorded-but-unsupported until issue #6 links typed evidence; nothing here is inferred true.
+recorded-but-unsupported until a typed certification links it (`revmath_certify_fact`,
+registry side, #24); nothing here is inferred true.
 Two fact families that never mix: RM facts (implication, equivalence, non-implication,
 conservation) whose endpoints are normalized conjunctions of **exact statement variants** and
 whose context is a base theory plus a fact scope (distinct fields, never conflated with the
@@ -451,8 +452,9 @@ def FactStatement.render : FactStatement → String
   | .reducibility l r st => s!"{l.name} <= {r.name} [{st.tag}]"
   | .nonReducibility l r st => s!"{l.name} </= {r.name} [{st.tag}]"
 
-/-- A registered typed fact: plain catalog data. **Fail-closed**: without linked evidence
-(issue #6) a fact renders recorded-but-unsupported and never participates in inference. -/
+/-- A registered typed fact: plain catalog data. **Fail-closed**: without a registered
+certification (`revmath_certify_fact`, #24, registry side) a fact renders
+recorded-but-unsupported and never participates in inference. -/
 structure FactEntry where
   /-- The fact identifier. -/
   id : FactId
@@ -1206,9 +1208,9 @@ elab "#rm_resolve " ns:ident key:str : command => do
   | none => throwErrorAt key "concept catalog: no exact alias for \
       {ns.getId}:\"{key.getString}\" (provenance relations do not resolve)"
 
-/-- `#rm_facts`: list the typed facts, sorted by id, with contexts and fail-closed evidence
-status — every fact renders `recorded, no evidence linked` until issue #6 links typed
-evidence. Rejects a conflicted state. -/
+/-- `#rm_facts`: the **catalog-data** view of typed facts, sorted by id; every fact renders
+`recorded, no evidence linked` here because certifications live registry-side — the
+evidence-aware view is `#revmath_facts`. Rejects a conflicted state. -/
 elab "#rm_facts" : command => do
   let cat ← requireCleanCatalog
   let facts := cat.facts.qsort fun a b => Name.lt a.id.name b.id.name

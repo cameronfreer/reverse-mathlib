@@ -304,7 +304,7 @@ renders its honest verdict. -/
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
 /--
-info: concepts: 3; variants: 5; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 3; variants: 5; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -653,7 +653,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 7; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 4; variants: 7; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -992,7 +992,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 4; variants: 9; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified ω-model implications: 1; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 4; variants: 9; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1006,5 +1006,150 @@ info: concepts: 4; variants: 9; ports: 5; evidence: 7 (5 kernel checked, 2 claim
       e.source == `RMSmoke.SmokeModelP || e.target == `RMSmoke.SmokeModelQ ||
         e.source == `RMSmoke.SmokeModelQ || e.target == `RMSmoke.SmokeModelP)
     "semantic evidence must not add ambient-factorization edges"
+
+/-! ### Fact certification (#24)
+
+The semantic certificate is evidence for the **fact**; base, scope, direction, and
+endpoints derive from the fact, never repeated freely. Only singleton
+implication/equivalence facts certify; everything else is fail-closed. The headline counts
+unique certified facts, so neither multiple certificates nor port evidence inflate it. -/
+
+rm_fact fixOmegaFact implication where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeModelVarP]
+  rhs := [smokeModelVarQ]
+
+rm_fact fixOmegaConj implication where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeModelVarP, smokeModelVarQ]
+  rhs := [smokeModelVarQ]
+
+-- Unknown fact and unknown context are rejected.
+/-- error: registry: unknown fact 'noSuchFact' -/
+#guard_msgs in
+revmath_certify_fact noSuchFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+/-- error: registry: unknown semantic context 'noSuchCtx' -/
+#guard_msgs in
+revmath_certify_fact fixOmegaFact where
+  context := noSuchCtx
+  via := RMSmoke.smokeSemCert
+
+-- The fact's scope must be the context's scope — a provability fact cannot borrow an
+-- ω context.
+/--
+error: registry: fact 'fixImp' has scope 'provability', which is not the semantic context's scope 'omegaModels'; scopes are never escalated or defaulted
+-/
+#guard_msgs in
+revmath_certify_fact fixImp where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+-- Uniform facts have no schema.
+/--
+error: registry: uniform facts have no semantic-certificate schema; only theory-context facts can be certified
+-/
+#guard_msgs in
+revmath_certify_fact fixRed where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+-- Endpoints must live at the context's layer — a singleton fact over ambient variants is
+-- rejected even at the right scope.
+rm_fact fixAmbientOmega implication where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeVariant]
+  rhs := [smokePropVariant]
+
+/--
+error: registry: endpoint variant 'smokeVariant' is at layer 'ambient', not the semantic context's layer 'smokemodellayer'; an ambient variant is never substituted for a model-indexed one
+-/
+#guard_msgs in
+revmath_certify_fact fixAmbientOmega where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+-- Conjunction certificates are rejected fail-closed.
+/--
+error: registry: conjunction certificates are rejected fail-closed until conjunction semantics exists (the lhs of 'fixOmegaConj' has 2 conjuncts)
+-/
+#guard_msgs in
+revmath_certify_fact fixOmegaConj where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+-- The literal True.intro is not a certificate for a fact either.
+/--
+error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semanticImplication citation must be a typed semantic certificate
+-/
+#guard_msgs in
+revmath_certify_fact fixOmegaFact where
+  context := smokeCtx
+  via := True.intro
+
+-- ACCEPT: the first certified fact.
+revmath_certify_fact fixOmegaFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+  note := "fixture certification"
+
+-- Duplicate certification via the same certificate is rejected.
+/-- error: registry: fact 'fixOmegaFact' is already certified via 'RMSmoke.smokeSemCert' -/
+#guard_msgs in
+revmath_certify_fact fixOmegaFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCert
+
+-- Ports may cross-link the fact, on semanticImplication evidence only.
+/-- error: registry: only semanticImplication evidence may cross-link a fact -/
+#guard_msgs in
+revmath_port strayFactLinkPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokePropVariant
+  relation := conceptualAnalogue
+  evidence relativeProof lower claimed lean
+    assumes smokeVariant
+    fact fixOmegaFact
+
+revmath_port linkedOmegaPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarP
+    fact fixOmegaFact
+
+-- The evidence-aware fact view: certified facts render certificates and the
+-- context-realization status; everything else stays recorded-but-unsupported.
+/--
+info: facts (7):
+  fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
+  fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixOmegaConj [implication | theory fixRca0 omegaModels] smokeModelVarP+smokeModelVarQ => smokeModelVarQ — recorded, no evidence linked
+  fixOmegaFact [implication | theory fixRca0 omegaModels] smokeModelVarP => smokeModelVarQ — CERTIFIED
+    via RMSmoke.smokeSemCert [context smokeCtx]
+      note: fixture certification
+    context realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; identification of that context with the omegaModels of 'fixRca0': literature-backed, backend adequacy pending
+  fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+-/
+#guard_msgs in
+#revmath_facts
+
+-- The headline counts UNIQUE certified facts: one ω-model fact, despite two ports carrying
+-- semantic evidence for the same content.
+/--
+info: concepts: 4; variants: 9; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
+-/
+#guard_msgs in
+#revmath_stats
 
 end RMSmoke

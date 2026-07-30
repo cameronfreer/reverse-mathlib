@@ -140,10 +140,15 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"{section} not sorted by {key}")
         if len(ids) != len(set(ids)):
             problems.append(f"duplicate ids in {section}")
+    contexts = {c["id"] for c in catalog.get("semanticContexts", [])}
     for f in catalog.get("facts", []):
-        if f.get("evidence"):
-            problems.append(f"fact {f.get('id')!r} carries evidence; fact evidence linkage "
-                            "is fail-closed (always [] until issue #6)")
+        for ev in f.get("evidence", []):
+            if not ev.get("certificate") or not ev.get("context"):
+                problems.append(f"fact {f.get('id')!r} has a certification without a "
+                                "certificate or context")
+            elif ev["context"] not in contexts:
+                problems.append(f"fact {f.get('id')!r} cites unregistered semantic context "
+                                f"{ev['context']!r}")
     got = catalog.get("ambientGraph", {}).get("edges", [])
     expected = recompute_edges(catalog)
     if got != expected:
