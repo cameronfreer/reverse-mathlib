@@ -21,9 +21,12 @@ issue #3; `catalog/v1` is published only after the #4 variant migration):
 * IDs are canonical strings (declaration and registry names), never generated numerics;
 * **set-like arrays are canonically sorted; order-bearing arrays preserve declared order** —
   in particular each port's `evidence` array keeps registration order, because `evidenceIdx`
-  refers to it. Every ordering rule is explicit: concepts, layers, variants, problems, namespaces, and ports
-  by id, refs by (namespace, key, target), ambient nodes
+  refers to it. Every ordering rule is explicit: concepts, layers, variants, problems,
+  namespaces, ports, base theories, formula classes, reducibility notions, and facts by id,
+  refs by (namespace, key, target), ambient nodes
   by name, ambient edges by (source, target, port, evidenceIdx), evidence in declared order;
+* typed facts export **fail-closed**: every fact carries `"evidence": []` until issue #6
+  links typed evidence — a recorded fact is never rendered as supported;
 * machine-readable fields carry **stable tags** (`relativeProof`, `kernelChecked`, `lean`, …),
   never rendered prose; human labels live in separate `display` objects, so editing display
   wording is never a schema migration;
@@ -248,7 +251,41 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
   let layerJson (l : SemanticLayerEntry) : Json :=
     Json.mkObj
       [("id", Json.str (toString l.id.name)),
+       ("interfaceSchema", optNameJson l.interfaceSchema?),
        ("description", Json.str l.description)]
+  let vocabJson (id : Name) (description : String) : Json :=
+    Json.mkObj
+      [("id", Json.str (toString id)),
+       ("description", Json.str description)]
+  let conjJson (c : VariantConjunction) : Json :=
+    Json.arr (c.variants.map fun v => Json.str v.serialized)
+  let factContextJson : FactContext → Json
+    | .theoryContext b s => Json.mkObj
+        [("kind", Json.str "theory"),
+         ("base", Json.str (toString b.name)),
+         ("scope", Json.str s.tag)]
+    | .uniformContext n => Json.mkObj
+        [("kind", Json.str "uniform"),
+         ("notion", Json.str (toString n.name))]
+  let factJson (f : FactEntry) : Json :=
+    let (lhs, rhs, formulaClass, degreeStatus) := match f.statement with
+      | .implication l r | .equivalence l r | .nonImplication l r =>
+        (conjJson l, conjJson r, Json.null, Json.null)
+      | .conservation s w c | .nonConservation s w c =>
+        (conjJson s, conjJson w, Json.str (toString c.name), Json.null)
+      | .reducibility l r st | .nonReducibility l r st =>
+        (Json.arr #[Json.str l.serialized], Json.arr #[Json.str r.serialized],
+         Json.null, Json.str st.tag)
+    Json.mkObj
+      [("id", Json.str (toString f.id.name)),
+       ("kind", Json.str f.statement.kindTag),
+       ("context", factContextJson f.context),
+       ("lhs", lhs),
+       ("rhs", rhs),
+       ("formulaClass", formulaClass),
+       ("degreeStatus", degreeStatus),
+       ("note", Json.str f.note),
+       ("evidence", Json.arr #[])]
   let variantJson (v : StatementVariantEntry) : Json :=
     Json.mkObj
       [("id", Json.str v.id.serialized),
@@ -287,6 +324,11 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
   let refs := cat.refs.qsort fun a b =>
     Name.lt a.ns.name b.ns.name || (a.ns.name == b.ns.name && (a.key < b.key ||
       (a.key == b.key && Name.lt a.target.name b.target.name)))
+  let baseTheories := cat.baseTheories.qsort fun a b => Name.lt a.id.name b.id.name
+  let formulaClasses := cat.formulaClasses.qsort fun a b => Name.lt a.id.name b.id.name
+  let reducibilityNotions := cat.reducibilityNotions.qsort fun a b =>
+    Name.lt a.id.name b.id.name
+  let facts := cat.facts.qsort fun a b => Name.lt a.id.name b.id.name
   Json.mkObj
     [("schema", Json.str "reverse-mathlib.catalog/v0"),
      ("dependencies", Json.mkObj
@@ -298,6 +340,11 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
      ("uniformProblems", Json.arr (problems.map problemJson)),
      ("externalNamespaces", Json.arr (namespaces.map nsJson)),
      ("externalRefs", Json.arr (refs.map refJson)),
+     ("baseTheories", Json.arr (baseTheories.map fun b => vocabJson b.id.name b.description)),
+     ("formulaClasses", Json.arr (formulaClasses.map fun c => vocabJson c.id.name c.description)),
+     ("reducibilityNotions", Json.arr
+       (reducibilityNotions.map fun n => vocabJson n.id.name n.description)),
+     ("facts", Json.arr (facts.map factJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \
@@ -316,7 +363,8 @@ elab "#rm_export_catalog " path:str : command => do
     IO.FS.createDirAll dir
   IO.FS.writeFile p ((snapshot.toJson (← getEnv) provenance).pretty ++ "\n")
   logInfo s!"rm_export_catalog: wrote {snapshot.conceptCatalog.concepts.size} concept(s), \
-    {snapshot.conceptCatalog.variants.size} variant(s), {snapshot.ports.size} port(s), \
+    {snapshot.conceptCatalog.variants.size} variant(s), \
+    {snapshot.conceptCatalog.facts.size} fact(s), {snapshot.ports.size} port(s), \
     {snapshot.ambientEdges.size} ambient edge(s) to {path.getString}"
 
 end ReverseMathlib.Meta

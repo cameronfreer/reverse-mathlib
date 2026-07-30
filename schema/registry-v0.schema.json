@@ -13,6 +13,10 @@
     "uniformProblems",
     "externalNamespaces",
     "externalRefs",
+    "baseTheories",
+    "formulaClasses",
+    "reducibilityNotions",
+    "facts",
     "ports",
     "ambientGraph"
   ],
@@ -366,6 +370,34 @@
         "type": "object",
         "required": [
           "id",
+          "interfaceSchema",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "interfaceSchema": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Name of the type-valued Lean definition giving the expected interface type of variants at this layer; null keeps the ambient default (interfaces must be Prop-valued). Candidate interfaces are validated by definitional equality."
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "baseTheories": {
+      "type": "array",
+      "description": "Registered base theories for theory-context facts (issue #5). Extensible by registration.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
           "description"
         ],
         "properties": {
@@ -379,9 +411,152 @@
         "additionalProperties": false
       }
     },
+    "formulaClasses": {
+      "type": "array",
+      "description": "Registered formula classes parametrizing conservation facts (issue #5).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "reducibilityNotions": {
+      "type": "array",
+      "description": "Registered reducibility notions for uniform facts (issue #5). Extensible by registration, never a closed enum.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "facts": {
+      "type": "array",
+      "description": "Typed facts (issue #5). FAIL-CLOSED: evidence is always [] until issue #6 links typed evidence, so a recorded fact is never rendered as supported and never participates in inference. RM facts (kind implication|equivalence|nonImplication|conservation|nonConservation) have theory contexts and normalized conjunctions of exact statement-variant ids as endpoints; uniform facts (reducibility|nonReducibility) have uniform contexts, single uniform-problem endpoints, and a mandatory degreeStatus. The two families never mix.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "kind",
+          "context",
+          "lhs",
+          "rhs",
+          "formulaClass",
+          "degreeStatus",
+          "note",
+          "evidence"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "enum": [
+              "implication",
+              "equivalence",
+              "nonImplication",
+              "conservation",
+              "nonConservation",
+              "reducibility",
+              "nonReducibility"
+            ]
+          },
+          "context": {
+            "type": "object",
+            "required": [
+              "kind"
+            ],
+            "properties": {
+              "kind": {
+                "enum": [
+                  "theory",
+                  "uniform"
+                ]
+              },
+              "base": {
+                "type": "string"
+              },
+              "scope": {
+                "enum": [
+                  "provability",
+                  "omegaModels",
+                  "allModels"
+                ]
+              },
+              "notion": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": false
+          },
+          "lhs": {
+            "type": "array",
+            "description": "Normalized (sorted, deduplicated) serialized statement-variant ids for RM facts; a single serialized uniform-problem id for uniform facts.",
+            "items": {
+              "type": "string",
+              "pattern": "^reverse-mathlib:"
+            }
+          },
+          "rhs": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "pattern": "^reverse-mathlib:"
+            }
+          },
+          "formulaClass": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Present exactly on conservation kinds."
+          },
+          "degreeStatus": {
+            "enum": [
+              "exact",
+              "representative",
+              "variantSensitive",
+              "notAssigned",
+              null
+            ],
+            "description": "Mandatory on uniform kinds; null otherwise. representative is descriptive only — never an inference edge."
+          },
+          "note": {
+            "type": "string"
+          },
+          "evidence": {
+            "type": "array",
+            "maxItems": 0,
+            "description": "Always empty in v0 — typed evidence linkage arrives with issue #6."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
     "statementVariants": {
       "type": "array",
-      "description": "Exact statement variants (issue #4). Parent concept is explicit data; a variant may own at most one Prop-valued Lean interface (the capability layer).",
+      "description": "Exact statement variants (issue #4). Parent concept is explicit data; a variant may own at most one Lean interface, whose type must match its layer's interface schema up to definitional equality (Prop for schema-less layers).",
       "items": {
         "type": "object",
         "required": [

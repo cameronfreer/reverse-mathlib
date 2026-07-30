@@ -131,12 +131,18 @@ def cmd_check(args: argparse.Namespace) -> None:
     if node_ids != sorted(node_ids):
         problems.append("ambientGraph.nodes not sorted")
     for section, key in (("concepts", "id"), ("statementVariants", "id"),
-                         ("uniformProblems", "id"), ("ports", "id")):
+                         ("uniformProblems", "id"), ("ports", "id"),
+                         ("baseTheories", "id"), ("formulaClasses", "id"),
+                         ("reducibilityNotions", "id"), ("facts", "id")):
         ids = [x[key] for x in catalog.get(section, [])]
         if ids != sorted(ids):
             problems.append(f"{section} not sorted by {key}")
         if len(ids) != len(set(ids)):
             problems.append(f"duplicate ids in {section}")
+    for f in catalog.get("facts", []):
+        if f.get("evidence"):
+            problems.append(f"fact {f.get('id')!r} carries evidence; fact evidence linkage "
+                            "is fail-closed (always [] until issue #6)")
     got = catalog.get("ambientGraph", {}).get("edges", [])
     expected = recompute_edges(catalog)
     if got != expected:
@@ -155,6 +161,7 @@ def cmd_check(args: argparse.Namespace) -> None:
         sys.exit(1)
     print(f"rmlib-zoo check: ok ({len(catalog['concepts'])} concepts, "
           f"{len(catalog['statementVariants'])} variants, "
+          f"{len(catalog.get('facts', []))} facts, "
           f"{len(catalog['ports'])} ports, {len(got)} ambient edges)")
 
 
