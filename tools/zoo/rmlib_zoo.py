@@ -202,22 +202,30 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
     deps = catalog["dependencies"]
     e = html.escape
 
-    def principle_rows() -> str:
-        rows = []
-        for p in catalog["principles"]:
-            note = f"{e(p['literatureNote'])} <em>[claimed, UNVERIFIED]</em>" \
-                if p.get("literatureNote") else "unknown"
-            rows.append(
-                f"<tr><td><code>{e(p['id'])}</code></td>"
-                f"<td><code>{e(p['interface'] or 'none')}</code></td>"
-                f"<td>{e(p['description'])}</td><td>{note}</td></tr>")
-        return "\n".join(rows)
+    def note_html(text: str | None) -> str:
+        if not text:
+            return "<em>unknown</em>"
+        return f"{e(text)} <em>[claimed, UNVERIFIED]</em>"
 
-    def evidence_list(port: dict) -> str:
+    def principle_cards() -> str:
+        cards = []
+        for p_ in catalog["principles"]:
+            cards.append(f"""<div class="card">
+<h3><code>{e(p_['id'])}</code></h3>
+<p>{e(p_['description'])}</p>
+<dl>
+<dt>Lean interface</dt><dd><code>{e(p_['interface'] or 'none')}</code></dd>
+<dt>module</dt><dd><code>{e(p_.get('interfaceModule') or '—')}</code></dd>
+<dt>literature note</dt><dd>{note_html(p_.get('literatureNote'))}</dd>
+</dl></div>""")
+        return "\n".join(cards)
+
+    def evidence_items(port: dict) -> str:
         items = []
         for ev in port["evidence"]:
             d = ev["display"]
-            bits = [f"{e(ev['direction'])} · {e(d['kind'])}: {e(d['verification'])}"]
+            bits = [f"<strong>{e(ev['direction'])}</strong> · {e(d['kind'])}: "
+                    f"{e(d['verification'])}"]
             if ev["certificate"]:
                 bits.append(f"certificate <code>{e(ev['certificate'])}</code>")
             if ev["assumes"]:
@@ -226,56 +234,103 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
 
-    def port_rows() -> str:
-        rows = []
-        for p in catalog["ports"]:
-            note = f"{e(p['literatureNote'])} <em>[claimed, UNVERIFIED]</em>" \
-                if p.get("literatureNote") else "unknown"
-            rows.append(
-                f"<tr><td><code>{e(p['id'])}</code></td>"
-                f"<td><code>{e(p['mathlibDecl'] or 'none')}</code></td>"
-                f"<td><code>{e(p['portDecl'] or 'none')}</code></td>"
-                f"<td>{e(p['display']['relation'])}</td><td>{note}</td>"
-                f"<td>{evidence_list(p)}</td></tr>")
-        return "\n".join(rows)
+    def port_cards() -> str:
+        cards = []
+        for p_ in catalog["ports"]:
+            cards.append(f"""<div class="card">
+<h3><code>{e(p_['id'])}</code> <span class="tag">{e(p_['display']['relation'])}</span></h3>
+<dl>
+<dt>mathlib</dt><dd><code>{e(p_['mathlibDecl'] or 'none')}</code></dd>
+<dt>port statement</dt><dd><code>{e(p_['portDecl'] or 'none')}</code></dd>
+<dt>literature note</dt><dd>{note_html(p_.get('literatureNote'))}</dd>
+</dl>
+<h4>Evidence</h4>
+{evidence_items(p_)}
+<details><summary>note</summary><p>{e(p_['note'])}</p></details>
+</div>""")
+        return "\n".join(cards)
 
-    graph_block = ('<img src="ambient-factorizations.svg" '
+    def concept_cards() -> str:
+        refs_by_target: dict[str, list[dict]] = {}
+        for r in catalog.get("externalRefs", []):
+            refs_by_target.setdefault(r["target"]["id"], []).append(r)
+        cards = []
+        for c in catalog.get("concepts", []):
+            refs = refs_by_target.get(c["id"], [])
+            ref_html = "".join(
+                f'<li><code>{e(r["namespace"])}:&quot;{e(r["key"])}&quot;</code> '
+                f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
+            refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
+            cards.append(f"""<div class="card">
+<h3><code>{e(c['id'])}</code></h3>
+<p>{e(c['description'])}</p>
+{refs_block}</div>""")
+        return "\n".join(cards)
+
+    graph_block = ('<p class="graph"><img src="ambient-factorizations.svg" '
                    'alt="Ambient factorization graph: kernel-checked relative certificates">'
-                   if have_svg else f"<pre>{e(dot_text)}</pre>")
+                   '</p>'
+                   if have_svg else f'<div class="scroll"><pre>{e(dot_text)}</pre></div>')
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>reverse-mathlib zoo — ambient factorizations</title>
 <style>
-body {{ font-family: Helvetica, Arial, sans-serif; max-width: 72rem; margin: 2rem auto;
-       padding: 0 1rem; }}
-table {{ border-collapse: collapse; width: 100%; margin: 1rem 0; }}
-td, th {{ border: 1px solid #ccc; padding: 0.4rem; text-align: left; vertical-align: top;
-          font-size: 0.9rem; }}
-.banner {{ background: #fff3cd; border: 1px solid #e0c060; padding: 0.75rem 1rem;
-           border-radius: 4px; }}
-footer {{ color: #666; font-size: 0.85rem; margin-top: 2rem; }}
-</style></head><body>
+* {{ box-sizing: border-box; }}
+body {{ font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+       margin: 0; padding: 1.25rem 1rem 3rem; color: #1a1a1a; background: #fafafa;
+       line-height: 1.5; }}
+main {{ max-width: 56rem; margin: 0 auto; }}
+h1 {{ font-size: 1.5rem; }}
+h2 {{ font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #ddd;
+      padding-bottom: 0.3rem; }}
+h3 {{ font-size: 1rem; margin: 0 0 0.5rem; overflow-wrap: anywhere; }}
+h4 {{ font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }}
+code {{ font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.85em; background: #f0f0f0; padding: 0.1em 0.3em;
+        border-radius: 3px; overflow-wrap: anywhere; }}
+.card {{ background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+         padding: 0.9rem 1.1rem; margin: 0.75rem 0; }}
+.card p {{ margin: 0.4rem 0; }}
+.tag {{ font-size: 0.72rem; font-weight: normal; color: #555; background: #eee;
+        border-radius: 10px; padding: 0.1rem 0.55rem; vertical-align: middle;
+        white-space: nowrap; }}
+dl {{ display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.9rem;
+      margin: 0.5rem 0; }}
+dt {{ color: #666; font-size: 0.85rem; }}
+dd {{ margin: 0; overflow-wrap: anywhere; }}
+ul {{ margin: 0.3rem 0; padding-left: 1.2rem; }}
+li {{ margin: 0.25rem 0; overflow-wrap: anywhere; }}
+.banner {{ background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
+           border-radius: 6px; overflow-wrap: anywhere; }}
+.graph {{ text-align: center; }}
+.graph img {{ max-width: 100%; height: auto; }}
+.scroll {{ overflow-x: auto; }}
+details summary {{ cursor: pointer; color: #666; font-size: 0.85rem; }}
+details p {{ font-size: 0.85rem; color: #444; }}
+footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
+          border-top: 1px solid #ddd; padding-top: 0.75rem;
+          overflow-wrap: anywhere; }}
+a {{ color: #205ea6; }}
+</style></head><body><main>
 <h1>reverse-mathlib zoo — ambient factorizations</h1>
+<p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
 <p class="banner"><strong>Honesty note:</strong> every edge below is a kernel-checked
 <em>relative certificate in unrestricted Lean over standard ℕ</em> (scope:
 ambientFactorization). Nothing on this page is a reverse-mathematics implication, an ω-model
 result, or a subsystem theorem; those require the typed catalog and backend, and render as
 <em>pending</em> until they exist.</p>
 {graph_block}
-<h2>Principles</h2>
-<table><tr><th>id</th><th>Lean interface</th><th>description</th>
-<th>literature note</th></tr>
-{principle_rows()}
-</table>
+<h2>Concepts</h2>
+{concept_cards()}
+<h2>Capabilities (registry principles)</h2>
+{principle_cards()}
 <h2>Ports</h2>
-<table><tr><th>id</th><th>mathlib</th><th>port statement</th><th>relation</th>
-<th>literature note</th><th>evidence</th></tr>
-{port_rows()}
-</table>
+{port_cards()}
 <footer>Generated by rmlib-zoo from <code>catalog.direct.json</code> —
-Lean {e(deps["leanVersion"])}, mathlib {e(deps["mathlibRevision"])}.
+Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
 No timestamp by design: the catalog depends only on the environment and the pin.</footer>
-</body></html>
+</main></body></html>
 """
 
 

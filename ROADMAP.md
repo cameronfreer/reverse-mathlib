@@ -375,6 +375,112 @@ sequence). Then horizon issues forcing serious backend work: 71. Borel and analy
   Picard–Lindelöf vs Peano existence); Baire category (above); compactness (single instance vs
   sequentialized).
 
+## Strict reverse mathematics (cross-cutting, not a sixth axis)
+
+Friedman's strict RM enters as a **presentation-and-interpretation discipline** cutting across
+the existing axes, under the design north star: *every classified object is a theorem realized
+under a presentation, with supplied data, a proof route, an output effect, and evidence at a
+declared semantic scope*. Presentation is mathematical data, and changing presentation can
+consume logical, computational, or formalization strength.
+
+Key correction, recorded so it is never re-introduced: **Friedman's P1 is not a presentation
+of binary-tree WKL.** P1 is the halving-closed-set principle — a *distinct principle*
+connected to WKL by a contextual equivalence fact. List-based trees vs numeric tree codes vs
+internal graph sets *are* presentation relations; P1 vs tree-WKL is not (Friedman's ETF
+manuscript, pinned by version/date when seeded, makes both distinctions explicit).
+
+Design decisions (from review):
+- Presentations become **reusable objects** (`PresentationId`/`PresentationEntry`) referenced
+  by exact statement variants, with **evidence-bearing translation relations carrying semantic
+  scope** — a second certificate family beside the reverse-mathematical one; uncertified
+  translations are fail-closed and never enter implication closure. Do **not** commit to a
+  separate `Realization` node up-front: test whether variant + presentation suffices, adding
+  `Realization` only if the tree pilot exposes real duplication.
+- The relation taxonomy is **not one enum**: literal / faithfulCoding / quotientPresentation
+  concern *representations*; definitionalExtension / interpretation /
+  arithmeticPreservingSynonymy concern *theories*; chosenRepresentatives is a construction
+  effect or requirement.
+- Strictness is **attributed evidence, never a Boolean**: `StrictnessAssessment` per dimension
+  (base/statement/principle naturalness, no-code, literal object identity, interpretation
+  distance) with statuses `assertedBy | arguedBy | contestedBy | editorialAssessment` —
+  Friedman says "strictly mathematical" is not a sharp boundary, and the catalog must not
+  manufacture consensus (`literatureAccepted` deliberately rejected). Lean certifies
+  translations and reversals; it never settles naturalness by syntax.
+- A strict incident is a package: base realization + target system/principle + theorem
+  realization + equivalence fact + attributed assessments.
+- Sequence: presentations/translations (issue) → ETF/FSRA/P1–P4 literature seed with exact
+  base/system notation and claimed scopes (issue) → tree-presentation pilot → strict WKL and
+  strict Hall pilots → the **deferred** ETF/FSRA syntax/semantics/synonymy backend (proving
+  P1's calibration waits for a model/syntactic backend — defining ETF structures in
+  unrestricted Lean and proving ambient theorems would not establish ETF strength, for the
+  same reason ambient implications are not RCA₀ results).
+
+## Reverse mathematics qua Lean, and the mining track
+
+The three kernel axioms are too coarse an axis: `Classical.choice` conflates selection
+strengths (and yields EM), `propext`/`Quot.sound` are not comprehension strengths, and a
+proof-only audit ignores strength supplied *in the statement*. Every theorem eventually gets
+three profiles: **statement burden** (`Finite` vs `Fintype`, `Countable` vs `Encodable`,
+supplied moduli/bounds/codes, quotient vs representative), **proof-route burden** (the
+frontier interfaces the proof traverses), and **witness/effect burden** (`Prop`-only vs
+data-live output; a `Prop`-only classical argument is computationally erased but *not*
+proof-theoretically free). Four assertion levels, extending the documented gate-certification
+levels: occurrence → factorization → restricted replay → necessity/lower bound.
+
+The **empirical Lean capability basis v0** (mine proof-only closures across a corpus, find
+co-occurring frontier sets and dominators, collapse aliases, validate by hand-written
+factorization and restricted replay — a capability *zoo*, not a designed "Lean Big Five")
+comes only after Q6, route analysis, restricted replay, and at least three theorem families.
+The capability lattice vocabulary (logic / selection / presentation / extensionality-quotient /
+search-recursion / compactness-maximality / size-universe / computation-trust) is good
+vocabulary that must emerge from evidence, not become a speculative enum.
+
+Mining-track items (issues open only as their prerequisites land):
+- **Route analysis** (near-term, independent): `#rm_paths`, `#rm_dominators`, representative
+  path explanations, exact type-vs-proof-edge handling, fail-closed under truncation; minimum
+  cuts as a stretch and only *relative to registered frontier families* (unconstrained cuts
+  return trivial immediate dependencies). Every result is "architecture of the current
+  elaborated proof; not logical necessity or an RM lower bound."
+- **Restricted replay MVP** (after #6): sandbox module with approved imports/capability
+  interfaces, replaying an already-explicit relative theorem (the Hall/EFILC slice as first
+  fixture); fails on unapproved constants; records environment, source hash, allowed
+  interface; renders `restrictedReplay`, never a lower bound. More valuable than mechanical
+  slicing initially.
+- **Q6 occurrence/effect audit** (promote after Q2–Q5): per-occurrence choice liveness —
+  Prop-only-and-erased vs flows-into-Type, instance constructions (`Fintype.ofFinite`),
+  finite-search repair candidates, residual capability, and explicit `unknown` when dependent
+  flow cannot be classified safely.
+- **Presentation-diamond benchmark** (after the presentations issue and Q6): start with
+  `Finite ↔ Fintype`, `Countable ↔ Encodable`, `Set.Finite ↔ Finset` only; per direction
+  record computability, required selection interface, supplied-vs-recovered data, and
+  statement/proof-route consequences. Typeclass instrumentation v1 records only the *selected*
+  instance and whether it came from a parameter, local construction, or global instance —
+  "alternatives considered" is unstable elaborator telemetry, deferred.
+- Deferred horizons: universal mechanical slicer (a restricted single-frontier slicer only
+  after replay works: monomorphic, nondependent occurrences, human-stabilized output),
+  tactic-search/failed-branch archaeology (discovery archaeology ≠ theorem strength),
+  historical `#rm_diff` across arbitrary revisions.
+
+## Further programs (roadmap-only horizons)
+
+- **Constructive/intuitionistic RM**: not a separate database — a refined *logic context*
+  (classical / intuitionistic / minimal / +MP / +LPO / +LLPO / +FAN / choice fragments).
+  Constraint on #5 now: the context type must be extensible and must not hard-code classical
+  logic. Seed MP/LPO/LLPO/fan/choice-fragment principles as exact literature records after #5.
+- **Choice and maximality sub-zoo** (after #5/#6, preferably after one algebra case): unique /
+  finite / countable / dependent / global choice, BPI/ultrafilter, Zorn-style maximality,
+  representative selection, measurable selection — explicitly *not* one chain.
+- **Finite, bounded, and feasible RM**: the Q-track's sibling (Q asks what bounds a proof
+  yields; finite RM asks which finite forms are equivalent over weak finite foundations;
+  feasible RM asks whether bounds live in practical complexity classes). Meeting point with
+  `native_decide` trust, certified algorithms, and proof complexity.
+- **Ordinal analysis and conservation backend**: ordinal notations, well-ordering principles
+  (already forced by Dickson/WO(ω^ω)), reflection, cut elimination, conservativity,
+  interpretability, proof speed-up — the vertical resolution the Big Five lack.
+- Nonstandard RM, set-theoretic RM, further reducibilities (Medvedev, Muchnik, enumeration,
+  strong Weihrauch, game), concrete incompleteness, categorical/structural RM, and RM of type
+  theory itself (truncation, resizing, extensionality) remain named horizons.
+
 ## The quantitative proof-mining track (orthogonal: Q1, Q2, …)
 
 Kohlenbach supplies the quantitative axis. Simpson classifies theorem strength; RMZoo records
