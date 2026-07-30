@@ -45,7 +45,12 @@ def headlineDecls : List Name :=
    -- The end-to-end classical chain
    ``ReverseMathlib.Classical.weakKonig,
    ``ReverseMathlib.Classical.explicitFiniteInverseLimitCompactness,
-   ``ReverseMathlib.Classical.countableHall_nat]
+   ``ReverseMathlib.Classical.countableHall_nat,
+   -- Q-track pilot: Kohlenbach Prop. 2.27 / Cor. 2.28 and the rational realizer
+   ``ReverseMathlib.Quantitative.exists_metastable_le_bound,
+   ``ReverseMathlib.Quantitative.finite_metastability,
+   ``ReverseMathlib.Quantitative.findMetastable_isSome,
+   ``ReverseMathlib.Quantitative.findMetastable_congr]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

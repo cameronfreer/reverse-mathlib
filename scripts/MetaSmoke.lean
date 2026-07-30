@@ -333,7 +333,7 @@ info: concepts (3):
     simpson:"X.3.16" [relatedVariant]
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
-  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: variants differ by tree presentation (binary / explicitly bounded / finitely branching) and semantic layer (ambient / ω-model / second-order syntax), and differ in strength
+  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax); explicitly bounded formulations may join once their relationship is fixed. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]

@@ -30,9 +30,11 @@ rm_namespace sanders "[San] Sam Sanders, Reverse Mathematics: there and back aga
   monograph under review with Springer, pp 450, 2026 — references"
 
 rm_concept wkl where
-  description := "Weak Kőnig's lemma as a conceptual family: variants differ by tree \
-    presentation (binary / explicitly bounded / finitely branching) and semantic layer \
-    (ambient / ω-model / second-order syntax), and differ in strength"
+  description := "Weak Kőnig's lemma as a conceptual family: binary-tree formulations across \
+    semantic layers (ambient / ω-model / second-order syntax); explicitly bounded \
+    formulations may join once their relationship is fixed. Merely finitely branching \
+    (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under \
+    the rmzoo:WKL alias"
 
 rm_concept explicitFiniteInverseLimitCompactness where
   description := "Explicit finite inverse-limit compactness as a conceptual family: \

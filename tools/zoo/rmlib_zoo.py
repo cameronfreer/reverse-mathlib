@@ -327,7 +327,7 @@ result, or a subsystem theorem; those require the typed catalog and backend, and
 {graph_block}
 <h2>Concepts</h2>
 {concept_cards()}
-<h2>Statement variants (capability layer)</h2>
+<h2>Statement variants and Lean interfaces</h2>
 {variant_cards()}
 <h2>Ports</h2>
 {port_cards()}
