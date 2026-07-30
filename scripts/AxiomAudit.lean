@@ -50,7 +50,10 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Quantitative.exists_metastable_le_bound,
    ``ReverseMathlib.Quantitative.finite_metastability,
    ``ReverseMathlib.Quantitative.findMetastable_isSome,
-   ``ReverseMathlib.Quantitative.findMetastable_congr]
+   ``ReverseMathlib.Quantitative.findMetastable_congr,
+   -- WKLω slice 1: the join least upper bound and the recursive-set Turing ideal
+   ``ReverseMathlib.Omega.joinSet_le,
+   ``ReverseMathlib.Omega.recursivePart_isTuringIdeal]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

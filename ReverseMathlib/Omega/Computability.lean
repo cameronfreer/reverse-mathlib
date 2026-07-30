@@ -44,6 +44,43 @@ def TuringReducibleSet (A B : Set ℕ) : Prop :=
 theorem TuringReducibleSet.refl (A : Set ℕ) : A ≤ᵀ A :=
   Nat.RecursiveIn.oracle _ rfl
 
+/-- Reducibility is transitive, by substituting the middle oracle
+(`Nat.RecursiveIn.subst`). -/
+theorem TuringReducibleSet.trans {A B C : Set ℕ} (hab : A ≤ᵀ B) (hbc : B ≤ᵀ C) : A ≤ᵀ C :=
+  hab.subst fun _ hg => Set.mem_singleton_iff.mp hg ▸ hbc
+
+instance : Std.Refl TuringReducibleSet := ⟨TuringReducibleSet.refl⟩
+
+instance : Trans TuringReducibleSet TuringReducibleSet TuringReducibleSet :=
+  ⟨TuringReducibleSet.trans⟩
+
+/-- The characteristic function determines the set. -/
+theorem charFn_injective : Function.Injective charFn := by
+  intro A B h
+  ext n
+  have hn := congrFun h n
+  simp only [charFn, Part.some_inj] at hn
+  by_cases hA : n ∈ A <;> by_cases hB : n ∈ B <;> simp [hA, hB] at hn ⊢
+
+/-- Extensionality through the characteristic presentation. -/
+theorem charFn_inj {A B : Set ℕ} : charFn A = charFn B ↔ A = B :=
+  charFn_injective.eq_iff
+
+/-- The characteristic function is total. -/
+theorem charFn_dom (A : Set ℕ) (n : ℕ) : (charFn A n).Dom := trivial
+
+/-- What the oracle answers on members. -/
+theorem one_mem_charFn_iff {A : Set ℕ} {n : ℕ} : 1 ∈ charFn A n ↔ n ∈ A := by
+  by_cases h : n ∈ A <;> simp [charFn, h]
+
+/-- What the oracle answers on non-members. -/
+theorem zero_mem_charFn_iff {A : Set ℕ} {n : ℕ} : 0 ∈ charFn A n ↔ n ∉ A := by
+  by_cases h : n ∈ A <;> simp [charFn, h]
+
+/-- The characteristic function is binary-valued. -/
+theorem le_one_of_mem_charFn {A : Set ℕ} {n v : ℕ} (h : v ∈ charFn A n) : v ≤ 1 := by
+  by_cases hA : n ∈ A <;> simp [charFn, hA] at h <;> omega
+
 /-- The recursive join under even/odd coding: `2*a` codes membership in `A`, `2*b+1`
 membership in `B`. -/
 def joinSet (A B : Set ℕ) : Set ℕ :=
@@ -54,6 +91,123 @@ theorem mem_joinSet_left {A B : Set ℕ} {a : ℕ} (h : a ∈ A) : 2 * a ∈ joi
 
 theorem mem_joinSet_right {A B : Set ℕ} {b : ℕ} (h : b ∈ B) : 2 * b + 1 ∈ joinSet A B :=
   Or.inr ⟨by omega, by simpa [Nat.mul_add_div] using h⟩
+
+/-- Join normal form on the even side. -/
+theorem two_mul_mem_joinSet {A B : Set ℕ} {n : ℕ} : 2 * n ∈ joinSet A B ↔ n ∈ A := by
+  constructor
+  · rintro (⟨-, h⟩ | ⟨h, -⟩)
+    · simpa [Nat.mul_div_cancel_left] using h
+    · omega
+  · exact mem_joinSet_left
+
+/-- Join normal form on the odd side. -/
+theorem two_mul_add_one_mem_joinSet {A B : Set ℕ} {n : ℕ} :
+    2 * n + 1 ∈ joinSet A B ↔ n ∈ B := by
+  constructor
+  · rintro (⟨h, -⟩ | ⟨-, h⟩)
+    · omega
+    · simpa [Nat.mul_add_div] using h
+  · exact mem_joinSet_right
+
+/-! ### Oracle computations
+
+The construction pattern for everything below: precompose an oracle with a computable total
+function (`Nat.RecursiveIn.comp`), pair streams with `Nat.RecursiveIn.pair`, and postprocess
+with a primitive recursive selector. -/
+
+/-- Precompose a relatively computable partial function with a computable total function. -/
+private theorem recursiveIn_comp_partrec {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ}
+    (hf : Nat.RecursiveIn O f) {g : ℕ → ℕ} (hg : Nat.Partrec fun n => Part.some (g n)) :
+    Nat.RecursiveIn O fun n => f (g n) :=
+  (hf.comp hg.recursiveIn).of_eq fun n => by simp
+
+private theorem partrec_double : Nat.Partrec fun n => Part.some (2 * n) := by
+  have : Primrec fun n : ℕ => 2 * n := (Primrec.nat_mul.comp (.const 2) .id)
+  exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun n => rfl
+
+private theorem partrec_half : Nat.Partrec fun n => Part.some (n / 2) := by
+  have : Primrec fun n : ℕ => n / 2 := (Primrec.nat_div.comp .id (.const 2))
+  exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun n => rfl
+
+/-- `A` reduces to the join: query the oracle at `2 * n`. -/
+theorem left_le_joinSet (A B : Set ℕ) : A ≤ᵀ joinSet A B := by
+  have h := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn (joinSet A B)}) _ rfl) partrec_double
+  refine h.of_eq fun n => ?_
+  simp only [charFn]
+  by_cases hA : n ∈ A
+  · rw [if_pos (mem_joinSet_left hA), if_pos hA]
+  · rw [if_neg fun hc => hA (two_mul_mem_joinSet.mp hc), if_neg hA]
+
+/-- `B` reduces to the join: query the oracle at `2 * n + 1`. -/
+theorem right_le_joinSet (A B : Set ℕ) : B ≤ᵀ joinSet A B := by
+  have hsucc : Nat.Partrec fun n => Part.some (2 * n + 1) := by
+    have : Primrec fun n : ℕ => 2 * n + 1 :=
+      Primrec.succ.comp (Primrec.nat_mul.comp (.const 2) .id)
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun n => rfl
+  have h := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn (joinSet A B)}) _ rfl) hsucc
+  refine h.of_eq fun n => ?_
+  simp only [charFn]
+  by_cases hB : n ∈ B
+  · rw [if_pos (mem_joinSet_right hB), if_pos hB]
+  · rw [if_neg fun hc => hB (two_mul_add_one_mem_joinSet.mp hc), if_neg hB]
+
+/-- The core join computation, uniform in the oracle set: the join's characteristic function
+is computable from the two sides' characteristic functions — pair the input with both
+answers at `n / 2` and select by parity. -/
+private theorem charFn_joinSet_recursiveIn {O : Set (ℕ →. ℕ)} {A B : Set ℕ}
+    (hA : Nat.RecursiveIn O (charFn A)) (hB : Nat.RecursiveIn O (charFn B)) :
+    Nat.RecursiveIn O (charFn (joinSet A B)) := by
+  have hid : Nat.RecursiveIn O fun n => Part.some n :=
+    ((Nat.Partrec.of_primrec Nat.Primrec.id).recursiveIn).of_eq fun n => rfl
+  have hA2 := recursiveIn_comp_partrec hA partrec_half
+  have hB2 := recursiveIn_comp_partrec hB partrec_half
+  have ht := hid.pair (hA2.pair hB2)
+  have hpost : Nat.Partrec fun m => Part.some (if (Nat.unpair m).1 % 2 = 0
+      then (Nat.unpair (Nat.unpair m).2).1 else (Nat.unpair (Nat.unpair m).2).2) := by
+    have hfst : Primrec fun m : ℕ => (Nat.unpair m).1 := Primrec.fst.comp Primrec.unpair
+    have hsnd : Primrec fun m : ℕ => (Nat.unpair m).2 := Primrec.snd.comp Primrec.unpair
+    have : Primrec fun m : ℕ => if (Nat.unpair m).1 % 2 = 0
+        then (Nat.unpair (Nat.unpair m).2).1 else (Nat.unpair (Nat.unpair m).2).2 := by
+      refine Primrec.ite (Primrec.eq.comp (Primrec.nat_mod.comp hfst (.const 2)) (.const 0))
+        (Primrec.fst.comp (Primrec.unpair.comp hsnd))
+        (Primrec.snd.comp (Primrec.unpair.comp hsnd))
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun n => rfl
+  refine (hpost.recursiveIn.comp ht).of_eq fun n => ?_
+  simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
+    Part.map_some, Nat.unpair_pair]
+  by_cases hpar : n % 2 = 0
+  · have h2 : 2 * (n / 2) = n := by omega
+    rw [if_pos hpar]
+    by_cases hA' : n / 2 ∈ A
+    · rw [if_pos hA', if_pos (show n ∈ joinSet A B by rw [← h2]; exact mem_joinSet_left hA')]
+    · rw [if_neg hA', if_neg fun hc => hA' (two_mul_mem_joinSet.mp (by rwa [h2]))]
+  · have h2 : 2 * (n / 2) + 1 = n := by omega
+    rw [if_neg hpar]
+    by_cases hB' : n / 2 ∈ B
+    · rw [if_pos hB',
+        if_pos (show n ∈ joinSet A B by rw [← h2]; exact mem_joinSet_right hB')]
+    · rw [if_neg hB', if_neg fun hc => hB' (two_mul_add_one_mem_joinSet.mp (by rwa [h2]))]
+
+/-- The join is a least upper bound for set-based Turing reducibility. -/
+theorem joinSet_le {A B C : Set ℕ} (hA : A ≤ᵀ C) (hB : B ≤ᵀ C) : joinSet A B ≤ᵀ C :=
+  charFn_joinSet_recursiveIn hA hB
+
+/-- A recursive (computable) set: its characteristic function is partial recursive with no
+oracle. -/
+def RecursiveSet (A : Set ℕ) : Prop :=
+  Nat.Partrec (charFn A)
+
+/-- A recursive set reduces to every set. -/
+theorem RecursiveSet.turingReducibleSet {A : Set ℕ} (hA : RecursiveSet A) (B : Set ℕ) :
+    A ≤ᵀ B :=
+  hA.recursiveIn
+
+/-- The empty set is recursive. -/
+theorem recursiveSet_empty : RecursiveSet (∅ : Set ℕ) := by
+  have : Nat.Partrec fun _ : ℕ => Part.some 0 := Nat.Partrec.zero.of_eq fun n => rfl
+  exact this.of_eq fun n => by simp [charFn]
 
 /-- A second-order part: a collection of subsets of `ℕ`. An ω-structure is `(ℕ, Ω)`; the
 closure conditions making it an ω-model of RCA₀ are `IsTuringIdeal`. -/
@@ -82,5 +236,29 @@ sites. -/
 theorem IsTuringIdeal.mem_of_reducible {Ω : OmegaPart} (h : IsTuringIdeal Ω)
     {A B : Set ℕ} (hB : B ∈ Ω) (hAB : A ≤ᵀ B) : A ∈ Ω :=
   h.downward hB hAB
+
+/-- The recursive-membership workhorse: every recursive set belongs to every Turing ideal
+(nonemptiness plus downward closure) — this eliminates repetitive oracle arguments in the
+internal-presentation slice. -/
+theorem IsTuringIdeal.mem_of_recursive {Ω : OmegaPart} (h : IsTuringIdeal Ω)
+    {A : Set ℕ} (hA : RecursiveSet A) : A ∈ Ω := by
+  obtain ⟨B, hB⟩ := h.nonempty
+  exact h.downward hB (hA.turingReducibleSet B)
+
+/-- The **recursive-set Turing ideal**: second-order part consisting of exactly the
+recursive sets. Deliberately *not* yet called "an ω-model of RCA₀" — that identification
+belongs to the registered RCAω context and adequacy layer (slice 2 and the backend). -/
+def recursivePart : OmegaPart :=
+  ⟨{A | RecursiveSet A}⟩
+
+/-- The recursive sets form a Turing ideal. -/
+theorem recursivePart_isTuringIdeal : IsTuringIdeal recursivePart where
+  nonempty := ⟨∅, recursiveSet_empty⟩
+  downward hB hAB :=
+    Nat.RecursiveIn.partrec_of_oracle
+      (fun _ hg => Set.mem_singleton_iff.mp hg ▸ hB) hAB
+  join hA hB :=
+    Nat.RecursiveIn.partrec_of_oracle (fun _ hg => hg.elim)
+      (charFn_joinSet_recursiveIn (O := ∅) hA.recursiveIn hB.recursiveIn)
 
 end ReverseMathlib.Omega
