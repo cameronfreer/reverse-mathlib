@@ -68,8 +68,9 @@ attributed importer plus a generated upstream PR is a direct contribution opport
 - **Stable identity never depends on RMZoo's generated numeric UID.** Identity is layered —
   the concept-vs-variant distinction is itself part of the ID scheme: a *concept* id like
   `reverse-mathlib:wkl` has no privileged Lean proposition; *statement-variant* ids like
-  `reverse-mathlib:wkl.binaryTree.ambient` / `.omegaModel` / `.secondOrderSyntax` may own an
-  exact Lean interface; *uniform-problem* ids like
+  `reverse-mathlib:wkl.binaryTree.ambient` / `.binaryTree.turingIdealOmega` /
+  `.binaryTree.secondOrderSyntax` may own an exact Lean interface (presentation-explicit —
+  never a bare `.omegaModel` suffix, since multiple ω presentations will eventually exist); *uniform-problem* ids like
   `reverse-mathlib:wkl.binaryPathChoice.cantorRepresentation` identify represented problems.
   External references (`rmzoo:RT22`, `simpson:I.10.3`, `concordance:C017`) are **typed**: each
   carries a target and a relation (exact alias | source location | imported correspondence |
@@ -240,8 +241,8 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 7. Conceptual principle identity (`PrincipleId`, aliases, external IDs, display metadata; a
    principle is not yet a Lean proposition).
 8. Statement variants (`StatementVariant`, presentation requirements, semantic layer, optional
-   Lean declaration — e.g. `WKL.binaryTree.standard` / `.omegaModel` / `.secondOrderSyntax`,
-   `KL.explicitlyBounded.standard`, `KL.locallyFinite.omegaModel`).
+   Lean declaration — e.g. `WKL.binaryTree.standard` / `.binaryTree.turingIdealOmega` /
+   `.binaryTree.secondOrderSyntax`, `KL.explicitlyBounded.standard`).
 9. Typed facts and contexts (implication/equivalence, non-implication, conservation,
    reducibility and non-reducibility, formula-class facts, normalized conjunctions — `RT22+COH`
    is an AST, not a magic string — base theory and semantic scope).
@@ -279,22 +280,45 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
     locally finite perfect matching — correctly labeled capability-level evidence).
 
 ### Tranche 4 — ω-model semantics and first exact calibrations
-22. Turing-reducibility adapters and join (reuse `Mathlib/Computability`).
-23. Turing jump (needed to characterize ACA₀ ω-models).
-24. Second-order parts and internal sets (`OmegaPart`, internal pairs/graphs/functions/
-    sequences/trees/paths).
-25. Turing ideals / RCAω (closure conditions, basic examples; scope label `omegaModel` only).
-26. WKLω and ACAω (path closure for internal infinite binary trees; relative
-    jump/arithmetical-definability closure).
-27. ACAω ↔ internal range existence (functions represented by internal graphs — quantifying
-    over arbitrary Lean ℕ → ℕ would be wrong).
-28. WKLω ↔ relative Σ⁰₁ separation (explicit relative-computability parameters).
-29. WKLω ↔ EFILCω (re-run the standard proof over internal systems and section graphs).
-30. Matching calibrations: ω-model forms of X.3.16 (WKLω ↔ 2-regular perfect matching) and
-    X.3.15 (ACAω ↔ locally finite Hall/perfect matching).
-31. Evidence matrix report per Hall/matching statement (literature / ambient / ω-model /
-    all-model / syntactic / reversal status). Still no "formalized over RCA₀" claims without
-    the all-model/object-theory backend.
+
+Split (2026-07-30) so the first genuine semantic result lands early; the Turing jump and ACAω
+are deliberately **off the critical path**. Verified at the pinned mathlib revision:
+`Mathlib/Computability/RecursiveIn.lean` and `TuringDegree.lean` supply oracle computability
+and Turing reducibility, but there is no set-based Turing-ideal, set-join, or jump layer —
+those adapters are built here. Registration of the results below is blocked on #5
+(model-indexed interfaces) and #6 (typed ω certificates); the mathematics is not.
+
+22. Set-oracle Turing-reducibility adapters and join (reuse `Mathlib/Computability`).
+23. Turing ideals / RCAω second-order parts (`OmegaPart`, `IsTuringIdeal`, closure conditions,
+    basic examples) and `OmegaPart.InternalSet`; ω-models share the model-facing object API
+    and statement definitions with the later all-model layer, and *additionally* carry this
+    computability-theoretic realization — it is substantial structure, not an instance
+    declaration.
+24. Internal coded objects: pairs, graphs, trees, paths, finite-system and matching codes. The
+    internal Hall presentation is fully explicit: input = internal candidate relation +
+    explicit enumeration/bound data for each finite fiber + the exact internal Hall condition;
+    output = an internal graph set with totality, injectivity, and candidate-membership
+    proofs. Variant IDs are presentation-explicit
+    (`countableHall.oneSidedInjective.enumeratedFibers.turingIdealOmega`) — never a bare
+    `.omegaModel` suffix, since multiple ω presentations will eventually exist.
+25. WKLω ↔ EFILCω — **both directions**, the first exact semantic calibration. Computational
+    content: the coherent-chain tree is ≤T the inverse-system code; WKL supplies a path in Ω;
+    the section is ≤T path ⊕ input; closure under join and ≤T keeps every output in Ω.
+26. EFILCω → CountableHallω (Hall tree ≤T the coded candidate family; matching ≤T tree-path ⊕
+    input).
+27. Typed registry certificates and per-scope site rendering: "certified ω-model implications:
+    n" — never an unqualified "certified RM bounds: n" (see the turnstile track's reporting
+    split).
+28. REC/WKL certified separation (first nonimplication): REC ⊨ RCA₀ and REC ⊭ WKL, which with
+    backend soundness yields RCA₀ ⊬ WKL — needing soundness only, not completeness. The hard
+    component is the Kleene tree — a computable infinite binary tree with no computable path —
+    which is genuine computability theory, not bookkeeping.
+
+Deferred behind the WKLω milestone (they must not delay it): Turing jump; ACAω; ACAω ↔
+internal range existence (functions as internal graphs — quantifying over arbitrary Lean
+`ℕ → ℕ` would be wrong); WKLω ↔ relative Σ⁰₁ separation; ω-forms of X.3.16/X.3.15 matching
+calibrations; the per-statement evidence-matrix report. Still no "formalized over RCA₀"
+claims without the all-model/object-theory backend.
 
 ### Tranche 5 — first genuinely non-Big-Five slice
 32. Instance/solution problem abstraction (∀X (Instance X → ∃Y Solution X Y)) for computable
@@ -374,6 +398,184 @@ sequence). Then horizon issues forcing serious backend work: 71. Borel and analy
   fixed dimension ≥ 2 / compact infinite-dimensional); ODEs (Banach contraction and
   Picard–Lindelöf vs Peano existence); Baire category (above); compactness (single instance vs
   sequentialized).
+
+## The turnstile track: from ambient factorizations to WKL₀ ⊢ T̂
+
+Design fixed 2026-07-30 after external review (three review documents, with the Foundation
+claims verified against source). Implementation begins with #5 then #6 — not with the
+Turing-ideal mathematics.
+
+### Four claim forms, permanently distinct
+
+| form | reading |
+|---|---|
+| `P_Lean → T_Lean` | ambient factorization: kernel-checked ordinary mathematics |
+| `WKL₀ ⊨ω T̂` | every ω-model (Turing-ideal realization) satisfies the translated statement |
+| `WKL₀ ⊨all T̂` | every Henkin/two-sorted model satisfies it — already a genuine RM upper bound |
+| `WKL₀ ⊢ T̂` | checked object-language derivability |
+
+No automatic promotion in any direction: ω-model validity does not give all-model validity;
+all-model validity gives derivability only through a formalized completeness theorem; and a
+derivation is *more direct* than all-model + completeness, not *truer*. The current ambient
+Hall/EFILC results establish none of the last three — correctly.
+
+### Assurance routes (branching, not a ladder)
+
+```
+ambient factorization
+        │
+        ├── portability audit (target-relative obligation inventory)
+        │         │
+        │         ▼
+        │   restricted replay + formal fragment interpretation
+        │         │
+        │         ▼
+        │     syntactic theorem (⊢)
+        │
+        └── internalized model-facing proof
+                  ├── ω-model certificate (⊨ω)
+                  └── all-model certificate (⊨all) + formal completeness
+                                      │
+                                      ▼
+                                syntactic theorem (⊢)
+```
+
+Checked-fragment replay alone certifies **fragment membership**, not an RM bound; it becomes
+a formal translated RM result only when paired with a fragment interpretation. Replay
+evidence and ω-model evidence are not ordered relative to each other.
+
+### Model-facing architecture
+
+- `SOArithmeticModel` (domain, arithmetic structure, `sets : Set (Set Dom)`) with
+  `InternalSet M = {X // X ∈ M.sets}`: the **type system**, not dependency analysis, prevents
+  ambient Lean comprehension from manufacturing internal sets — an external `Set M.Dom`
+  cannot enter a conclusion without a membership proof passing through Δ⁰₁ comprehension,
+  WKL, or another declared closure principle. Meta-level classical reasoning is harmless: it
+  adds no sets to the object model.
+- All-model theorems cannot reuse `ℕ`/`Finset ℕ`/`List Bool` literally: internal pairing,
+  finite-sequence codes, binary strings, finite-set codes, function graphs, trees, and
+  sections are needed. The ambient walking slice dictates the *architecture* to reproduce
+  (finite levels, restriction maps, coherent chains, decoding), not the datatypes.
+- The comprehension schema needs its own hierarchy: in the Σ⁰₁/Π⁰₁ instance pairs, membership
+  in free set parameters counts as atomic and bound set quantifiers are forbidden — not quite
+  a reuse of an existing first-order arithmetical hierarchy.
+- ω-models share this model-facing surface and the statement definitions with the all-model
+  layer; they *additionally* carry the computability-theoretic realization (tranche 4). They
+  are also the project's first scalable **nonimplication engine** (not its only possible
+  route — nonstandard models, forcing, conservation, and proof-theoretic methods come
+  later): `REC ⊨ RCA₀` and `REC ⊭ WKL` plus backend *soundness* yields `RCA₀ ⊬ WKL` — no
+  completeness needed. Recorded as tranche-4 item 28; that issue is deliberately not opened
+  yet.
+
+### Layer-indexed interfaces and typed certificates (#5/#6)
+
+- Interface ownership generalizes **additively by semantic layer**: ambient variants own a
+  `Prop`; ω variants own `OmegaPart → Prop`; all-model variants own
+  `SOArithmeticModel → Prop`; syntax-layer variants own an `SOSentence` through
+  `SentenceRealization {variant, sentence, modelPredicate, adequate : ∀ M, M ⊧ sentence ↔
+  modelPredicate M}`. Never universally close a model-indexed principle into an artificial
+  ambient `Prop` to fit the current registry shape. The RCAω/Turing-ideal base context is
+  represented separately from the principle predicates.
+- Typed semantic certificate schemas:
+  `OmegaImplicationCertificate (Base P Q : OmegaPart → Prop)` with field
+  `∀ Ω, Base Ω → P Ω → Q Ω`; registration checks the exact registered base context, the exact
+  source/target variant interfaces, direction, genuine quantification over every model, and
+  that no ambient variant is substituted for a model-indexed one. All-model analogue
+  likewise. Until these land, an ω-model theorem is ordinary kernel-checked mathematics about
+  a user-defined structure — not a catalog-certified ω-scope fact.
+- **Reporting split**: `CertifiedClaimScope.isRMBound` (Registry.lean) is replaced by
+  separate predicates — `isScopedRMClaim`, `supportsOmegaModelClaim`,
+  `supportsAllModelConsequence`, `supportsSyntacticUpperBound` — and the site reports
+  "certified ω-model implications: n / all-model implications: n / syntactic RM bounds: n",
+  never a single undifferentiated "certified RM bounds" count.
+- Syntactic certificates eventually carry two **orthogonal** fields:
+  `SyntacticProofRoute = direct | semanticCompleteness | fragmentInterpretation |
+  importedChecked` (provenance) and `DerivationArtifact = propositionOnly | derivationObject
+  | serializedCheckedCode` (what survives). A derivation represented in `Prop` is
+  computationally erased *however obtained* — even a visibly constructed one; extraction
+  requires a derivation object in `Type`, or serialized derivation code plus a verified
+  checker. Completeness-mediated and direct proofs establish the same `Provable T φ`.
+
+### Completeness is the canonical semantic→syntactic bridge
+
+Restricted second-order arithmetic is essentially two-sorted first-order logic, so
+Henkin/general-model completeness is the right metatheorem — completeness is *not* available
+for full second-order semantics, and does not need to be. The order deliberately places
+completeness **before** the first substantive turnstile, since obtaining it beforehand would
+require hand-building a large derivation — the very repetition completeness eliminates:
+
+calculus → soundness → smoke turnstiles (`WKL₀ ⊢ WKL`; `⊢` each included RCA₀ axiom) →
+completeness → `WKL₀ ⊢ Σ⁰₁-separation`, converted from the already-proved semantic theorem.
+
+A later *direct* derivation of Σ⁰₁-separation is valuable as a cross-check and as the first
+`derivationObject` artifact; it does not block the first genuine `⊢₂` result.
+
+### Foundation findings (verified against source, 2026-07-29/30)
+
+Inspection pinned at commit `9800e78127294798496adc6e37c8b9ded637d93a`; toolchain v4.32.2
+(current master is also v4.32.2 as of verification — pin exact commits, never track master;
+reverse-mathlib is on v4.32.0, so integration needs a deliberate toolchain step).
+
+- `Struc₂` has exactly the restricted semantics needed: `sets : Set (Set Dom)`, with both set
+  quantifiers ranging over it.
+- **The `exs₂` obstruction**: the second-order calculus witnesses `∃²` by substituting an
+  arbitrary formula (`Derivation (φ/⟦ψ⟧ :: Γ) → Derivation ((∃² φ) :: Γ)`) — sound only over
+  structures closed under definable comprehension. RCA₀ models supply only Δ⁰₁ comprehension,
+  so "soundness over `Struc₂`" is false for the calculus unchanged.
+- The feasibility spike compares three remediations **without preselecting one**, and an
+  upstream Foundation change is never a prerequisite:
+  1. a Henkin-safe second-order calculus (smallest syntax change; straightforward soundness;
+     completeness still to build);
+  2. translation into Foundation's single-sorted FOL (reuses its existing completeness —
+     which is single-sorted, hence sort tags, guarded quantifiers, totalized arithmetic, and
+     a substantial model-equivalence theorem);
+  3. a genuine many-sorted FOL layer (conceptually cleanest; largest addition; potential
+     upstream value beyond reverse mathematics).
+- Acceptance criterion: a tiny end-to-end prototype — exact L₂ sentence → model-facing
+  adequacy → semantic validity in all general models → checked provability — not merely
+  successful imports.
+
+### The portability-audit track (parallel, miner-side)
+
+Target-relative by design — portability cannot be classified in isolation; it depends on the
+intended target variant and presentation:
+
+```
+#rm_portability sourceTheorem
+  to countableHall.oneSidedInjective.enumeratedFibers.turingIdealOmega
+  under Presentation.internalEnumeratedFibers
+```
+
+Two maturity levels. The **inventory** (MVP; fail-closed) conservatively identifies raw set
+formation, function spaces, recursion/induction shapes, choice and quotient occurrences, and
+missing adapters — unknown stays unknown. **Certified discharge** (definitive Δ⁰₁/Σ⁰₁
+comprehension classes, induction complexity, closure-lemma matching) requires translation
+into a formula layer/restricted IR or explicit definability evidence, so it is *not*
+backend-independent. Only the inventory proceeds early.
+
+Restricted replay (#20) discipline, recorded here so it is never diluted: declaration
+whitelisting is only **half** of replay. `Set α` is reducibly `α → Prop`, so a bare lambda
+can flow into a set position without touching any named comprehension constant — dependency
+analysis is structurally blind to this. The second half is structural: an abstract
+internal-set type with hidden constructors, a term-level checker, a restricted intermediate
+calculus, or the model-facing API whose types demand membership in `M.sets`. Replay is never
+an RM certificate until its interpretation bridge exists.
+
+### Order of work
+
+1. Foundation feasibility spike at the pinned commit. 2. #5 layer-indexed statement
+interfaces and typed contexts. 3. #6 typed ω/all-model certificate schemas and the reporting
+split. 4. General `SOArithmeticModel`/`InternalSet` surface. 5. ω realization — Turing
+ideals, WKL/Scott sets, internal graphs (the tranche-4 WKLω ↔ EFILCω → CountableHallω
+calibrations land here, at ω scope). 6. Formula hierarchy, RCA₀/WKL₀ theories, satisfaction.
+7. `SentenceRealization`. 8. Semantic WKL → Σ⁰₁-separation (all-model). 9.
+Henkin-safe/two-sorted calculus and soundness. 10. Completeness bridge. 11. First
+substantive turnstile via completeness. 12. Internal EFILC and Hall at all-model/turnstile
+scope. 13. REC/WKL certified separation. 14. Fragment-interpretation bridge for proof-mined
+ambient theorems.
+
+In parallel throughout: the portability-audit inventory; Q6 occurrence/effect auditing;
+restricted replay (#20) under the structural discipline above.
 
 ## Strict reverse mathematics (cross-cutting, not a sixth axis)
 
@@ -572,6 +774,8 @@ possible.
 
 ## Near-term sequence
 
-Hall walking slice → catalog/RMZoo seam → tree and matching representation matrix → ω-model
-calibrations → Simpson's WKL/ACA matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice →
-coded analysis ladder.
+Hall walking slice (done) → #5 layer-indexed typed facts and contexts → #6 typed semantic
+certificates and the reporting split → Foundation feasibility spike → `SOArithmeticModel`
+surface and ω realization (WKLω ↔ EFILCω → CountableHallω) → backend v0 and the completeness
+bridge (the turnstile track) → tree and matching representation matrix → Simpson's WKL/ACA
+matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice → coded analysis ladder.

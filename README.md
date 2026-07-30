@@ -14,7 +14,7 @@ evidence catalog that never overstates what has been established.
 > registry correctly reports zero certified RM bounds.
 
 - **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
-  reverse mathematics, and the assurance ladder toward genuine `RCA₀ ⊢ …` results.
+  reverse mathematics, and the assurance routes toward genuine `RCA₀ ⊢ …` results.
 - **[ROADMAP.md](ROADMAP.md)** — Simpson as the vertical theorem spine, RMZoo as the
   horizontal principle graph, the strict-RM and quantitative tracks, and the issue tranches.
 - **Live zoo**: <https://cameronfreer.github.io/reverse-mathlib/> — the ambient-factorization

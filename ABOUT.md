@@ -38,7 +38,11 @@ already been packaged into its statement; the proof itself may then be easy. Con
 proofs of the same statement can have very different proof-only closures.
 
 This is an exact syntactic fact about the current elaborated declaration — not a minimality
-result, and not a claim about every proof of the theorem.
+result, and not a claim about every proof of the theorem. The right name for this activity is
+**proof-route archaeology**, not theorem-strength inference: finding a compactness theorem in
+a proof closure says this proof uses it; removing it says this proof avoids that declaration;
+neither rules out a different proof or a reconstruction of the same principle from unlisted
+ingredients.
 
 ### Named frontiers
 
@@ -163,18 +167,35 @@ Existing RM literature contributes:
 
 ## 3. What confidence could this eventually provide about RCA₀ implications?
 
-The assurance ladder:
+Three claim forms stay permanently distinct: `P_Lean → T_Lean` (ambient factorization),
+`RCA₀ + P̂ ⊨ T̂` at ω-model or all-model scope (semantic consequence — the all-model form is
+already a genuine RM upper bound), and `RCA₀ + P̂ ⊢ T̂` (checked object-language
+derivability). None promotes to another automatically.
+
+The assurance routes:
 
 | Evidence | What it establishes | Confidence about RCA₀ ⊢ P → T |
 |---|---|---|
 | Dependency graph | Current Lean proof syntactically reaches certain declarations | None by itself |
 | Frontier report | Current proof factors architecturally through named boundaries | Suggestive upper bound |
 | Ambient relative theorem | Lean kernel checks P_Lean → T_Lean | Very high confidence in the conditional ordinary mathematics |
-| Restricted replay | Residual proof checks using only an approved fragment/interface | Strong candidate RM upper bound |
+| Portability audit | Every construction, comprehension, induction, and choice occurrence carries a target-relative translation obligation, inventoried and discharged | Very strong evidence the proof formalizes over the base, encoding backend pending |
+| Restricted replay | Residual proof checks using only an approved fragment/interface | Certified fragment membership — an RM bound only when paired with a fragment interpretation |
 | Literature interpretation | Published mathematics identifies the fragment/variant with RCA₀ + P | High human mathematical confidence, not end-to-end Lean certification |
 | Formal fragment interpretation | Lean proves the restricted fragment is interpreted by or conservative over RCA₀ | Formal RM upper bound for translated statements |
+| ω-model certificate | Every ω-model (Turing ideal) of RCA₀ + P satisfies translated T | Certified ω-model consequence — not derivability |
 | All-model certificate | Every model of RCA₀ + P satisfies translated T | Formal semantic RM result |
 | Syntactic derivation | A checked object-theory derivation exists | Strongest direct formal certificate |
+
+These rows are **routes, not rungs of one ladder**. There are two main branches from an
+ambient factorization: the replay branch (portability audit → restricted replay → fragment
+interpretation → syntactic theorem) and the model-facing branch (internalized proof → ω-model
+and all-model certificates → completeness → syntactic theorem). Rows on different branches
+are not ordered against each other: replay without an interpretation is neither above nor
+below an ω-model theorem, and ω-model validity never promotes to all-model validity. An
+all-model certificate and a syntactic derivation become interchangeable only once soundness
+and completeness are themselves formalized — and even then a derivation is *more direct*, not
+*truer*.
 
 ### The amortized bridge
 
