@@ -1,13 +1,23 @@
 # About the reverse-mathlib project
 
-The cleanest way to understand reverse-mathlib is:
+reverse-mathlib is a **typed, proof-carrying atlas** of statements, presentations, proof
+routes, and resource use in Lean. It records both the intrinsic foundational or
+computational classification of a theorem and the architecture of particular proofs of it;
+reverse mathematics (ordinary, strict, higher-order), Weihrauch reducibility, quantitative
+proof mining, and mathlib proof-route archaeology are distinct projections of that record —
+none is the master ordering, and a route result ("this canonical proof overshoots the
+theorem's known calibration") is a final result in its own right, not preliminary evidence
+awaiting promotion. The slogan: *classify the theorem, preserve the proof, and never
+confuse the two.*
+
+On the calibration axis specifically:
 
 > **Today it certifies the architecture of particular Lean proofs. Eventually, reusable
 > interpretation theorems can turn some of those architecture certificates into genuine
 > reverse-mathematical upper bounds.**
 
 It is not currently proving anything over RCA₀. The live registry correctly reports zero
-certified RM bounds.
+certified bounds at every scope (ω-model / all-model / syntactic).
 
 ## 1. What it is actually doing
 

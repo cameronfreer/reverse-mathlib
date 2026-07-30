@@ -4,14 +4,29 @@
 
 # reverse-mathlib
 
-Reverse mathematics for Lean: proof-strength analysis of mathlib via dependency mining,
-hand-written proof factorizations at named principle boundaries, and a presentation-aware
-evidence catalog that never overstates what has been established.
+**A typed, proof-carrying atlas of mathematical strength and proof architecture in Lean.**
+It records exact statement variants, presentations, represented uniform problems, and
+concrete proof artifacts under several deliberately noncollapsed analyses: ordinary and
+strict reverse mathematics, higher-order reverse mathematics, Weihrauch reducibility,
+quantitative proof mining, and mathlib-specific proof-route archaeology.
 
-> **Today it certifies the architecture of particular Lean proofs. Eventually, reusable
-> interpretation theorems can turn some of those architecture certificates into genuine
-> reverse-mathematical upper bounds.** It is not currently proving anything over RCA₀ — the
-> registry correctly reports zero certified RM bounds.
+The name has a double meaning: conventional **reverse mathematics** — which principles
+suffice or are necessary over a weak base — and **reverse-engineering mathlib** — which
+ideas, representations, interfaces, and proof routes are embodied in its declarations. The
+project studies not only the weakest principles known to prove a theorem, but which route a
+particular proof takes, which stronger ambient resources make a standard or elegant
+transformation possible, what the statement's presentation supplies, and what witnesses,
+oracle behavior, or quantitative data the proof produces.
+
+> **Today it certifies facts about particular Lean proofs and ambient factorizations.** Some
+> are candidates for genuine reverse-mathematical bounds after suitable interpretation
+> bridges. Others are final results in their own right: canonical, overpowered, generic,
+> quantitative, or presentation-revealing proof routes that should never be mistaken for
+> minimal theorem calibrations. It is not currently proving anything over RCA₀ — the
+> registry correctly reports zero certified bounds at every scope (ω-model / all-model /
+> syntactic).
+
+*Classify the theorem, preserve the proof, and never confuse the two.*
 
 - **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
   reverse mathematics, and the assurance routes toward genuine `RCA₀ ⊢ …` results.

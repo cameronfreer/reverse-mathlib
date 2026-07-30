@@ -7,6 +7,22 @@ grown through concrete mathematical pressure — not designed as an encyclopedia
 
 ## Thesis
 
+**reverse-mathlib is a typed, proof-carrying atlas of statements, presentations, proof
+routes, and resource use in Lean.** The primary object is the *proof incident* — (exact
+statement variant, presentation, particular proof artifact, named resources with roles,
+output effect, evidence scope) — and each research program is a deliberately lossy
+projection of it: mathlib archaeology (what this elaborated proof traverses; forgets
+minimality), ordinary RM/RMZoo (which exact variants imply which over a base; forgets the
+proof used), strict/higher-order RM (the cost of presentation and interpretation), Weihrauch
+analysis (uniform transformations under representations; forgets verification difficulty),
+proof mining (extracted bounds and programs; forgets minimal nonuniform strength), and
+attributed proof-cultural assessment (never formal consensus). None is the master ordering;
+a route result — "this canonical proof overshoots the theorem's calibration" — is a final
+result, not larval reverse mathematics. *Classify the theorem, preserve the proof, never
+confuse the two.*
+
+Within the atlas, the calibration spine remains the flagship thread:
+
 **Use Simpson as the vertical theorem spine, and RMZoo as the horizontal principle graph.**
 
 Simpson ([Sim09], *Subsystems of Second Order Arithmetic*, 2nd ed.) tells us which
@@ -150,6 +166,27 @@ nodes. Sequentialization/parallelization are explicit problem operations
 (`ProblemOp.single | finiteParallelization | sequentialization` — metadata first, reduction
 rules later): one instance and a sequence of instances differ, because sequentialization
 introduces countable-choice or bar-recursive content.
+
+Division of labor with `cameronfreer/computable-analysis`, which owns the machine model
+(`Representation`, `Problem`, `OracleCode`, realizers, `≤W`/`≤sW`, continuous
+realizability, and the multifunction/problem algebra — tightening, promise restriction,
+specification-safe composition, products/coproducts, parallelization): reverse-mathlib
+never implements a second machine model; it **consumes certified relationships** and
+records construction metadata. A future `ProblemExpr` AST (atom | restrict | comp |
+product | coproduct | finiteParallelization | sequentialization) explains how a named
+problem was constructed and never becomes canonical problem identity — extensionally
+equivalent expressions need not be syntactically equal — and the shallow `ProblemOp` stays
+shallow until the actual problem algebra has exercised these distinctions. Cross-repository
+staging: shared stable external identifiers → canonical catalog JSON exported by
+computable-analysis → imported facts as external checked/literature evidence (never Lean
+axioms) → an optional typed adapter module if toolchains and dependency direction permit →
+a shared schema package only if JSON interchange proves insufficient; no circular
+dependency between the repositories. Five fact families stay permanently separate, with no
+cross-axis inference without an explicit bridge certificate: base-theory implication,
+ω-model consequence, computable Weihrauch reduction, continuous Weihrauch reduction, and
+representation equivalence. The best eventual bridge case: binary-tree WKL ↔ Cantor-space
+closed choice ↔ compactness presentations (then positive-measure closed choice toward
+WWKL₀, and BW/jump-of-WKL toward the ACA ladder).
 
 Status semantics (amends issues #5/#6): `Exact` may become a typed reducibility/equivalence
 claim with evidence; `Representative` is a descriptive comparison only — never an inference
@@ -643,6 +680,34 @@ Mining-track items (issues open only as their prerequisites land):
   cuts as a stretch and only *relative to registered frontier families* (unconstrained cuts
   return trivial immediate dependencies). Every result is "architecture of the current
   elaborated proof; not logical necessity or an RM lower bound."
+- **Contextual proof routes and overshoot profiles** (after #6 and #19; parallel to, never
+  on the critical path of, the turnstile track): a separate `ProofRouteId`/`ProofRouteEntry`
+  catalog for named derivations `Γ ; A₁,…,Aₙ ⟹ρ B`, distinguishing **background
+  resources** from **designated active premises** and **presentation adapters**, with the
+  output effect and — crucially — whether the background alone is already known to prove
+  the target (the marker of an *explanatory* route rather than a calibrating implication).
+  A kernel-checked route may cite a typed `ContextualRouteCertificate (background active
+  target)`, which checks the stated factorization and nothing more; graded "uses A"
+  evidence stays separate: designated intent → syntactic liveness (#19) → explicit
+  factorization → restricted replay (#20) → transformational content (Type-level
+  data/realizer) → necessity (a different theorem). Evidence-bearing route comparisons
+  (`factorsThrough`, `weakensBackground`, `refinesGenericInterface`,
+  `replacesCompletionPrinciple`, `proofByStrengthening`, `sharesCoreWith`,
+  `hasLowerUniformUseThan`, `hasBetterQuantitativeOutputThan`) use an extensible
+  registered vocabulary; standardness/elegance/"same central idea" are attributed
+  assessments under the strict-RM policy, never inference edges. Route entries live outside
+  `FactEntry` and never enter RM or Weihrauch closure without a bridge certificate; the
+  site renders the fact graph and the route graph as visibly different structures. Pilots
+  (which pressure-test the vocabulary before the schema stabilizes): Higman via mathlib's
+  Nash-Williams route vs a minimal-bad-sequence interface (canonical-proof overshoot;
+  ACA₀-equivalent theorem, candidate Π¹₁-CA-level route resource); Sperner/Brouwer as
+  shared finite core + completion bridge; countable de Bruijn–Erdős via first-order vs
+  propositional compactness (generic-interface overshoot); Borel determinacy via
+  measurable-cardinal strengthening (base pinned to the exact source, never flattened to
+  "ordinary set theory"); Hahn–Banach via Zorn (choice/maximality overshoot). The
+  research-query program this enables (overshooting frontiers, finite-core+completion
+  families, same-RM-different-oracle-pattern, route changes across mathlib revisions)
+  merges into the empirical capability-basis program below, not a separate track.
 - **Restricted replay MVP** (after #6): sandbox module with approved imports/capability
   interfaces, replaying an already-explicit relative theorem (the Hall/EFILC slice as first
   fixture); fails on unapproved constants; records environment, source hash, allowed
@@ -699,7 +764,13 @@ for tranche 8.
 - Q5. Executable rational/dyadic bounded-search realizer.
 - Q6. Occurrence/effect audit: Prop → Prop, Prop → Type, finite-search repair, residual oracle.
 - Q7. Quantitative certificate registry: uniform parameters, intensional dependencies, term
-  class, residual oracles, source hash.
+  class, residual oracles, source hash; plus **artifact-strength dimensions** for uniform
+  and quantitative evidence — `UniformArtifact` (propositionOnly | bundledTransformer |
+  oracleCode | serializedCheckedCode), computational status (extensional | continuous |
+  computable), **input access** (oracle answer only vs original input + answer — the
+  ordinary-vs-strong-Weihrauch signal, and the uniform analogue of the Q6 effect audit),
+  and witness visibility (existential Prop | Type-level data | serialized code). A `Prop`
+  saying codes exist is never an extracted reduction witness.
 - Q8. Herbrand/ε-weakening of WKL and EFILC.
 - Q9. Finite-query quantitative Hall.
 - Q10. Modulus-of-uniqueness pilot.
