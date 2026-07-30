@@ -24,18 +24,26 @@ Honesty rules, enforced at registration or rendering:
   `relativeProof` record cites a typed certificate matched up to definitional equality:
   `RelativeCertificate interface port` for `upper` evidence, `RelativeCertificate port
   interface` for `lower`, `interface ↔ port` for `exact` — a bare axiom-audited reference
-  (which `True.intro` would pass) is never a certificate. Kernel-checked citations of any
-  *other* kind (semantic, syntactic, fragment, audit) are rejected outright until typed schemas
-  exist for them. Kernel-checked citations are additionally swept by `collectAxioms` against
-  the standard three axioms, and evidence kind must agree with its ambient.
-* **Certified claims carry an explicit scope** (`CertifiedClaimScope`): ambient factorization,
-  checked-fragment membership, ω-models, all models, and syntactic derivation render
-  separately, and no scope is ever escalated automatically — an all-ω-model theorem is not a
-  syntactic subsystem theorem, and even an all-model semantic result stays distinct until an
-  explicit soundness/completeness bridge upgrades it. Only ω-model, all-model, and syntactic
-  claims count as RM bounds (nothing in Milestone 1 produces one); claimed/literature evidence
-  never produces a claim, so it can never suppress a `pending` line. Everything else prints
-  `pending`/`UNVERIFIED`, and unknown prints `unknown`.
+  (which `True.intro` would pass) is never a certificate. Kernel-checked
+  `semanticImplication` records cite a `SemanticImplicationCertificate`/
+  `SemanticEquivalenceCertificate` validated against a **registered semantic context** (exact
+  base predicate, matching scope, layer-matched model-indexed endpoints — an ambient variant
+  is never substituted for a model-indexed one). Kernel-checked citations of any *other* kind
+  (syntactic, fragment, audit) are rejected outright until typed schemas exist for them.
+  Kernel-checked citations are additionally swept by `collectAxioms` against the standard
+  three axioms, and evidence kind must agree with its ambient.
+* **Certified claims carry an explicit scope and report per scope** (`CertifiedClaimScope`):
+  ambient factorization, checked-fragment membership, ω-models, all models, and syntactic
+  derivation render separately, and no scope is ever escalated automatically — an
+  all-ω-model theorem is a *certified ω-model implication*, never an unqualified subsystem
+  bound; even an all-model semantic result stays distinct until an explicit
+  soundness/completeness bridge upgrades it. The scoreboard reports
+  ω-model/all-model/syntactic counts on separate lines — there is deliberately no single
+  "certified RM bounds" number. Syntactic evidence will additionally record its proof
+  **route** (provenance) separately from its surviving derivation **artifact** — a
+  `Prop`-level derivation is computationally erased however obtained. Claimed/literature
+  evidence never produces a claim, so it can never suppress a `pending` line. Everything
+  else prints `pending`/`UNVERIFIED`, and unknown prints `unknown`.
 -/
 
 namespace ReverseMathlib.Meta
@@ -123,6 +131,64 @@ structure RelativeCertificate (assumption conclusion : Prop) : Prop where
   /-- The factorization itself. -/
   proof : assumption → conclusion
 
+universe u
+
+/-- A typed **semantic implication certificate**: for every model satisfying the registered
+base context, the assumed model-indexed statement implies the target one. Generic in the
+model type — the ω realization and the all-model layer instantiate it with their own model
+types; the registered `SemanticContextEntry` fixes `Base` (and, through its layer's interface
+schema, `Model`), so an accidental quantification over the wrong model class cannot
+register. -/
+structure SemanticImplicationCertificate {Model : Sort u} (Base P Q : Model → Prop) :
+    Prop where
+  /-- The implication over every model of the base context. -/
+  proof : ∀ M, Base M → P M → Q M
+
+/-- A typed semantic **equivalence** certificate, for `exact`-direction semantic evidence. -/
+structure SemanticEquivalenceCertificate {Model : Sort u} (Base P Q : Model → Prop) :
+    Prop where
+  /-- The equivalence over every model of the base context. -/
+  proof : ∀ M, Base M → (P M ↔ Q M)
+
+/-- How a syntactic-derivation claim was obtained (provenance). Orthogonal to
+`DerivationArtifact`: completeness-mediated and direct proofs establish the same
+provability proposition — they differ in provenance and in what artifacts survive. -/
+inductive SyntacticProofRoute where
+  /-- A derivation constructed directly. -/
+  | direct
+  /-- Obtained through a formalized completeness theorem from a semantic certificate. -/
+  | semanticCompleteness
+  /-- Obtained through a certified fragment interpretation. -/
+  | fragmentInterpretation
+  /-- Imported from an external checked proof. -/
+  | importedChecked
+  deriving Inhabited, Repr, BEq
+
+/-- Stable tag for a syntactic proof route. -/
+def SyntacticProofRoute.tag : SyntacticProofRoute → String
+  | .direct => "direct"
+  | .semanticCompleteness => "semanticCompleteness"
+  | .fragmentInterpretation => "fragmentInterpretation"
+  | .importedChecked => "importedChecked"
+
+/-- What derivation artifact survives. A derivation represented in `Prop` is computationally
+erased **however obtained** — even a visibly constructed one; extraction requires a
+derivation object in `Type`, or serialized derivation code plus a verified checker. -/
+inductive DerivationArtifact where
+  /-- Only the provability proposition; no inspectable derivation survives. -/
+  | propositionOnly
+  /-- An inspectable derivation object in `Type`. -/
+  | derivationObject
+  /-- Serialized derivation code plus a verified checker. -/
+  | serializedCheckedCode
+  deriving Inhabited, Repr, BEq
+
+/-- Stable tag for a derivation artifact. -/
+def DerivationArtifact.tag : DerivationArtifact → String
+  | .propositionOnly => "propositionOnly"
+  | .derivationObject => "derivationObject"
+  | .serializedCheckedCode => "serializedCheckedCode"
+
 /-- An open theory identifier (for future syntactic-derivation claims), open for the same
 reason as `ConceptId`. -/
 structure TheoryId where
@@ -148,10 +214,28 @@ inductive CertifiedClaimScope where
   | syntacticDerivation (theory : TheoryId)
   deriving Inhabited, Repr, BEq
 
-/-- Whether a certified claim scope supports a reverse-mathematics bound. -/
-def CertifiedClaimScope.isRMBound : CertifiedClaimScope → Bool
+/-- A **scoped RM claim**: any certified claim at ω-model, all-model, or syntactic scope.
+Deliberately not called an "RM bound": the per-scope predicates below stay separate, and the
+scoreboard reports each count on its own line — an ω-model implication is a genuine scoped
+reverse-mathematical claim but **never** an unqualified subsystem upper bound. -/
+def CertifiedClaimScope.isScopedRMClaim : CertifiedClaimScope → Bool
   | .omegaModels | .allModels | .syntacticDerivation _ => true
   | .ambientFactorization | .checkedFragment => false
+
+/-- Supports exactly a certified ω-model implication (`⊨ω`). -/
+def CertifiedClaimScope.supportsOmegaModelClaim : CertifiedClaimScope → Bool
+  | .omegaModels => true
+  | _ => false
+
+/-- Supports exactly a certified all-model consequence (`⊨all`). -/
+def CertifiedClaimScope.supportsAllModelConsequence : CertifiedClaimScope → Bool
+  | .allModels => true
+  | _ => false
+
+/-- Supports exactly a syntactic subsystem upper bound (`⊢`). -/
+def CertifiedClaimScope.supportsSyntacticUpperBound : CertifiedClaimScope → Bool
+  | .syntacticDerivation _ => true
+  | _ => false
 
 /-- A certified claim extracted from validated evidence: scope × direction × the index of the
 evidence record it came from. -/
@@ -176,6 +260,13 @@ structure EvidenceRecord where
   ambient : ProofAmbient
   /-- Semantic scope; only `semanticImplication` evidence may carry one. -/
   scope? : Option SemanticScope := none
+  /-- For `semanticImplication` (only): the registered semantic context the certificate
+  quantifies over — required for kernel-checked semantic evidence. -/
+  context? : Option SemanticContextId := none
+  /-- For `syntacticDerivation` (only): how provability was obtained. -/
+  route? : Option SyntacticProofRoute := none
+  /-- For `syntacticDerivation` (only): what derivation artifact survives. -/
+  artifact? : Option DerivationArtifact := none
   /-- For `syntacticDerivation`: the object theory, through this dedicated field (never through
   the scope). -/
   theory? : Option TheoryId := none
@@ -287,6 +378,49 @@ def checkIffCertificateType (cert assumption conclusion : Name) : CommandElabM U
         definitionally the registered interface '{assumption}' and port statement \
         '{conclusion}'"
 
+/-- Whether a fact-scope (of a registered semantic context) matches an evidence semantic
+scope. `provability` and `fullStandardModel` match nothing — neither is a certified model
+class. -/
+def contextScopeMatches : FactScope → SemanticScope → Bool
+  | .omegaModels, .omegaModels => true
+  | .allModels, .allModels => true
+  | _, _ => false
+
+/-- Check that `cert` has type `SemanticImplicationCertificate base p q` (or the equivalence
+form for `exact` evidence), up to definitional equality in all three predicate positions —
+the registered base-context predicate and the exact assumed/target variant interfaces. The
+model type is argument 0 and is fixed by `base` through defeq. -/
+def checkSemanticCertificateType (cert base p q : Name) (equiv : Bool) :
+    CommandElabM Unit := do
+  liftTermElabM do
+    let info ← getConstInfo cert
+    let ty ← Meta.whnfR info.type
+    let fn := ty.getAppFn
+    let expected := if equiv then ``SemanticEquivalenceCertificate
+      else ``SemanticImplicationCertificate
+    unless fn.isConstOf expected do
+      throwError "registry: '{cert}' does not have type '{expected} _ _ _' (found '{ty}'); \
+        a kernel-checked semanticImplication citation must be a typed semantic certificate"
+    let args := ty.getAppArgs
+    unless args.size == 4 do
+      throwError "registry: unexpected arity in certificate type '{ty}'"
+    unless ← Meta.isDefEq args[1]! (mkConst base) do
+      throwError "registry: semantic certificate '{cert}' quantifies over base context \
+        '{args[1]!}', which is not definitionally the registered context predicate '{base}'"
+    let straight ← Meta.isDefEq args[2]! (mkConst p) <&&> Meta.isDefEq args[3]! (mkConst q)
+    if equiv then
+      let flipped ← Meta.isDefEq args[2]! (mkConst q) <&&> Meta.isDefEq args[3]! (mkConst p)
+      unless straight || flipped do
+        throwError "registry: semantic equivalence certificate '{cert}' does not relate the \
+          assumed interface '{p}' and the target interface '{q}' definitionally"
+    else
+      unless ← Meta.isDefEq args[2]! (mkConst p) do
+        throwError "registry: semantic certificate '{cert}' assumes '{args[2]!}', which is \
+          not definitionally the required source interface '{p}'"
+      unless ← Meta.isDefEq args[3]! (mkConst q) do
+        throwError "registry: semantic certificate '{cert}' concludes '{args[3]!}', which is \
+          not definitionally the required target interface '{q}'"
+
 /-- Look up a registered port by id. -/
 def findPort? (env : Environment) (id : Name) : Option PortEntry :=
   (portExt.getState env).find? (·.id == id)
@@ -320,7 +454,8 @@ Hardening invariants (each rejection is a hard error, never a silent downgrade):
   `RelativeCertificate port interface` for `lower`, and `interface ↔ port` for `exact`. Until
   typed schemas exist for semantic/syntactic evidence, kernel-checked citations of those kinds
   are rejected outright — an axiom audit alone (which `True.intro` passes) certifies nothing. -/
-def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandElabM Unit := do
+def validateEvidence (e : EvidenceRecord) (target : StatementVariantId)
+    (portDecl? : Option Name) : CommandElabM Unit := do
   if e.ambient == .lean && e.scope?.isSome then
     throwError "registry: ambient-Lean evidence carries no RM semantic scope; remove the \
       scope or change the ambient"
@@ -332,11 +467,19 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
   if e.kind == .semanticImplication && e.scope?.isNone then
     throwError "registry: semanticImplication evidence requires an explicit scope \
       (fullStandardModel | omegaModels | allModels); scope is never defaulted"
-  if e.kind == .relativeProof && e.assumes?.isNone then
-    throwError "registry: relativeProof evidence must name the assumed statement variant \
+  if e.context?.isSome && e.kind != .semanticImplication then
+    throwError "registry: only semanticImplication evidence may carry a semantic context"
+  if e.route?.isSome && e.kind != .syntacticDerivation then
+    throwError "registry: only syntacticDerivation evidence may carry a proof route"
+  if e.artifact?.isSome && e.kind != .syntacticDerivation then
+    throwError "registry: only syntacticDerivation evidence may carry a derivation artifact"
+  if (e.kind == .relativeProof || e.kind == .semanticImplication) && e.assumes?.isNone then
+    let kindWord := if e.kind == .relativeProof then "relativeProof" else "semanticImplication"
+    throwError "registry: {kindWord} evidence must name the assumed statement variant \
       (assumes ...), even when merely claimed"
-  if e.assumes?.isSome && e.kind != .relativeProof then
-    throwError "registry: only relativeProof evidence may carry assumes"
+  if e.assumes?.isSome && e.kind != .relativeProof && e.kind != .semanticImplication then
+    throwError "registry: only relativeProof and semanticImplication evidence may carry \
+      assumes"
   if e.kind == .syntacticDerivation && e.theory?.isNone then
     throwError "registry: syntacticDerivation evidence must name its object theory \
       (theory ...), through the dedicated field rather than the scope"
@@ -348,47 +491,100 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
   if e.verification == .backendChecked then
     throwError "registry: no backend exists yet; backendChecked evidence cannot be registered"
   if e.verification == .kernelChecked then
-    unless e.kind == .relativeProof do
-      throwError "registry: no typed certificate schema exists yet for kernel-checked \
-        '{repr e.kind}' evidence; an axiom audit alone certifies nothing, so it is rejected \
-        until a typed schema exists"
-    let some thm := e.thm?
-      | throwError "registry: relativeProof evidence must cite its certificate (via ...)"
-    checkStandardAxioms thm
-    let some assumes := e.assumes?
-      | throwError "registry: relativeProof evidence must name the assumed statement \
-        variant (assumes ...)"
     let cat := ConceptCatalog.ofEnv (← getEnv)
     unless cat.conflicts.isEmpty do
       let lines := "\n  ".intercalate cat.conflicts.toList
       throwError "registry: conceptual catalog is conflicted; resolve before registering \
         evidence:\n  {lines}"
-    let some ventry := cat.findVariant? assumes.name
-      | throwError "registry: unknown statement variant '{assumes.name}'"
-    let some interface := ventry.interface?
-      | throwError "registry: statement variant '{assumes.name}' has no Lean interface"
-    let some portDecl := portDecl?
-      | throwError "registry: relativeProof evidence requires the target variant to own a \
-        Lean interface"
-    match e.direction with
-    | .upper => checkCertificateType thm interface portDecl
-    | .lower =>
-      checkCertificateType thm portDecl interface
-        (describeA := "the registered port statement")
-        (describeC := "the registered interface")
-    | .exact => checkIffCertificateType thm interface portDecl
+    match e.kind with
+    | .relativeProof =>
+      let some thm := e.thm?
+        | throwError "registry: relativeProof evidence must cite its certificate (via ...)"
+      checkStandardAxioms thm
+      let some assumes := e.assumes?
+        | throwError "registry: relativeProof evidence must name the assumed statement \
+          variant (assumes ...)"
+      let some ventry := cat.findVariant? assumes.name
+        | throwError "registry: unknown statement variant '{assumes.name}'"
+      let some interface := ventry.interface?
+        | throwError "registry: statement variant '{assumes.name}' has no Lean interface"
+      let some portDecl := portDecl?
+        | throwError "registry: relativeProof evidence requires the target variant to own a \
+          Lean interface"
+      match e.direction with
+      | .upper => checkCertificateType thm interface portDecl
+      | .lower =>
+        checkCertificateType thm portDecl interface
+          (describeA := "the registered port statement")
+          (describeC := "the registered interface")
+      | .exact => checkIffCertificateType thm interface portDecl
+    | .semanticImplication =>
+      -- Exact validation: registered context, matching scope, layer-matched endpoints, and
+      -- a typed certificate quantifying over every model of the exact context predicate.
+      let some thm := e.thm?
+        | throwError "registry: kernel-checked semanticImplication evidence must cite its \
+          certificate (via ...)"
+      checkStandardAxioms thm
+      let some ctxId := e.context?
+        | throwError "registry: kernel-checked semanticImplication evidence must name its \
+          registered semantic context (context ...); a free-floating model quantification \
+          certifies nothing"
+      let some ctx := cat.semanticContexts.find? (·.id == ctxId)
+        | throwError "registry: unknown semantic context '{ctxId}'"
+      let some scope := e.scope?
+        | throwError "registry: semanticImplication evidence requires an explicit scope"
+      unless contextScopeMatches ctx.scope scope do
+        throwError "registry: evidence scope '{repr scope}' does not match the registered \
+          scope of semantic context '{ctxId}' ('{ctx.scope.tag}'); scopes are never \
+          escalated or defaulted"
+      let some assumes := e.assumes?
+        | throwError "registry: semanticImplication evidence must name the assumed \
+          statement variant (assumes ...)"
+      let some aentry := cat.findVariant? assumes.name
+        | throwError "registry: unknown statement variant '{assumes.name}'"
+      let some tentry := cat.findVariant? target.name
+        | throwError "registry: unknown statement variant '{target.name}'"
+      unless aentry.layer == ctx.layer do
+        throwError "registry: assumed variant '{assumes.name}' is at layer \
+          '{aentry.layer.name}', not the semantic context's layer '{ctx.layer.name}'; an \
+          ambient variant is never substituted for a model-indexed one"
+      unless tentry.layer == ctx.layer do
+        throwError "registry: target variant '{target.name}' is at layer \
+          '{tentry.layer.name}', not the semantic context's layer '{ctx.layer.name}'; an \
+          ambient variant is never substituted for a model-indexed one"
+      let some pIface := aentry.interface?
+        | throwError "registry: statement variant '{assumes.name}' has no Lean interface"
+      let some qIface := tentry.interface?
+        | throwError "registry: statement variant '{target.name}' has no Lean interface"
+      match e.direction with
+      | .upper => checkSemanticCertificateType thm ctx.contextDecl pIface qIface false
+      | .lower => checkSemanticCertificateType thm ctx.contextDecl qIface pIface false
+      | .exact => checkSemanticCertificateType thm ctx.contextDecl pIface qIface true
+    | k =>
+      throwError "registry: no typed certificate schema exists yet for kernel-checked \
+        '{repr k}' evidence; an axiom audit alone certifies nothing, so it is rejected \
+        until a typed schema exists"
 
-/-- The certified claims of a port, derived from its (already-validated) evidence. Only
-kernel-checked `relativeProof` records produce claims today, and they are
-`ambientFactorization`-scoped — never an RM bound. Claimed/literature evidence never produces a
-claim, so a bogus lower literature record cannot suppress "exact lower bound: pending". -/
+/-- The certified claims of a port, derived from its (already-validated) evidence.
+Kernel-checked `relativeProof` records produce `ambientFactorization` claims — never an RM
+claim; kernel-checked `semanticImplication` records produce claims at exactly their validated
+scope (`omegaModels` or `allModels`), never escalated. Claimed/literature evidence never
+produces a claim, so a bogus lower literature record cannot suppress
+"exact lower bound: pending". -/
 def PortEntry.certifiedClaims (p : PortEntry) : Array CertifiedClaim := Id.run do
   let mut claims := #[]
   let mut i := 0
   for e in p.evidence do
-    if e.kind == .relativeProof && e.verification == .kernelChecked then
-      claims :=
-        claims.push { scope := .ambientFactorization, direction := e.direction, evidence := i }
+    if e.verification == .kernelChecked then
+      match e.kind, e.scope? with
+      | .relativeProof, _ =>
+        claims := claims.push
+          { scope := .ambientFactorization, direction := e.direction, evidence := i }
+      | .semanticImplication, some .omegaModels =>
+        claims := claims.push { scope := .omegaModels, direction := e.direction, evidence := i }
+      | .semanticImplication, some .allModels =>
+        claims := claims.push { scope := .allModels, direction := e.direction, evidence := i }
+      | _, _ => pure ()
     i := i + 1
   return claims
 
@@ -399,10 +595,11 @@ private def resolveConst (id : TSyntax `ident) : CommandElabM Name :=
   liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
 
 /-- One evidence line of a `revmath_port` command:
-`evidence <kind> <direction> <verification> <ambient> [scope <s>] [theory <t>] [via <thm>]
-[assumes <p>] [note "…"]`. -/
+`evidence <kind> <direction> <verification> <ambient> [scope <s>] [context <c>] [theory <t>]
+[route <r>] [artifact <a>] [via <thm>] [assumes <p>] [note "…"]`. -/
 syntax rmEvidenceLine := &"evidence" ident ident ident ident (&"scope" ident)?
-  (&"theory" ident)? (&"via" ident)? (&"assumes" ident)? (&"note" str)?
+  (&"context" ident)? (&"theory" ident)? (&"route" ident)? (&"artifact" ident)?
+  (&"via" ident)? (&"assumes" ident)? (&"note" str)?
 
 /-- `revmath_port id where mathlib := … target := … relation := … …`: register a port with
 its evidence. The target is an exact statement variant; the port statement is **derived from
@@ -461,6 +658,23 @@ private def parseScope (stx : Syntax) : CommandElabM SemanticScope :=
   | s => throwErrorAt stx "registry: unknown scope '{s}' (expected fullStandardModel | \
       omegaModels | allModels)"
 
+private def parseRoute (stx : Syntax) : CommandElabM SyntacticProofRoute :=
+  match stx.getId with
+  | `direct => pure .direct
+  | `semanticCompleteness => pure .semanticCompleteness
+  | `fragmentInterpretation => pure .fragmentInterpretation
+  | `importedChecked => pure .importedChecked
+  | r => throwErrorAt stx "registry: unknown proof route '{r}' (expected direct | \
+      semanticCompleteness | fragmentInterpretation | importedChecked)"
+
+private def parseArtifact (stx : Syntax) : CommandElabM DerivationArtifact :=
+  match stx.getId with
+  | `propositionOnly => pure .propositionOnly
+  | `derivationObject => pure .derivationObject
+  | `serializedCheckedCode => pure .serializedCheckedCode
+  | a => throwErrorAt stx "registry: unknown derivation artifact '{a}' (expected \
+      propositionOnly | derivationObject | serializedCheckedCode)"
+
 private def parseRelation (stx : Syntax) : CommandElabM PortRelation :=
   match stx.getId with
   | `proofAnalogue => pure .proofAnalogue
@@ -494,15 +708,18 @@ def elabRevmathPort : CommandElab := fun stx => do
     let verification ← parseVerification ev[3]
     let ambient ← parseAmbient ev[4]
     let scope? ← (optArg ev[5] 1).mapM parseScope
-    let theory? : Option TheoryId := (optArg ev[6] 1).map fun s => ⟨s.getId⟩
-    let thm? ← (optArg ev[7] 1).mapM fun s => resolveConst ⟨s⟩
-    let assumes? : Option StatementVariantId := (optArg ev[8] 1).map fun s => ⟨s.getId⟩
+    let context? : Option SemanticContextId := (optArg ev[6] 1).map fun s => ⟨s.getId⟩
+    let theory? : Option TheoryId := (optArg ev[7] 1).map fun s => ⟨s.getId⟩
+    let route? ← (optArg ev[8] 1).mapM parseRoute
+    let artifact? ← (optArg ev[9] 1).mapM parseArtifact
+    let thm? ← (optArg ev[10] 1).mapM fun s => resolveConst ⟨s⟩
+    let assumes? : Option StatementVariantId := (optArg ev[11] 1).map fun s => ⟨s.getId⟩
     let evNote : String :=
-      ((optArg ev[9] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
+      ((optArg ev[12] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
     let rec' : EvidenceRecord :=
-      { kind, direction, verification, ambient, scope?, theory?, thm?, assumes?,
-        note := evNote }
-    validateEvidence rec' portDecl?
+      { kind, direction, verification, ambient, scope?, context?, theory?, route?, artifact?,
+        thm?, assumes?, note := evNote }
+    validateEvidence rec' target portDecl?
     evidence := evidence.push rec'
   if (findPort? (← getEnv) id).isSome then
     throwError "registry: duplicate port id '{id}'"
@@ -572,6 +789,12 @@ def EvidenceRecord.render (e : EvidenceRecord) : Array String := Id.run do
       | none => ""
     lines := lines.push s!"    certificate: {thm}{assumes}"
   lines := lines.push s!"    ambient: {e.ambient.render}; RM semantic scope: {renderScope e.scope?}"
+  if let some c := e.context? then
+    lines := lines.push s!"    semantic context: {c}"
+  if e.route?.isSome || e.artifact?.isSome then
+    let route := (e.route?.map (·.tag)).getD "unrecorded"
+    let artifact := (e.artifact?.map (·.tag)).getD "unrecorded"
+    lines := lines.push s!"    route: {route}; artifact: {artifact}"
   unless e.note.isEmpty do
     lines := lines.push s!"    note: {e.note}"
   return lines
@@ -590,13 +813,16 @@ def PortEntry.render (p : PortEntry) : String := Id.run do
   | some c => lines := lines.push s!"  candidate classical classification: {c} [claimed, UNVERIFIED]"
   | none => lines := lines.push s!"  candidate classical classification: unknown"
   let claims := p.certifiedClaims
-  let rmClaims := claims.filter (·.scope.isRMBound)
-  if rmClaims.isEmpty then
+  let scopedClaims := claims.filter (·.scope.isScopedRMClaim)
+  if scopedClaims.isEmpty then
     lines := lines.push s!"  backend RM certificate: pending"
   else
-    for c in rmClaims do
-      lines := lines.push s!"  certified RM bound ({c.scope.render}, {c.direction.render})"
-  unless rmClaims.any fun c => c.direction == .lower || c.direction == .exact do
+    for c in scopedClaims do
+      let label := if c.scope.supportsSyntacticUpperBound then "certified syntactic RM bound"
+        else if c.scope.supportsAllModelConsequence then "certified all-model implication"
+        else "certified ω-model implication"
+      lines := lines.push s!"  {label} ({c.scope.render}, {c.direction.render})"
+  unless scopedClaims.any fun c => c.direction == .lower || c.direction == .exact do
     lines := lines.push s!"  exact lower bound: pending"
   unless p.note.isEmpty do
     lines := lines.push s!"  note: {p.note}"
@@ -624,18 +850,23 @@ elab "#revmath_port? " id:ident : command => do
   | some p => logInfo p.render
   | none => throwErrorAt id "registry: no port registered under '{n}'"
 
-/-- `#revmath_stats`: the honest scoreboard — evidence counts by verification, and how many
-certified RM bounds exist (in Milestone 1: zero, by construction). -/
+/-- `#revmath_stats`: the honest scoreboard — evidence counts by verification, and the
+**per-scope** certified counts. Never a single undifferentiated "certified RM bounds"
+number: an ω-model implication is reported as exactly that, not as a subsystem bound. -/
 elab "#revmath_stats" : command => do
   let env ← getEnv
   let cat := ConceptCatalog.ofEnv env
   let ports := portExt.getState env
   let evs := ports.flatMap (·.evidence)
   let count (v : Verification) := evs.filter (·.verification == v) |>.size
-  let certified := (ports.flatMap (·.certifiedClaims)).filter (·.scope.isRMBound) |>.size
+  let claims := ports.flatMap (·.certifiedClaims)
+  let omega := claims.filter (·.scope.supportsOmegaModelClaim) |>.size
+  let allM := claims.filter (·.scope.supportsAllModelConsequence) |>.size
+  let syn := claims.filter (·.scope.supportsSyntacticUpperBound) |>.size
   logInfo <| s!"concepts: {cat.concepts.size}; variants: {cat.variants.size}; \
     ports: {ports.size}; evidence: {evs.size} \
     ({count .kernelChecked} kernel checked, {count .claimed} claimed, \
-    {count .backendChecked} backend checked); certified RM bounds: {certified}"
+    {count .backendChecked} backend checked); certified ω-model implications: {omega}; \
+    all-model implications: {allM}; syntactic RM bounds: {syn}"
 
 end ReverseMathlib.Meta

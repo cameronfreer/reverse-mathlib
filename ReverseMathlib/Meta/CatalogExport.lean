@@ -194,7 +194,10 @@ def evidenceJson (e : EvidenceRecord) : Json :=
      ("verification", Json.str e.verification.tag),
      ("ambient", Json.str e.ambient.tag),
      ("semanticScope", scopeTagJson e.scope?),
+     ("context", optNameJson (e.context?.map (·.name))),
      ("theory", optNameJson (e.theory?.map (·.name))),
+     ("route", optStrJson (e.route?.map (·.tag))),
+     ("artifact", optStrJson (e.artifact?.map (·.tag))),
      ("certificate", optNameJson e.thm?),
      ("assumes", (e.assumes?.map fun v => Json.str v.serialized).getD Json.null),
      ("note", Json.str e.note),
@@ -329,6 +332,15 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
   let reducibilityNotions := cat.reducibilityNotions.qsort fun a b =>
     Name.lt a.id.name b.id.name
   let facts := cat.facts.qsort fun a b => Name.lt a.id.name b.id.name
+  let semanticContexts := cat.semanticContexts.qsort fun a b => Name.lt a.id.name b.id.name
+  let contextEntryJson (c : SemanticContextEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str (toString c.id.name)),
+       ("base", Json.str (toString c.base.name)),
+       ("scope", Json.str c.scope.tag),
+       ("layer", Json.str (toString c.layer.name)),
+       ("contextDecl", nameJson c.contextDecl),
+       ("description", Json.str c.description)]
   Json.mkObj
     [("schema", Json.str "reverse-mathlib.catalog/v0"),
      ("dependencies", Json.mkObj
@@ -345,6 +357,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
      ("reducibilityNotions", Json.arr
        (reducibilityNotions.map fun n => vocabJson n.id.name n.description)),
      ("facts", Json.arr (facts.map factJson)),
+     ("semanticContexts", Json.arr (semanticContexts.map contextEntryJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \

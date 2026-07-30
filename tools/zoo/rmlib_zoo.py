@@ -133,7 +133,8 @@ def cmd_check(args: argparse.Namespace) -> None:
     for section, key in (("concepts", "id"), ("statementVariants", "id"),
                          ("uniformProblems", "id"), ("ports", "id"),
                          ("baseTheories", "id"), ("formulaClasses", "id"),
-                         ("reducibilityNotions", "id"), ("facts", "id")):
+                         ("reducibilityNotions", "id"), ("facts", "id"),
+                         ("semanticContexts", "id")):
         ids = [x[key] for x in catalog.get(section, [])]
         if ids != sorted(ids):
             problems.append(f"{section} not sorted by {key}")

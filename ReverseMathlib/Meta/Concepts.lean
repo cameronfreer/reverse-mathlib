@@ -491,6 +491,42 @@ initialize factExt : SimplePersistentEnvExtension FactEntry (Array FactEntry) �
     addImportedFn := mkStateFromImportedEntries Array.push #[]
   }
 
+/-- A semantic-context identifier. -/
+structure SemanticContextId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+instance : ToString SemanticContextId := ⟨fun c => toString c.name⟩
+
+/-- A registered semantic context (issue #6): the typed target of scoped semantic
+certificates. It ties a base theory and a scope (`omegaModels` or `allModels` — never
+`provability`) to the Lean predicate `contextDecl : Model → Prop` that certificates quantify
+over, at a semantic layer whose interface schema fixes `Model`. Certificate registration
+checks the exact registered context — never a free-floating predicate. -/
+structure SemanticContextEntry where
+  /-- The identifier. -/
+  id : SemanticContextId
+  /-- The registered base theory this context models. -/
+  base : BaseTheoryId
+  /-- `omegaModels` or `allModels`; `provability` is not a model class. -/
+  scope : FactScope
+  /-- The semantic layer whose interface schema is the model-indexed predicate type. -/
+  layer : SemanticLayerId
+  /-- The base-context predicate `Model → Prop`; its type must be definitionally the layer's
+  interface schema. -/
+  contextDecl : Name
+  /-- What class of models this context denotes, with citation. -/
+  description : String
+  deriving Inhabited, Repr, BEq
+
+initialize semanticContextExt : SimplePersistentEnvExtension SemanticContextEntry
+    (Array SemanticContextEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
 /-- The indexed conceptual catalog with accumulated conflicts. Built by folding every entry
 visible in the environment — imported and local — so collisions between independently
 developed sibling modules surface in any module that imports both. -/
@@ -515,6 +551,8 @@ structure ConceptCatalog where
   reducibilityNotions : Array ReducibilityNotionEntry := #[]
   /-- All typed facts, in fold order. -/
   facts : Array FactEntry := #[]
+  /-- All semantic contexts, in fold order. -/
+  semanticContexts : Array SemanticContextEntry := #[]
   /-- The exact-alias resolution map: `(namespace, key) ↦ target`. Direct — no chains. -/
   aliasMap : Std.HashMap (Name × String) CatalogObjectRef := {}
   /-- Lean-interface ownership: each declaration is owned by at most one variant. -/
@@ -651,6 +689,32 @@ def ConceptCatalog.ofEnv (env : Environment) : ConceptCatalog := Id.run do
     else
       notionIds := notionIds.insert n.id.name
       cat := { cat with reducibilityNotions := cat.reducibilityNotions.push n }
+  let mut ctxIds : NameSet := {}
+  for c in semanticContextExt.getState env do
+    if ctxIds.contains c.id.name then
+      let msg := s!"duplicate semantic context '{c.id.name}'"
+      cat := { cat with conflicts := cat.conflicts.push msg }
+    else
+      ctxIds := ctxIds.insert c.id.name
+      cat := { cat with semanticContexts := cat.semanticContexts.push c }
+      if !baseIds.contains c.base.name then
+        let msg := s!"semantic context '{c.id.name}' uses unregistered base theory \
+          '{c.base.name}'"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+      if c.scope == .provability then
+        let msg := s!"semantic context '{c.id.name}' has scope provability, which is not a \
+          model class"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+      match (cat.layers.find? (·.id.name == c.layer.name)).map (·.interfaceSchema?) with
+      | none =>
+        let msg := s!"semantic context '{c.id.name}' uses unregistered semantic layer \
+          '{c.layer.name}'"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+      | some none =>
+        let msg := s!"semantic context '{c.id.name}' uses layer '{c.layer.name}', which has \
+          no interface schema (a model type is required)"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+      | some (some _) => pure ()
   let mut factIds : NameSet := {}
   for f in factExt.getState env do
     if factIds.contains f.id.name then
@@ -916,6 +980,17 @@ elab "rm_reducibility_notion " id:ident descr:str : command => do
     throwErrorAt id "concept catalog: duplicate reducibility notion '{n}'"
   modifyEnv fun env => reducibilityNotionExt.addEntry env ⟨⟨n⟩, descr.getString⟩
 
+/-- `rm_semantic_context id where base := b scope := s layer := l decl := D
+description := "…"`: register a semantic context for scoped certificates. The scope must be
+`omegaModels` or `allModels`; the layer must own an interface schema; the context predicate's
+type must be definitionally that schema. -/
+syntax (name := rmContextCmd) "rm_semantic_context " ident " where "
+  &"base" " := " ident
+  &"scope" " := " ident
+  &"layer" " := " ident
+  &"decl" " := " ident
+  &"description" " := " str : command
+
 private def parseFactScope (stx : Syntax) : CommandElabM FactScope :=
   match stx.getId with
   | `provability => pure .provability
@@ -932,6 +1007,38 @@ private def parseDegreeStatus (stx : Syntax) : CommandElabM DegreeStatus :=
   | `notAssigned => pure .notAssigned
   | s => throwErrorAt stx "concept catalog: unknown degree status '{s}' (expected exact | \
       representative | variantSensitive | notAssigned)"
+
+@[command_elab rmContextCmd]
+def elabRmContext : CommandElab := fun stx => do
+  let cat := ConceptCatalog.ofEnv (← getEnv)
+  let id := stx[1].getId
+  let baseStx := stx[5]
+  let layerStx := stx[11]
+  let declStx := stx[14]
+  let description := (⟨stx[17]⟩ : TSyntax `str).getString
+  if cat.semanticContexts.any (·.id.name == id) then
+    throwErrorAt stx[1] "concept catalog: duplicate semantic context '{id}'"
+  unless cat.baseTheories.any (·.id.name == baseStx.getId) do
+    throwErrorAt baseStx "concept catalog: unregistered base theory '{baseStx.getId}'"
+  let scope ← parseFactScope stx[8]
+  if scope == .provability then
+    throwErrorAt stx[8] "concept catalog: a semantic context's scope must be omegaModels or \
+      allModels — provability is not a model class"
+  let some layerEntry := cat.layers.find? (·.id.name == layerStx.getId)
+    | throwErrorAt layerStx "concept catalog: unregistered semantic layer '{layerStx.getId}'"
+  let some schemaName := layerEntry.interfaceSchema?
+    | throwErrorAt layerStx "concept catalog: layer '{layerStx.getId}' has no interface \
+        schema; a semantic context requires a model-indexed layer"
+  let declName ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo declStx
+  let info ← getConstInfo declName
+  let ok ← liftTermElabM <| Meta.isDefEq info.type (Expr.const schemaName [])
+  unless ok do
+    throwErrorAt declStx "concept catalog: context predicate '{declName}' must have type \
+      '{schemaName}' (the interface schema of layer '{layerStx.getId}') up to definitional \
+      equality"
+  modifyEnv fun env => semanticContextExt.addEntry env
+    { id := ⟨id⟩, base := ⟨baseStx.getId⟩, scope, layer := ⟨layerStx.getId⟩,
+      contextDecl := declName, description }
 
 /-- `rm_fact id kind where [base := b scope := s] [notion := n status := d]
 [formulaClass := c] lhs := [v, …] rhs := [v, …] [note := "…"]`: register a typed fact.
@@ -1120,6 +1227,7 @@ elab "#rm_facts" : command => do
   lines := lines.push (vocab "base theories" (cat.baseTheories.map (·.id.name)))
   lines := lines.push (vocab "formula classes" (cat.formulaClasses.map (·.id.name)))
   lines := lines.push (vocab "reducibility notions" (cat.reducibilityNotions.map (·.id.name)))
+  lines := lines.push (vocab "semantic contexts" (cat.semanticContexts.map (·.id.name)))
   logInfo ("\n".intercalate lines.toList)
 
 end ReverseMathlib.Meta

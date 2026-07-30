@@ -17,6 +17,7 @@
     "formulaClasses",
     "reducibilityNotions",
     "facts",
+    "semanticContexts",
     "ports",
     "ambientGraph"
   ],
@@ -135,11 +136,37 @@
                     "objectTheory"
                   ]
                 },
+                "context": {
+                  "type": [
+                    "string",
+                    "null"
+                  ],
+                  "description": "Registered semantic context of semanticImplication evidence; null otherwise."
+                },
                 "theory": {
                   "type": [
                     "string",
                     "null"
                   ]
+                },
+                "route": {
+                  "enum": [
+                    "direct",
+                    "semanticCompleteness",
+                    "fragmentInterpretation",
+                    "importedChecked",
+                    null
+                  ],
+                  "description": "syntacticDerivation only: how provability was obtained (provenance)."
+                },
+                "artifact": {
+                  "enum": [
+                    "propositionOnly",
+                    "derivationObject",
+                    "serializedCheckedCode",
+                    null
+                  ],
+                  "description": "syntacticDerivation only: what derivation artifact survives. A Prop-level derivation is erased however obtained; extraction needs derivationObject or serializedCheckedCode."
                 },
                 "certificate": {
                   "type": [
@@ -179,6 +206,45 @@
             "type": "string",
             "pattern": "^reverse-mathlib:",
             "description": "The exact statement variant this port targets; portDecl is derived from its interface."
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "semanticContexts": {
+      "type": "array",
+      "description": "Registered semantic contexts (issue #6): the typed targets of scoped semantic certificates. Each ties a base theory and a scope (omegaModels | allModels; never provability) to the Lean base-context predicate contextDecl : Model -> Prop, at a semantic layer whose interfaceSchema fixes Model. Kernel-checked semanticImplication evidence validates against the exact registered context.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "base",
+          "scope",
+          "layer",
+          "contextDecl",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "base": {
+            "type": "string"
+          },
+          "scope": {
+            "enum": [
+              "omegaModels",
+              "allModels"
+            ]
+          },
+          "layer": {
+            "type": "string"
+          },
+          "contextDecl": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
           }
         },
         "additionalProperties": false

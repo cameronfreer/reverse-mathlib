@@ -284,7 +284,7 @@ renders its honest verdict. -/
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
 /--
-info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
+info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -470,7 +470,7 @@ revmath_port countableHall where
 -- Kernel-checked semantic/syntactic evidence is rejected until typed schemas exist: an axiom
 -- audit alone certifies nothing — pinned with the literal `True.intro`.
 /--
-error: registry: no typed certificate schema exists yet for kernel-checked 'ReverseMathlib.Meta.EvidenceKind.semanticImplication' evidence; an axiom audit alone certifies nothing, so it is rejected until a typed schema exists
+error: registry: semanticImplication evidence must name the assumed statement variant (assumes ...), even when merely claimed
 -/
 #guard_msgs in
 revmath_port semanticPort where
@@ -534,7 +534,7 @@ revmath_port noAssumesPort where
   relation := conceptualAnalogue
   evidence relativeProof lower claimed lean
 
-/-- error: registry: only relativeProof evidence may carry assumes -/
+/-- error: registry: only relativeProof and semanticImplication evidence may carry assumes -/
 #guard_msgs in
 revmath_port strayAssumesPort where
   mathlib := RMSmoke.smokeProp
@@ -614,7 +614,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 5; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified RM bounds: 0
+info: concepts: 4; variants: 5; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -755,8 +755,217 @@ info: facts (4):
 base theories (1): fixRca0
 formula classes (1): fixPi11
 reducibility notions (1): fixWeihrauch
+semantic contexts (0): (none)
 -/
 #guard_msgs in
 #rm_facts
+
+/-! ### Typed semantic certificates and the scoped reporting split (#6)
+
+A kernel-checked `semanticImplication` record must cite a
+`SemanticImplicationCertificate Base P Q` validated against a **registered semantic
+context**: exact base predicate, matching (never escalated) scope, and endpoints at the
+context's model-indexed layer — an ambient variant is never substituted. The resulting claim
+renders and counts as a *certified ω-model implication*, never an unqualified RM bound. -/
+
+/-- A fixture model type for semantic-certificate tests. -/
+structure SmokeModel where
+  /-- A stand-in second-order part. -/
+  sets : Nat → Prop
+
+/-- The fixture model layer's interface schema. -/
+abbrev SmokeModelInterface := SmokeModel → Prop
+
+rm_semantic_layer smokemodellayer "fixture model layer"
+  interfaceSchema := SmokeModelInterface
+
+/-- The fixture base context (an RCAω stand-in). -/
+def SmokeBaseCtx : SmokeModel → Prop := fun _ => True
+
+/-- A model-indexed fixture principle. -/
+def SmokeModelP : SmokeModel → Prop := fun M => M.sets 0
+
+/-- A model-indexed fixture target. -/
+def SmokeModelQ : SmokeModel → Prop := fun M => M.sets 0 ∨ M.sets 1
+
+rm_semantic_context smokeCtx where
+  base := fixRca0
+  scope := omegaModels
+  layer := smokemodellayer
+  decl := RMSmoke.SmokeBaseCtx
+  description := "fixture ω-model context"
+
+-- provability is not a model class.
+/--
+error: concept catalog: a semantic context's scope must be omegaModels or allModels — provability is not a model class
+-/
+#guard_msgs in
+rm_semantic_context smokeBadCtx where
+  base := fixRca0
+  scope := provability
+  layer := smokemodellayer
+  decl := RMSmoke.SmokeBaseCtx
+  description := "rejected"
+
+-- The context predicate must live at the layer's model type.
+/--
+error: concept catalog: context predicate 'RMSmoke.smokeProp' must have type 'RMSmoke.SmokeModelInterface' (the interface schema of layer 'smokemodellayer') up to definitional equality
+-/
+#guard_msgs in
+rm_semantic_context smokeBadCtx2 where
+  base := fixRca0
+  scope := omegaModels
+  layer := smokemodellayer
+  decl := RMSmoke.smokeProp
+  description := "rejected"
+
+rm_statement_variant smokeModelVarP where
+  concept := smokeConcept
+  layer := smokemodellayer
+  interface := RMSmoke.SmokeModelP
+  description := "fixture model-indexed principle"
+
+rm_statement_variant smokeModelVarQ where
+  concept := smokeConcept
+  layer := smokemodellayer
+  interface := RMSmoke.SmokeModelQ
+  description := "fixture model-indexed target"
+
+/-- The typed ω certificate: the implication over every model of the exact base context. -/
+theorem smokeSemCert :
+    ReverseMathlib.Meta.SemanticImplicationCertificate SmokeBaseCtx SmokeModelP SmokeModelQ :=
+  ⟨fun _ _ h => Or.inl h⟩
+
+-- Kernel-checked semantic evidence without a registered context is rejected.
+/--
+error: registry: kernel-checked semanticImplication evidence must name its registered semantic context (context ...); a free-floating model quantification certifies nothing
+-/
+#guard_msgs in
+revmath_port noCtxPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarP
+
+-- The evidence scope must match the registered context's scope; never escalated.
+/--
+error: registry: evidence scope 'ReverseMathlib.Meta.SemanticScope.allModels' does not match the registered scope of semantic context 'smokeCtx' ('omegaModels'); scopes are never escalated or defaulted
+-/
+#guard_msgs in
+revmath_port escalatedPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope allModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarP
+
+-- An ambient variant is never substituted for a model-indexed one.
+/--
+error: registry: assumed variant 'smokeVariant' is at layer 'ambient', not the semantic context's layer 'smokemodellayer'; an ambient variant is never substituted for a model-indexed one
+-/
+#guard_msgs in
+revmath_port ambientSubPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeVariant
+
+-- The literal True.intro is not a semantic certificate.
+/--
+error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semanticImplication citation must be a typed semantic certificate
+-/
+#guard_msgs in
+revmath_port bogusSemPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via True.intro
+    assumes smokeModelVarP
+
+-- Direction-aware: an upper-shaped semantic certificate is rejected as lower evidence.
+/--
+error: registry: semantic certificate 'RMSmoke.smokeSemCert' assumes 'SmokeModelP', which is not definitionally the required source interface 'RMSmoke.SmokeModelQ'
+-/
+#guard_msgs in
+revmath_port wrongDirSemPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication lower kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarP
+
+-- ACCEPT: the first certified ω-scope claim in the fixture registry.
+revmath_port omegaFixture where
+  mathlib := RMSmoke.smokeProp
+  target := smokeModelVarQ
+  relation := conceptualAnalogue
+  evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
+    context smokeCtx
+    via RMSmoke.smokeSemCert
+    assumes smokeModelVarP
+
+-- Renders as a certified ω-model implication — never an unqualified "RM bound".
+/--
+info: omegaFixture
+  mathlib: RMSmoke.smokeProp
+  target: reverse-mathlib:smokeModelVarQ
+  port: RMSmoke.SmokeModelQ
+  source relation: conceptual analogue
+  upper · semantic implication: kernel checked
+    certificate: RMSmoke.smokeSemCert (assumes smokeModelVarP)
+    ambient: model semantics; RM semantic scope: all ω-models
+    semantic context: smokeCtx
+  candidate classical classification: unknown
+  certified ω-model implication (all ω-models, upper)
+  exact lower bound: pending
+-/
+#guard_msgs in
+#revmath_port? omegaFixture
+
+-- route/artifact belong to syntacticDerivation only …
+/-- error: registry: only syntacticDerivation evidence may carry a proof route -/
+#guard_msgs in
+revmath_port strayRoutePort where
+  mathlib := RMSmoke.smokeProp
+  target := smokePropVariant
+  relation := conceptualAnalogue
+  evidence relativeProof lower claimed lean route direct
+    assumes smokeVariant
+
+-- … and register as provenance/artifact data on claimed syntactic evidence.
+revmath_port routedPort where
+  mathlib := RMSmoke.smokeProp
+  target := smokePropVariant
+  relation := conceptualAnalogue
+  evidence syntacticDerivation upper claimed objectTheory theory smokeTheory
+    route semanticCompleteness artifact propositionOnly
+
+-- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
+/--
+info: concepts: 4; variants: 7; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified ω-model implications: 1; all-model implications: 0; syntactic RM bounds: 0
+-/
+#guard_msgs in
+#revmath_stats
+
+-- The ambient-factorization graph is untouched by semantic evidence: still no edge into or
+-- out of the model-indexed interfaces.
+#eval show CoreM Unit from do
+  let env ← getEnv
+  let snap := CatalogSnapshot.ofEnv env
+  check (!snap.ambientEdges.any fun e =>
+      e.source == `RMSmoke.SmokeModelP || e.target == `RMSmoke.SmokeModelQ ||
+        e.source == `RMSmoke.SmokeModelQ || e.target == `RMSmoke.SmokeModelP)
+    "semantic evidence must not add ambient-factorization edges"
 
 end RMSmoke
