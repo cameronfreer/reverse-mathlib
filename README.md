@@ -5,88 +5,55 @@
 # reverse-mathlib
 
 Reverse mathematics for Lean: proof-strength analysis of mathlib via dependency mining,
-hand-written proof factorizations at named principle boundaries, and an evidence registry that
-never overstates what has been established.
+hand-written proof factorizations at named principle boundaries, and a presentation-aware
+evidence catalog that never overstates what has been established.
 
-## The thesis
+> **Today it certifies the architecture of particular Lean proofs. Eventually, reusable
+> interpretation theorems can turn some of those architecture certificates into genuine
+> reverse-mathematical upper bounds.** It is not currently proving anything over RCA₀ — the
+> registry correctly reports zero certified RM bounds.
 
-Proof-mine existing Lean developments, expose small principle boundaries, and certify those
-boundaries separately — rather than formalizing an encyclopedia of reverse mathematics from
-scratch, or stamping Big-Five labels on mathlib theorems (which would usually be false or
-meaningless: a kernel-axiom audit is not a strength audit).
+- **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
+  reverse mathematics, and the assurance ladder toward genuine `RCA₀ ⊢ …` results.
+- **[ROADMAP.md](ROADMAP.md)** — Simpson as the vertical theorem spine, RMZoo as the
+  horizontal principle graph, the strict-RM and quantitative tracks, and the issue tranches.
+- **Live zoo**: <https://cameronfreer.github.io/reverse-mathlib/> — the ambient-factorization
+  graph, the catalog, and the canonical
+  [`catalog.direct.json`](https://cameronfreer.github.io/reverse-mathlib/catalog.direct.json).
 
-## Case study: the Hall walking slice
+## What exists today
 
-Mathlib's infinite Hall theorem (`Finset.all_card_le_biUnion_card_iff_exists_injective`) proves
-a countable marriage theorem by routing finite matchings through a categorical inverse-limit
-theorem backed by topological compactness (ultimately Tychonoff), extracting a matching with
-`Classical.indefiniteDescription`. Its kernel axioms are just `propext`, `Classical.choice`,
-`Quot.sound` — indistinguishable from a trivial lemma. The proof-only dependency closure is
-where the structure lives, and this repository makes it visible and then replaces it:
-
-- **`#rm_deps` / `#rm_frontier`** (`ReverseMathlib/Meta/`): exact dependency graphs with
-  statement vs proof-only closures; the raw closure is never cut, the frontier view exhibits
-  the compactness boundary as a cut point.
-- **`ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness`**: countable Hall
-  derived from `ExplicitFiniteInverseLimitCompactness` *taken as a hypothesis*. Levels are
-  explicitly enumerated `Finset`s of encoded injective partial transversals; mathlib's *finite*
-  Hall theorem (reused, not reinvented) proves each level `Finset.Nonempty` — no selection step,
-  no topology.
-- **Hard CI gates** (`scripts/MetaSmoke.lean`): `#rm_assert_proof_depends` /
-  `#rm_assert_not_proof_depends` certify, on complete closures only, that mathlib's proof
-  crosses the compactness boundary and the `hallMatchingsOn` selection scaffolding while ours
-  contains neither — and does contain finite Hall.
-- **The registry record** (`ReverseMathlib/Ports/Mathlib/Hall.lean`), verdict in full:
-
-  ```
-  source relation: proof analogue / mined architecture
-  relative Lean factorization: kernel checked
-  ambient: unrestricted Lean over standard ℕ
-  RM semantic scope: none
-  candidate classical classification: WKL₀ … [claimed, UNVERIFIED]
-  backend RM certificate: pending
-  exact lower bound: pending
-  ```
-
-That verdict is deliberately modest: in full Lean the principles are all provable, so the
-implication as an ambient proposition does not calibrate reverse-mathematical strength — the
-informative artifact is the *factorization of a particular proof term*, and nothing here claims
-an ω-model or subsystem result. Those require the model-relative layer and a backend, which
-come later and are recorded as `pending` until they exist.
-
-One honest limitation, found while building the gates: `Classical.indefiniteDescription` is not
-assertable at constant granularity — `Classical.em` itself reaches it, so every classical proof
-does. The selection-free repair is an occurrence-level fact (the construction never extracts
-from a `Nonempty` instance); occurrence-level auditing is future work.
-
-The slice now closes end-to-end (`ReverseMathlib/Classical/KonigHall.lean`): mathlib's
-order-theoretic Kőnig lemma → `Classical.weakKonig` → EFILC (via the relative bridge) →
-countable Hall (via the relative Hall theorem) → `Classical.countableHall_nat`, with gates
-certifying the chain reaches both bridges and finite Hall and never the infinite Hall theorem
-or the topological inverse-limit theorem. Statement-variant caveat, recorded in the port: our
-`CountableHall` is a *one-sided injective-choice* variant — related to, but not identical with,
-Simpson's perfect-matching theorems X.3.15/X.3.16, and the ambient variant has no certified RM
-classification.
+- **Dependency miner** (`#rm_deps`, `#rm_frontier`, hard `#rm_assert_*` CI gates): exact
+  statement/value/proof-only closures over elaborated declarations; raw closures are never
+  cut; assertions fail on truncated graphs.
+- **The Hall walking slice**: mathlib's infinite Hall theorem mined at its compactness
+  boundary and refactored as kernel-checked relative theorems —
+  `WeakKonig ⇄ EFILC → CountableHall`, all in unrestricted Lean, composed end-to-end from
+  mathlib's order-theoretic Kőnig lemma to `Classical.countableHall_nat`. CI certifies the
+  proof-only closures exclude the topological route.
+- **A typed catalog**: concepts (`reverse-mathlib:wkl`) ≠ exact statement variants
+  (`wkl.binaryTree.ambient`) ≠ Lean interfaces, with registered semantic layers, typed
+  external references (`rmzoo:` / `simpson:` / `concordance:` / `sanders:`), direction-aware
+  typed certificates, and import-wide collision detection.
+- **A quantitative pilot** (`ReverseMathlib/Quantitative/`): Kohlenbach's metastability of
+  bounded monotone sequences (Prop. 2.27, Cor. 2.28) with an executable rational realizer and
+  its finite-query locality theorem — bounds, not rates; see
+  [docs/quantitative-pilot.md](docs/quantitative-pilot.md).
+- **A deterministic exporter and site**: canonical JSON extracted from the elaborated
+  environment's persistent extension state, rendered to the Pages site on every push.
 
 ## Structure
 
-- `ReverseMathlib/` — mathematical root (`ReverseMathlib.lean`): `Standard/` principle
-  statements over ℕ, `Slice/` relative proofs. Sorry-free, standard axioms only,
-  `warningAsError` with the mathlib linter set.
-- `ReverseMathlib/Registry.lean` — tooling root: `Meta/` (dependency miner, assertion commands,
-  evidence registry), `Ports/` (registry records). Never imported by the mathematical root.
-- `ReverseMathlibExperimental/` — staging area. May contain sorries; must typecheck; never
-  imported by either production root.
-- `scripts/` — CI gates: `check_sorry_boundary.py` (sorry boundary, meta/math isolation, no
-  orphans), `AxiomAudit.lean` + `MetaAxiomAudit.lean` (standard axioms only, both roots, no
-  exemptions), `MetaSmoke.lean` (miner micro-tests + the Hall dependency gates).
-
-## Roadmap
-
-See [ROADMAP.md](ROADMAP.md): Simpson as the vertical theorem spine, RMZoo as the horizontal
-principle graph, and the long-term target of a typed, presentation-aware, proof-carrying
-superset of the RMZoo database. Near-term work is tracked in the issues (walking-slice stretch,
-then the catalog/RMZoo seam).
+- `ReverseMathlib/` — mathematical root: `Standard/` principle statements, `Slice/` relative
+  proofs, `Classical/` outright instances, `Quantitative/` the Q-track. Sorry-free, standard
+  axioms only, `warningAsError` with the mathlib linter set.
+- `ReverseMathlib/Registry.lean` — tooling root: `Meta/` (miner, registry, catalog, exporter),
+  `Ports/` (catalog seed and port records). Never imported by the mathematical root.
+- `ReverseMathlibExperimental/`, `ReverseMathlibFixtures/` — staging and collision-test
+  libraries; never imported by production roots.
+- `scripts/` — CI gates: sorry boundary and root isolation, axiom audits for both roots,
+  miner micro-tests and the hard dependency assertions.
+- `tools/zoo/` — the `rmlib-zoo` build/check/serve/diff CLI.
 
 ## Building
 
@@ -98,7 +65,8 @@ lake build
 ```
 
 Useful commands once built (import `ReverseMathlib.Registry`): `#rm_deps <decl>`,
-`#rm_frontier <decl>`, `#revmath_registry`, `#revmath_port? countableHall`, `#revmath_stats`.
+`#rm_frontier <decl>`, `#rm_concepts`, `#revmath_registry`, `#revmath_port? countableHall`,
+`#revmath_stats`.
 
 ## License
 
