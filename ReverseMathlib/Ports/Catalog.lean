@@ -4,6 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
 import ReverseMathlib.Meta.Concepts
+import ReverseMathlib.Standard.Trees
+import ReverseMathlib.Standard.InverseLimit
+import ReverseMathlib.Standard.Hall
 
 /-!
 # Conceptual catalog seed
@@ -39,6 +42,31 @@ rm_concept countableHall where
   description := "Countable Hall / marriage as a conceptual family: the one-sided \
     injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but \
     not identical, and no RMZoo symbol exists for this family"
+
+rm_semantic_layer ambient "statements about standard ℕ in unrestricted Lean; provable \
+  outright, no reverse-mathematical semantic scope"
+
+rm_statement_variant wkl.binaryTree.ambient where
+  concept := wkl
+  layer := ambient
+  interface := ReverseMathlib.Standard.WeakKonig
+  description := "Binary-tree weak Kőnig on the ambient list-based surface: prefix-closed \
+    Set (List Bool) with a node at every level has a path (Set ℕ of positions)"
+
+rm_statement_variant efilc.explicitSequential.ambient where
+  concept := explicitFiniteInverseLimitCompactness
+  layer := ambient
+  interface := ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness
+  description := "Ambient explicit sequential inverse-limit compactness: Finset fibers, \
+    adjacent bonding maps, sections exist"
+
+rm_statement_variant countableHall.oneSidedInjective.ambient where
+  concept := countableHall
+  layer := ambient
+  interface := ReverseMathlib.Standard.CountableHall
+  description := "Ambient one-sided countable Hall: ℕ-indexed Finset family with the \
+    marriage condition admits an injective transversal (related to but not identical with \
+    Simpson's perfect-matching variants)"
 
 rm_external_ref rmzoo "WKL" exactAlias concept wkl
 rm_external_ref simpson "I.10" sourceLocation concept wkl

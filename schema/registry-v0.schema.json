@@ -2,15 +2,17 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/cameronfreer/reverse-mathlib/schema/registry-v0.schema.json",
   "title": "reverse-mathlib direct catalog (v0)",
-  "description": "DOCUMENTED schema (custom checks in rmlib-zoo validate invariants; full machine validation arrives with the first Python dependency). TRANSITIONAL and pre-conceptual: principle ids are today's registry/capability ids, not the layered conceptual ids of issue #3; catalog/v1 is published only after the #4 variant migration. Canonical extraction of the registry's persistent extension state. Set-like arrays are canonically sorted; order-bearing arrays (evidence) preserve declared order since evidenceIdx refers to it. Machine fields carry stable tags; human labels live in display objects. No timestamps. The ambientGraph section contains kernel-checked relative certificates in unrestricted Lean; nothing in it is a reverse-mathematics implication.",
+  "description": "DOCUMENTED schema (custom checks in rmlib-zoo validate invariants; full machine validation arrives with the first Python dependency). TRANSITIONAL: the #3/#4 conceptual and variant layers are present; catalog/v1 is published once the presentations issue (#17) stabilizes the ontology. Canonical extraction of the registry's persistent extension state. Set-like arrays are canonically sorted; order-bearing arrays (evidence) preserve declared order since evidenceIdx refers to it. Machine fields carry stable tags; human labels live in display objects. No timestamps. The ambientGraph section contains kernel-checked relative certificates in unrestricted Lean; nothing in it is a reverse-mathematics implication.",
   "type": "object",
   "required": [
     "schema",
     "dependencies",
     "concepts",
+    "semanticLayers",
+    "statementVariants",
+    "uniformProblems",
     "externalNamespaces",
     "externalRefs",
-    "principles",
     "ports",
     "ambientGraph"
   ],
@@ -34,55 +36,13 @@
         }
       }
     },
-    "principles": {
-      "type": "array",
-      "items": {
-        "type": "object",
-        "required": [
-          "id",
-          "description",
-          "interface",
-          "display"
-        ],
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "description": {
-            "type": "string"
-          },
-          "interface": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "interfaceModule": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "literatureNote": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "description": "Free-text claimed classification; always UNVERIFIED, never machine-interpreted."
-          },
-          "display": {
-            "type": "object"
-          }
-        },
-        "additionalProperties": false
-      }
-    },
     "ports": {
       "type": "array",
       "items": {
         "type": "object",
         "required": [
           "id",
+          "target",
           "portDecl",
           "relation",
           "evidence"
@@ -187,7 +147,8 @@
                   "type": [
                     "string",
                     "null"
-                  ]
+                  ],
+                  "description": "Serialized statement-variant id taken as hypothesis."
                 },
                 "note": {
                   "type": "string"
@@ -209,6 +170,11 @@
           },
           "display": {
             "type": "object"
+          },
+          "target": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:",
+            "description": "The exact statement variant this port targets; portDecl is derived from its interface."
           }
         },
         "additionalProperties": false
@@ -244,6 +210,13 @@
               },
               "display": {
                 "type": "object"
+              },
+              "statementVariant": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "description": "Cross-link only: ambient-graph identity remains the Lean declaration name."
               }
             },
             "additionalProperties": false
@@ -382,6 +355,122 @@
               }
             },
             "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "semanticLayers": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "description"
+        ],
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "statementVariants": {
+      "type": "array",
+      "description": "Exact statement variants (issue #4). Parent concept is explicit data; a variant may own at most one Prop-valued Lean interface (the capability layer).",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "concept",
+          "layer",
+          "interface",
+          "description",
+          "display"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:"
+          },
+          "concept": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:"
+          },
+          "layer": {
+            "type": "string"
+          },
+          "interface": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "interfaceModule": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "display": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "uniformProblems": {
+      "type": "array",
+      "description": "Represented uniform problems \u2014 deliberately shallow metadata until Q2-Q5.",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "concept",
+          "inputRepresentation",
+          "outputRepresentation",
+          "operation"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:"
+          },
+          "concept": {
+            "type": "string",
+            "pattern": "^reverse-mathlib:"
+          },
+          "inputRepresentation": {
+            "type": "string"
+          },
+          "outputRepresentation": {
+            "type": "string"
+          },
+          "interface": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "operation": {
+            "enum": [
+              "single",
+              "finiteParallelization",
+              "sequentialization"
+            ]
+          },
+          "uniformizes": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "additionalProperties": false

@@ -7,6 +7,7 @@ import Mathlib.Combinatorics.Hall.Basic
 import ReverseMathlib.Slice.HallFromCompactness
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Commands
+import ReverseMathlib.Ports.Catalog
 
 /-!
 # Port record: countable Hall
@@ -39,16 +40,9 @@ theorem countableHallRelativeCertificate :
 
 attribute [rm_frontier] nonempty_sections_of_finite_inverse_system
 
-rm_principle explicitFiniteInverseLimitCompactness where
-  description := "Every explicitly finite, explicitly nonempty sequential inverse system of \
-    naturals has a section (adjacent bonding maps, Finset fibers)."
-  interface := ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness
-  claimedClassical := "equivalent to WKL₀ over RCA₀ for coded systems (cf. Simpson, SOSOA, via \
-    bounded Kőnig's lemma; presentation-sensitive)"
-
 revmath_port countableHall where
   mathlib := Finset.all_card_le_biUnion_card_iff_exists_injective
-  port := ReverseMathlib.Standard.CountableHall
+  target := countableHall.oneSidedInjective.ambient
   relation := minedArchitecture
   claimedClassical := "future internally coded/model-relative analogue: WKL₀ candidate; the \
     current ambient one-sided injective-choice variant has no certified RM classification; \
@@ -61,7 +55,7 @@ revmath_port countableHall where
     recorded indefiniteDescription granularity limitation)."
   evidence relativeProof upper kernelChecked lean
     via ReverseMathlib.Ports.countableHallRelativeCertificate
-    assumes explicitFiniteInverseLimitCompactness
+    assumes efilc.explicitSequential.ambient
     note "Proof-only closure certified by CI (scripts/MetaSmoke.lean): contains finite Hall, \
       excludes the infinite Hall theorem, the compactness boundary, and the selection \
       scaffolding."

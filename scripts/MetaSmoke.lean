@@ -284,7 +284,7 @@ renders its honest verdict. -/
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
 /--
-info: principles: 2; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
+info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -307,6 +307,16 @@ info: principles: 2; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backe
   check (!has `ReverseMathlib.Standard.CountableHall
       `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
     "no spurious reversed Hall edge"
+  -- Migration golden: variants own the interfaces, edges keep Lean-declaration endpoints,
+  -- and the exporter cross-links nodes to variants without changing graph identity.
+  let cat := ConceptCatalog.ofEnv env
+  let some v := cat.findVariant? `wkl.binaryTree.ambient
+    | throwError "wkl.binaryTree.ambient must be registered"
+  check (v.concept == ⟨`wkl⟩) "variant parent concept is explicit data"
+  check (v.interface? == some `ReverseMathlib.Standard.WeakKonig)
+    "variant owns the WeakKonig interface"
+  check (cat.interfaceOwner[`ReverseMathlib.Standard.WeakKonig]? == some ⟨`wkl.binaryTree.ambient⟩)
+    "interface ownership is indexed"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 
@@ -318,10 +328,13 @@ that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 /--
 info: concepts (3):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
+    variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
+    variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
   reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: variants differ by tree presentation (binary / explicitly bounded / finitely branching) and semantic layer (ambient / ω-model / second-order syntax), and differ in strength
+    variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
@@ -367,8 +380,8 @@ error: concept catalog: exact alias rmzoo:"WKL" already resolves to 'wkl'
 #guard_msgs in
 rm_external_ref rmzoo "WKL" exactAlias concept countableHall
 
--- Statement/uniform-problem targets arrive with issue #4.
-/-- error: concept catalog: statement-variant targets arrive with issue #4 -/
+-- Statement targets must reference registered variants.
+/-- error: concept catalog: unknown statement variant 'wkl' -/
 #guard_msgs in
 rm_external_ref rmzoo "K3" exactAlias statement wkl
 
@@ -396,15 +409,27 @@ the registered interface of the principle it will claim to assume. -/
 theorem bogusCert : ReverseMathlib.Meta.RelativeCertificate ((1 : ℕ) = 1) smokeProp :=
   ⟨fun _ => trivial⟩
 
-rm_principle smokeTestPrinciple where
-  description := "test principle"
-  interface := RMSmoke.otherProp
+rm_concept smokeConcept where
+  description := "fixture concept for registry tests"
 
-/-- error: registry: duplicate principle id 'smokeTestPrinciple' -/
-#guard_msgs in
-rm_principle smokeTestPrinciple where
-  description := "duplicate"
+rm_statement_variant smokeVariant where
+  concept := smokeConcept
+  layer := ambient
   interface := RMSmoke.otherProp
+  description := "fixture capability variant (interface otherProp)"
+
+rm_statement_variant smokePropVariant where
+  concept := smokeConcept
+  layer := ambient
+  interface := RMSmoke.smokeProp
+  description := "fixture target variant (interface smokeProp)"
+
+/-- error: concept catalog: duplicate statement-variant id 'smokeVariant' -/
+#guard_msgs in
+rm_statement_variant smokeVariant where
+  concept := smokeConcept
+  layer := ambient
+  description := "duplicate"
 
 /--
 error: registry: certificate 'RMSmoke.bogusCert' assumes '1 =
@@ -413,11 +438,11 @@ error: registry: certificate 'RMSmoke.bogusCert' assumes '1 =
 #guard_msgs in
 revmath_port bogusPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof upper kernelChecked lean
     via RMSmoke.bogusCert
-    assumes smokeTestPrinciple
+    assumes smokeVariant
 
 /--
 error: registry: ambient-Lean evidence carries no RM semantic scope; remove the scope or change the ambient
@@ -425,7 +450,7 @@ error: registry: ambient-Lean evidence carries no RM semantic scope; remove the 
 #guard_msgs in
 revmath_port scopedPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof upper claimed lean scope omegaModels
 
@@ -433,7 +458,7 @@ revmath_port scopedPort where
 #guard_msgs in
 revmath_port countableHall where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
 
 /-! ### Hardening: typed, direction-aware, scope-preserving certificates -/
@@ -446,7 +471,7 @@ error: registry: no typed certificate schema exists yet for kernel-checked 'Reve
 #guard_msgs in
 revmath_port semanticPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
     via True.intro
@@ -458,7 +483,7 @@ error: registry: evidence kind 'ReverseMathlib.Meta.EvidenceKind.relativeProof' 
 #guard_msgs in
 revmath_port mismatchPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof upper claimed modelSemantics scope omegaModels
 
@@ -473,11 +498,11 @@ error: registry: certificate 'RMSmoke.upperShapedCert' assumes 'otherProp', whic
 #guard_msgs in
 revmath_port wrongDirPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof lower kernelChecked lean
     via RMSmoke.upperShapedCert
-    assumes smokeTestPrinciple
+    assumes smokeVariant
 
 /-- A correctly-shaped *lower* certificate: `T → P` (port statement implies interface). -/
 theorem lowerShapedCert : ReverseMathlib.Meta.RelativeCertificate RMSmoke.smokeProp
@@ -485,23 +510,23 @@ theorem lowerShapedCert : ReverseMathlib.Meta.RelativeCertificate RMSmoke.smokeP
 
 revmath_port lowerFixture where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof lower kernelChecked lean
     via RMSmoke.lowerShapedCert
-    assumes smokeTestPrinciple
+    assumes smokeVariant
   evidence relativeProof lower claimed lean
-    assumes smokeTestPrinciple
+    assumes smokeVariant
 
 /-! ### Evidence-field compatibility matrix: malformed unverified records are rejected too -/
 
 /--
-error: registry: relativeProof evidence must name the assumed principle (assumes ...), even when merely claimed
+error: registry: relativeProof evidence must name the assumed statement variant (assumes ...), even when merely claimed
 -/
 #guard_msgs in
 revmath_port noAssumesPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof lower claimed lean
 
@@ -509,10 +534,10 @@ revmath_port noAssumesPort where
 #guard_msgs in
 revmath_port strayAssumesPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence dependencyAudit upper claimed lean
-    assumes smokeTestPrinciple
+    assumes smokeVariant
 
 /--
 error: registry: syntacticDerivation evidence must name its object theory (theory ...), through the dedicated field rather than the scope
@@ -520,7 +545,7 @@ error: registry: syntacticDerivation evidence must name its object theory (theor
 #guard_msgs in
 revmath_port noTheoryPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence syntacticDerivation upper claimed objectTheory
 
@@ -530,21 +555,22 @@ error: registry: via citations are only for kernelChecked evidence; cite literat
 #guard_msgs in
 revmath_port strayViaPort where
   mathlib := RMSmoke.smokeProp
-  port := RMSmoke.smokeProp
+  target := smokePropVariant
   relation := conceptualAnalogue
   evidence relativeProof lower claimed lean
     via RMSmoke.bogusCert
-    assumes smokeTestPrinciple
+    assumes smokeVariant
 
 -- An ambient lower factorization (and a fortiori a claimed lower record) is NOT an RM lower
 -- bound: both pending lines must survive.
 /--
 info: lowerFixture
   mathlib: RMSmoke.smokeProp
+  target: reverse-mathlib:smokePropVariant
   port: RMSmoke.smokeProp
   source relation: conceptual analogue
   lower · relative Lean factorization: kernel checked
-    certificate: RMSmoke.lowerShapedCert (assumes smokeTestPrinciple)
+    certificate: RMSmoke.lowerShapedCert (assumes smokeVariant)
     ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
   lower · relative Lean factorization: claimed (UNVERIFIED)
     ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
@@ -568,10 +594,11 @@ info: lowerFixture
 /--
 info: countableHall
   mathlib: Finset.all_card_le_biUnion_card_iff_exists_injective
+  target: reverse-mathlib:countableHall.oneSidedInjective.ambient
   port: ReverseMathlib.Standard.CountableHall
   source relation: proof analogue / mined architecture
   upper · relative Lean factorization: kernel checked
-    certificate: ReverseMathlib.Ports.countableHallRelativeCertificate (assumes explicitFiniteInverseLimitCompactness)
+    certificate: ReverseMathlib.Ports.countableHallRelativeCertificate (assumes efilc.explicitSequential.ambient)
     ambient: unrestricted Lean over standard ℕ; RM semantic scope: none
     note: Proof-only closure certified by CI (scripts/MetaSmoke.lean): contains finite Hall, excludes the infinite Hall theorem, the compactness boundary, and the selection scaffolding.
   candidate classical classification: future internally coded/model-relative analogue: WKL₀ candidate; the current ambient one-sided injective-choice variant has no certified RM classification; relationship to Simpson X.3.15/X.3.16: related statement variant, not identical [claimed, UNVERIFIED]
@@ -583,7 +610,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: principles: 3; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified RM bounds: 0
+info: concepts: 4; variants: 5; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats

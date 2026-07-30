@@ -36,16 +36,9 @@ theorem efilcOfWeakKonigCertificate :
       Standard.ExplicitFiniteInverseLimitCompactness :=
   ⟨Slice.efilc_of_weakKonig⟩
 
-rm_principle weakKonig where
-  description := "Every prefix-closed set of finite bit lists with a node at every level has \
-    a path (a set of positions), on the ambient list-based surface."
-  interface := ReverseMathlib.Standard.WeakKonig
-  claimedClassical := "defines WKL₀ over RCA₀ for coded binary trees (Simpson, SOSOA, I.10; \
-    presentation-sensitive)"
-
 revmath_port weakKonigEfilc where
   mathlib := exists_seq_forall_proj_of_forall_finite
-  port := ReverseMathlib.Standard.WeakKonig
+  target := wkl.binaryTree.ambient
   relation := conceptualAnalogue
   claimedClassical := "both equivalent to WKL₀ over RCA₀ for coded presentations (cf. \
     Simpson, SOSOA; presentation-sensitive)"
@@ -55,9 +48,9 @@ revmath_port weakKonigEfilc where
     factorizations; neither is an RM bound."
   evidence relativeProof upper kernelChecked lean
     via ReverseMathlib.Ports.weakKonigOfEfilcCertificate
-    assumes explicitFiniteInverseLimitCompactness
+    assumes efilc.explicitSequential.ambient
   evidence relativeProof lower kernelChecked lean
     via ReverseMathlib.Ports.efilcOfWeakKonigCertificate
-    assumes explicitFiniteInverseLimitCompactness
+    assumes efilc.explicitSequential.ambient
 
 end ReverseMathlib.Ports

@@ -3,7 +3,7 @@ Copyright (c) 2026 Cameron Freer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
-import ReverseMathlib.Meta.Concepts
+import ReverseMathlib.Meta.Registry
 
 /-!
 # Deterministic catalog export
@@ -21,7 +21,8 @@ issue #3; `catalog/v1` is published only after the #4 variant migration):
 * IDs are canonical strings (declaration and registry names), never generated numerics;
 * **set-like arrays are canonically sorted; order-bearing arrays preserve declared order** —
   in particular each port's `evidence` array keeps registration order, because `evidenceIdx`
-  refers to it. Every ordering rule is explicit: principles by id, ports by id, ambient nodes
+  refers to it. Every ordering rule is explicit: concepts, layers, variants, problems, namespaces, and ports
+  by id, refs by (namespace, key, target), ambient nodes
   by name, ambient edges by (source, target, port, evidenceIdx), evidence in declared order;
 * machine-readable fields carry **stable tags** (`relativeProof`, `kernelChecked`, `lean`, …),
   never rendered prose; human labels live in separate `display` objects, so editing display
@@ -78,8 +79,6 @@ structure AmbientEdge where
 
 /-- The direct catalog snapshot: exactly what is registered, plus the derived ambient edges. -/
 structure CatalogSnapshot where
-  /-- Registered principles, sorted by id. -/
-  principles : Array PrincipleEntry
   /-- Registered ports, sorted by id. -/
   ports : Array PortEntry
   /-- Ambient-factorization edges, sorted by (source, target, port, evidenceIdx). -/
@@ -89,10 +88,10 @@ structure CatalogSnapshot where
   conceptCatalog : ConceptCatalog
 
 /-- Derive the ambient-factorization edges of one port. Direction-aware: `upper` maps
-interface → port statement, `lower` maps port statement → interface, `exact` contributes both
-directions. Only kernel-checked `relativeProof` evidence with resolvable endpoints yields
-edges. -/
-def ambientEdgesOf (principles : Array PrincipleEntry) (p : PortEntry) :
+the assumed variant's interface → the target's interface, `lower` maps target → assumed,
+`exact` contributes both directions. Only kernel-checked `relativeProof` evidence with
+resolvable endpoints yields edges. -/
+def ambientEdgesOf (cat : ConceptCatalog) (p : PortEntry) :
     Array AmbientEdge := Id.run do
   let mut edges := #[]
   let some portDecl := p.portDecl? | return #[]
@@ -100,8 +99,8 @@ def ambientEdgesOf (principles : Array PrincipleEntry) (p : PortEntry) :
   for e in p.evidence do
     if e.kind == .relativeProof && e.verification == .kernelChecked then
       if let (some cert, some assumes) := (e.thm?, e.assumes?) then
-        if let some pentry := principles.find? (·.id == assumes) then
-          if let some interface := pentry.interface? then
+        if let some ventry := cat.findVariant? assumes.name then
+          if let some interface := ventry.interface? then
             let mk (src tgt : Name) : AmbientEdge :=
               { source := src, target := tgt, port := p.id, evidenceIdx := i,
                 direction := e.direction, certificate := cert }
@@ -117,14 +116,14 @@ def ambientEdgesOf (principles : Array PrincipleEntry) (p : PortEntry) :
 /-- Extract the snapshot from an elaborated environment. Deterministic: set-like arrays
 sorted, order-bearing (evidence) arrays preserved. -/
 def CatalogSnapshot.ofEnv (env : Environment) : CatalogSnapshot :=
-  let principles := (principleExt.getState env).qsort fun a b => Name.lt a.id.name b.id.name
+  let cat := ConceptCatalog.ofEnv env
   let ports := (portExt.getState env).qsort fun a b => Name.lt a.id b.id
-  let edges := (ports.flatMap (ambientEdgesOf principles)).qsort fun a b =>
+  let edges := (ports.flatMap (ambientEdgesOf cat)).qsort fun a b =>
     Name.lt a.source b.source ||
       (a.source == b.source && (Name.lt a.target b.target ||
         (a.target == b.target && (Name.lt a.port b.port ||
           (a.port == b.port && a.evidenceIdx < b.evidenceIdx)))))
-  { principles, ports, ambientEdges := edges, conceptCatalog := ConceptCatalog.ofEnv env }
+  { ports, ambientEdges := edges, conceptCatalog := cat }
 
 /-- Owning module of a declaration, or `null` for current-file declarations. Module names,
 never file paths. -/
@@ -194,7 +193,7 @@ def evidenceJson (e : EvidenceRecord) : Json :=
      ("semanticScope", scopeTagJson e.scope?),
      ("theory", optNameJson (e.theory?.map (·.name))),
      ("certificate", optNameJson e.thm?),
-     ("assumes", optNameJson (e.assumes?.map (·.name))),
+     ("assumes", (e.assumes?.map fun v => Json.str v.serialized).getD Json.null),
      ("note", Json.str e.note),
      ("display", Json.mkObj
        [("kind", Json.str e.kind.render),
@@ -205,19 +204,12 @@ def evidenceJson (e : EvidenceRecord) : Json :=
 /-- Serialize the snapshot with provenance to canonical JSON. -/
 def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
     (provenance : BuildProvenance) : Json :=
-  let principleJson (p : PrincipleEntry) : Json :=
-    Json.mkObj
-      [("id", nameJson p.id.name),
-       ("description", Json.str p.description),
-       ("interface", optNameJson p.interface?),
-       ("interfaceModule", (p.interface?.map (moduleJson env)).getD Json.null),
-       ("literatureNote", optStrJson p.claimedClassical?),
-       ("display", Json.mkObj [("label", Json.str (toString p.id.name))])]
   let portJson (p : PortEntry) : Json :=
     Json.mkObj
       [("id", nameJson p.id),
        ("mathlibDecl", optNameJson p.mathlibDecl?),
        ("mathlibModule", (p.mathlibDecl?.map (moduleJson env)).getD Json.null),
+       ("target", Json.str p.target.serialized),
        ("portDecl", optNameJson p.portDecl?),
        ("relation", Json.str p.relation.tag),
        ("literatureNote", optStrJson p.claimedClassical?),
@@ -237,10 +229,15 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
   -- explicitly sorted and deduplicated — never relying on set-iteration order
   let nodes := ((nodes.foldl (init := ({} : NameSet)) fun s n => s.insert n).toArray).qsort
     Name.lt
+  let variantOfInterface (n : Name) : Json :=
+    match snapshot.conceptCatalog.interfaceOwner[n]? with
+    | some v => Json.str v.serialized
+    | none => Json.null
   let nodeJson (n : Name) : Json :=
     Json.mkObj
       [("id", nameJson n),
        ("module", moduleJson env n),
+       ("statementVariant", variantOfInterface n),
        ("display", Json.mkObj [("label", Json.str (toString (n.componentsRev.headD n)))])]
   let cat := snapshot.conceptCatalog
   let conceptJson (c : ConceptEntry) : Json :=
@@ -248,6 +245,28 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
       [("id", Json.str c.id.serialized),
        ("description", Json.str c.description),
        ("display", Json.mkObj [("label", Json.str c.displayLabel)])]
+  let layerJson (l : SemanticLayerEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str (toString l.id.name)),
+       ("description", Json.str l.description)]
+  let variantJson (v : StatementVariantEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str v.id.serialized),
+       ("concept", Json.str v.concept.serialized),
+       ("layer", Json.str (toString v.layer.name)),
+       ("interface", optNameJson v.interface?),
+       ("interfaceModule", (v.interface?.map (moduleJson env)).getD Json.null),
+       ("description", Json.str v.description),
+       ("display", Json.mkObj [("label", Json.str (toString v.id.name))])]
+  let problemJson (q : UniformProblemEntry) : Json :=
+    Json.mkObj
+      [("id", Json.str q.id.serialized),
+       ("concept", Json.str q.concept.serialized),
+       ("inputRepresentation", Json.str q.inputRepresentation),
+       ("outputRepresentation", Json.str q.outputRepresentation),
+       ("interface", optNameJson q.interface?),
+       ("operation", Json.str q.operation.tag),
+       ("uniformizes", (q.uniformizes?.map fun v => Json.str v.serialized).getD Json.null)]
   let nsJson (n : ExternalNamespaceEntry) : Json :=
     Json.mkObj
       [("id", Json.str (toString n.id.name)),
@@ -261,6 +280,9 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
          [("kind", Json.str r.target.kindTag),
           ("id", Json.str s!"reverse-mathlib:{r.target.name}")])]
   let concepts := cat.concepts.qsort fun a b => Name.lt a.id.name b.id.name
+  let layers := cat.layers.qsort fun a b => Name.lt a.id.name b.id.name
+  let variants := cat.variants.qsort fun a b => Name.lt a.id.name b.id.name
+  let problems := cat.problems.qsort fun a b => Name.lt a.id.name b.id.name
   let namespaces := cat.namespaces.qsort fun a b => Name.lt a.id.name b.id.name
   let refs := cat.refs.qsort fun a b =>
     Name.lt a.ns.name b.ns.name || (a.ns.name == b.ns.name && (a.key < b.key ||
@@ -271,9 +293,11 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
      ("concepts", Json.arr (concepts.map conceptJson)),
+     ("semanticLayers", Json.arr (layers.map layerJson)),
+     ("statementVariants", Json.arr (variants.map variantJson)),
+     ("uniformProblems", Json.arr (problems.map problemJson)),
      ("externalNamespaces", Json.arr (namespaces.map nsJson)),
      ("externalRefs", Json.arr (refs.map refJson)),
-     ("principles", Json.arr (snapshot.principles.map principleJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \
@@ -291,8 +315,8 @@ elab "#rm_export_catalog " path:str : command => do
   if let some dir := p.parent then
     IO.FS.createDirAll dir
   IO.FS.writeFile p ((snapshot.toJson (← getEnv) provenance).pretty ++ "\n")
-  logInfo s!"rm_export_catalog: wrote {snapshot.principles.size} principle(s), \
-    {snapshot.ports.size} port(s), {snapshot.ambientEdges.size} ambient edge(s) to \
-    {path.getString}"
+  logInfo s!"rm_export_catalog: wrote {snapshot.conceptCatalog.concepts.size} concept(s), \
+    {snapshot.conceptCatalog.variants.size} variant(s), {snapshot.ports.size} port(s), \
+    {snapshot.ambientEdges.size} ambient edge(s) to {path.getString}"
 
 end ReverseMathlib.Meta

@@ -4,13 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
 import ReverseMathlib.Meta.Report
+import ReverseMathlib.Meta.Concepts
 
 /-!
 # The evidence registry
 
-Records reverse-mathematics *principles* (an open vocabulary of `PrincipleId`s — plain names,
-never a closed inductive, so new principles never migrate a central type) and *ports* (a
-relationship between a mathlib declaration and a statement in this repository), each carrying
+Records the evidence layer over the conceptual catalog (`ReverseMathlib.Meta.Concepts`):
+*ports* relate a mathlib declaration to an **exact statement variant** in this repository,
+each carrying
 **multidimensional evidence**: kind × bound direction × verification × proof ambient × semantic
 scope. Evidence is never ordinal — a reversal is `direction := lower`, not a maturity stage.
 
@@ -41,15 +42,14 @@ namespace ReverseMathlib.Meta
 
 open Lean Elab Command
 
-/-- An open principle identifier: a plain name. The vocabulary of principles is open on
-purpose — registering a new principle must never require changing a central inductive type or
-migrating serialized metadata. -/
-structure PrincipleId where
+/-- An open checked-fragment identifier. A checked fragment is not a mathematical statement,
+so it gets its own identifier — never a statement-variant id. -/
+structure FragmentId where
   /-- The identifying name. -/
   name : Name
   deriving Inhabited, Repr, BEq, Hashable
 
-instance : ToString PrincipleId := ⟨fun p => toString p.name⟩
+instance : ToString FragmentId := ⟨fun p => toString p.name⟩
 
 /-- What kind of evidence a record is. Orthogonal to `BoundDirection`, `Verification`,
 `ProofAmbient`, and `SemanticScope`. -/
@@ -95,8 +95,9 @@ ambient-Lean factorization over standard objects says nothing about models. -/
 inductive ProofAmbient where
   /-- Unrestricted Lean over standard objects. -/
   | lean
-  /-- A checked fragment, identified by principle id. -/
-  | checkedFragment (id : PrincipleId)
+  /-- A checked fragment, identified by its own fragment id (never a statement-variant id:
+  a fragment is not a mathematical statement). -/
+  | checkedFragment (id : FragmentId)
   /-- Model-relative semantics (e.g. ω-models). -/
   | modelSemantics
   /-- An object-language subsystem. -/
@@ -123,7 +124,7 @@ structure RelativeCertificate (assumption conclusion : Prop) : Prop where
   proof : assumption → conclusion
 
 /-- An open theory identifier (for future syntactic-derivation claims), open for the same
-reason as `PrincipleId`. -/
+reason as `ConceptId`. -/
 structure TheoryId where
   /-- The identifying name. -/
   name : Name
@@ -181,23 +182,12 @@ structure EvidenceRecord where
   /-- The cited certificate; only `kernelChecked` evidence may carry one (literature is cited
   in the note). -/
   thm? : Option Name := none
-  /-- For `relativeProof` (only): the principle taken as hypothesis — required even for
-  claimed records, so a malformed unverified record cannot be registered. -/
-  assumes? : Option PrincipleId := none
+  /-- For `relativeProof` (only): the exact statement variant taken as hypothesis — required
+  even for claimed records, so a malformed unverified record cannot be registered. The cited
+  variant must own a Prop-valued Lean interface for kernel-checked evidence. -/
+  assumes? : Option StatementVariantId := none
   /-- Free-text qualifier. -/
   note : String := ""
-  deriving Inhabited, Repr, BEq
-
-/-- A registered principle. -/
-structure PrincipleEntry where
-  /-- The open identifier. -/
-  id : PrincipleId
-  /-- Informal description. -/
-  description : String
-  /-- The Lean interface (a `Prop`-valued declaration), when formalized. -/
-  interface? : Option Name := none
-  /-- Claimed classical classification, literature only; always rendered `UNVERIFIED`. -/
-  claimedClassical? : Option String := none
   deriving Inhabited, Repr, BEq
 
 /-- Relation between a mathlib declaration and a port. -/
@@ -218,7 +208,10 @@ structure PortEntry where
   id : Name
   /-- Counterpart declaration in mathlib, if any. -/
   mathlibDecl? : Option Name := none
-  /-- The statement in this repository, if formalized. -/
+  /-- The exact statement variant this port targets. -/
+  target : StatementVariantId
+  /-- The port statement — derived from the target variant's Lean interface at registration,
+  so the two can never drift. -/
   portDecl? : Option Name := none
   /-- Relation to the mathlib counterpart. -/
   relation : PortRelation
@@ -229,13 +222,6 @@ structure PortEntry where
   /-- The attached evidence. -/
   evidence : Array EvidenceRecord := #[]
   deriving Inhabited, Repr, BEq
-
-initialize principleExt :
-    SimplePersistentEnvExtension PrincipleEntry (Array PrincipleEntry) ←
-  registerSimplePersistentEnvExtension {
-    addEntryFn := Array.push
-    addImportedFn := mkStateFromImportedEntries Array.push #[]
-  }
 
 initialize portExt : SimplePersistentEnvExtension PortEntry (Array PortEntry) ←
   registerSimplePersistentEnvExtension {
@@ -301,10 +287,6 @@ def checkIffCertificateType (cert assumption conclusion : Name) : CommandElabM U
         definitionally the registered interface '{assumption}' and port statement \
         '{conclusion}'"
 
-/-- Look up a registered principle by id. -/
-def findPrinciple? (env : Environment) (id : PrincipleId) : Option PrincipleEntry :=
-  (principleExt.getState env).find? (·.id == id)
-
 /-- Look up a registered port by id. -/
 def findPort? (env : Environment) (id : Name) : Option PortEntry :=
   (portExt.getState env).find? (·.id == id)
@@ -351,7 +333,7 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
     throwError "registry: semanticImplication evidence requires an explicit scope \
       (fullStandardModel | omegaModels | allModels); scope is never defaulted"
   if e.kind == .relativeProof && e.assumes?.isNone then
-    throwError "registry: relativeProof evidence must name the assumed principle \
+    throwError "registry: relativeProof evidence must name the assumed statement variant \
       (assumes ...), even when merely claimed"
   if e.assumes?.isSome && e.kind != .relativeProof then
     throwError "registry: only relativeProof evidence may carry assumes"
@@ -374,15 +356,20 @@ def validateEvidence (e : EvidenceRecord) (portDecl? : Option Name) : CommandEla
       | throwError "registry: relativeProof evidence must cite its certificate (via ...)"
     checkStandardAxioms thm
     let some assumes := e.assumes?
-      | throwError "registry: relativeProof evidence must name the assumed principle \
-        (assumes ...)"
-    let some pentry := findPrinciple? (← getEnv) assumes
-      | throwError "registry: unknown principle '{assumes}'"
-    let some interface := pentry.interface?
-      | throwError "registry: principle '{assumes}' has no registered Lean interface"
+      | throwError "registry: relativeProof evidence must name the assumed statement \
+        variant (assumes ...)"
+    let cat := ConceptCatalog.ofEnv (← getEnv)
+    unless cat.conflicts.isEmpty do
+      let lines := "\n  ".intercalate cat.conflicts.toList
+      throwError "registry: conceptual catalog is conflicted; resolve before registering \
+        evidence:\n  {lines}"
+    let some ventry := cat.findVariant? assumes.name
+      | throwError "registry: unknown statement variant '{assumes.name}'"
+    let some interface := ventry.interface?
+      | throwError "registry: statement variant '{assumes.name}' has no Lean interface"
     let some portDecl := portDecl?
-      | throwError "registry: relativeProof evidence requires the port to have a registered \
-        statement"
+      | throwError "registry: relativeProof evidence requires the target variant to own a \
+        Lean interface"
     match e.direction with
     | .upper => checkCertificateType thm interface portDecl
     | .lower =>
@@ -411,44 +398,20 @@ def PortEntry.certifiedClaims (p : PortEntry) : Array CertifiedClaim := Id.run d
 private def resolveConst (id : TSyntax `ident) : CommandElabM Name :=
   liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
 
-/-- `rm_principle id where description := "…" interface := SomeProp
-claimedClassical := "…"`: register a principle. The interface must be a `Prop`-valued
-declaration; the claimed classification is literature-only and always renders `UNVERIFIED`. -/
-syntax (name := rmPrincipleCmd) "rm_principle " ident " where "
-  &"description" " := " str
-  &"interface" " := " ident
-  (&"claimedClassical" " := " str)? : command
-
-@[command_elab rmPrincipleCmd]
-def elabRmPrinciple : CommandElab := fun stx => do
-  let id : PrincipleId := ⟨stx[1].getId⟩
-  let description := (⟨stx[5]⟩ : TSyntax `str).getString
-  let interface ← resolveConst ⟨stx[8]⟩
-  let claimed? : Option String :=
-    if stx[9].getNumArgs == 0 then none
-    else some ((⟨stx[9][2]⟩ : TSyntax `str).getString)
-  if (findPrinciple? (← getEnv) id).isSome then
-    throwError "registry: duplicate principle id '{id}'"
-  liftTermElabM do
-    let info ← getConstInfo interface
-    unless info.type.isProp do
-      throwError "registry: interface '{interface}' must be a Prop-valued declaration"
-  modifyEnv fun env => principleExt.addEntry env
-    { id, description, interface? := some interface, claimedClassical? := claimed? }
-
 /-- One evidence line of a `revmath_port` command:
 `evidence <kind> <direction> <verification> <ambient> [scope <s>] [theory <t>] [via <thm>]
 [assumes <p>] [note "…"]`. -/
 syntax rmEvidenceLine := &"evidence" ident ident ident ident (&"scope" ident)?
   (&"theory" ident)? (&"via" ident)? (&"assumes" ident)? (&"note" str)?
 
-/-- `revmath_port id where mathlib := … port := … relation := … …`: register a port with its
-evidence. All cited names must resolve; kernel-checked citations are axiom-swept; typed
-certificates are matched against the registered principle interface and port statement up to
-definitional equality. -/
+/-- `revmath_port id where mathlib := … target := … relation := … …`: register a port with
+its evidence. The target is an exact statement variant; the port statement is **derived from
+that variant's Lean interface**, so the two can never drift. All cited names must resolve;
+kernel-checked citations are axiom-swept; typed certificates are matched against the assumed
+variant's interface and the target's interface up to definitional equality. -/
 syntax (name := revmathPortCmd) "revmath_port " ident " where "
   &"mathlib" " := " ident
-  &"port" " := " ident
+  &"target" " := " ident
   &"relation" " := " ident
   (&"claimedClassical" " := " str)?
   (&"note" " := " str)?
@@ -514,7 +477,11 @@ private def optArg (stx : Syntax) (i : Nat) : Option Syntax :=
 def elabRevmathPort : CommandElab := fun stx => do
   let id := stx[1].getId
   let mathlibDecl ← resolveConst ⟨stx[5]⟩
-  let portDecl ← resolveConst ⟨stx[8]⟩
+  let target : StatementVariantId := ⟨stx[8].getId⟩
+  let cat0 := ConceptCatalog.ofEnv (← getEnv)
+  let some ventry := cat0.findVariant? target.name
+    | throwErrorAt stx[8] "registry: unknown statement variant '{target.name}'"
+  let portDecl? := ventry.interface?
   let relation ← parseRelation stx[11]
   let claimed? : Option String :=
     (optArg stx[12] 2).map fun s => (⟨s⟩ : TSyntax `str).getString
@@ -529,18 +496,18 @@ def elabRevmathPort : CommandElab := fun stx => do
     let scope? ← (optArg ev[5] 1).mapM parseScope
     let theory? : Option TheoryId := (optArg ev[6] 1).map fun s => ⟨s.getId⟩
     let thm? ← (optArg ev[7] 1).mapM fun s => resolveConst ⟨s⟩
-    let assumes? : Option PrincipleId := (optArg ev[8] 1).map fun s => ⟨s.getId⟩
+    let assumes? : Option StatementVariantId := (optArg ev[8] 1).map fun s => ⟨s.getId⟩
     let evNote : String :=
       ((optArg ev[9] 1).map fun s => (⟨s⟩ : TSyntax `str).getString).getD ""
     let rec' : EvidenceRecord :=
       { kind, direction, verification, ambient, scope?, theory?, thm?, assumes?,
         note := evNote }
-    validateEvidence rec' (some portDecl)
+    validateEvidence rec' portDecl?
     evidence := evidence.push rec'
   if (findPort? (← getEnv) id).isSome then
     throwError "registry: duplicate port id '{id}'"
   modifyEnv fun env => portExt.addEntry env
-    { id, mathlibDecl? := some mathlibDecl, portDecl? := some portDecl, relation,
+    { id, mathlibDecl? := some mathlibDecl, target, portDecl?, relation,
       claimedClassical? := claimed?, note, evidence }
 
 /-! ## Rendering (fail-closed) -/
@@ -614,6 +581,7 @@ missing backend certificate prints `pending`, a missing lower bound prints `pend
 def PortEntry.render (p : PortEntry) : String := Id.run do
   let mut lines := #[s!"{p.id}"]
   lines := lines.push s!"  mathlib: {(p.mathlibDecl?.map toString).getD "none"}"
+  lines := lines.push s!"  target: {p.target.serialized}"
   lines := lines.push s!"  port: {(p.portDecl?.map toString).getD "none"}"
   lines := lines.push s!"  source relation: {p.relation.render}"
   for e in p.evidence do
@@ -634,25 +602,13 @@ def PortEntry.render (p : PortEntry) : String := Id.run do
     lines := lines.push s!"  note: {p.note}"
   return "\n".intercalate lines.toList
 
-/-- Render a principle entry. -/
-def PrincipleEntry.render (p : PrincipleEntry) : String := Id.run do
-  let mut lines := #[s!"{p.id}"]
-  lines := lines.push s!"  {p.description}"
-  lines := lines.push s!"  interface: {(p.interface?.map toString).getD "none"}"
-  match p.claimedClassical? with
-  | some c => lines := lines.push s!"  claimed classical classification: {c} [claimed, UNVERIFIED]"
-  | none => lines := lines.push s!"  claimed classical classification: unknown"
-  return "\n".intercalate lines.toList
-
-/-- `#revmath_registry`: print every registered principle and port, sorted by id. -/
+/-- `#revmath_registry`: print every registered port, sorted by id (concepts and variants are
+listed by `#rm_concepts`). -/
 elab "#revmath_registry" : command => do
   let env ← getEnv
-  let principles := (principleExt.getState env).qsort fun a b => Name.lt a.id.name b.id.name
   let ports := (portExt.getState env).qsort fun a b => Name.lt a.id b.id
-  let pl := principles.toList.map PrincipleEntry.render
   let ql := ports.toList.map PortEntry.render
-  logInfo <| "\n".intercalate
-    ([s!"principles ({principles.size}):"] ++ pl ++ [s!"ports ({ports.size}):"] ++ ql)
+  logInfo <| "\n".intercalate ([s!"ports ({ports.size}):"] ++ ql)
 
 /-- `#revmath_port? id`: look up a port by registry id, mathlib declaration, or port
 declaration. -/
@@ -672,12 +628,13 @@ elab "#revmath_port? " id:ident : command => do
 certified RM bounds exist (in Milestone 1: zero, by construction). -/
 elab "#revmath_stats" : command => do
   let env ← getEnv
-  let principles := principleExt.getState env
+  let cat := ConceptCatalog.ofEnv env
   let ports := portExt.getState env
   let evs := ports.flatMap (·.evidence)
   let count (v : Verification) := evs.filter (·.verification == v) |>.size
   let certified := (ports.flatMap (·.certifiedClaims)).filter (·.scope.isRMBound) |>.size
-  logInfo <| s!"principles: {principles.size}; ports: {ports.size}; evidence: {evs.size} \
+  logInfo <| s!"concepts: {cat.concepts.size}; variants: {cat.variants.size}; \
+    ports: {ports.size}; evidence: {evs.size} \
     ({count .kernelChecked} kernel checked, {count .claimed} claimed, \
     {count .backendChecked} backend checked); certified RM bounds: {certified}"
 
