@@ -747,6 +747,79 @@ Mining-track items (issues open only as their prerequisites land):
   tactic-search/failed-branch archaeology (discovery archaeology ≠ theorem strength),
   historical `#rm_diff` across arbitrary revisions.
 
+### The extraction pipeline: compile routes, not degrees
+
+The mining program's technical north star. The mined graph never *infers* a strength; it
+proposes a **typed extraction plan**, and a compiler turns the particular proof artifact
+into a kernel- or verified-checker-validated artifact whose catalog claim is explicitly
+typed at one of the existing scopes:
+
+```
+mined artifact → typed extraction plan → generated/reconstructed artifact
+              → kernel or verified-checker validation → explicitly typed catalog claim
+```
+
+- **`ExtractionPlan`**: registrable-but-uncertified data (recorded, no artifact certified),
+  with **explicit `FrontierBinding`s** — (sourceDecl, occurrenceClass, targetVariant,
+  optional translation certificate) — never parallel arrays; plus exact target
+  presentation, source revision + declaration hash, a fingerprint of every cloned body,
+  extractor version, requested backend, and unsupported-feature findings. Compiling a plan
+  and registering its mathematical meaning are two separate operations. Extraction never
+  invents frontiers: only registered ones, human-curated, miner-proposed.
+- **Order of implementation**: witness extraction first (folded into Q6 above — smaller, no
+  DAG cloning, fixtures in `findMetastable` and the ω constructions); then the
+  factorization MVP; then ω-transfer automation; the discrete Weihrauch lane after the
+  #27/#28 ownership decision; all-model transfer and any restricted RM IR + verified
+  checker much later (PBLean is the untrusted-producer/sound-checker precedent, but it is
+  domain-specific evidence, not evidence that Lean-to-RM compilation is easy; Lean4Lean is
+  a far-later possible substrate, not a near-term dependency).
+- **`#rm_extract_factorization` MVP, deliberately tiny**: direct or one-helper-deep
+  proof-position abstraction; monomorphic occurrence classes (one specialized capability
+  field per occurrence class — a later wrapper theorem unifies them); no frontier
+  occurrences in dependent types; no mutual recursion; no unresolved metavariables; no
+  frontier-adjacent dependent `ite`/instance-heavy motives; hard failure otherwise. Golden:
+  **the project's own classical König/Hall wrappers compared against the hand-written
+  slices** — not mathlib's categorical infinite Hall proof, which is the stretch target.
+  Two backends under one plan, as **distinct `ProofArtifact` kinds**: mechanical
+  abstraction (transform/clone the actual expression slice) and restricted reconstruction
+  (generate the relative goal, reprove with approved imports/interfaces — proves the mined
+  boundary *sufficient*, never that the result is literally the source route). After
+  generation, always: kernel check; complete re-mining; disappearance of the selected
+  frontier; no new forbidden frontier; explicit, separate certificate registration.
+- **ω-transfer is the first real "effect handler"**, only after the slice-3/4 chain is
+  hand-built (the hand-built chain supplies both the `@[rm_computable]` rule signatures and
+  the regression golden). The internal effect is not bare "computable" but a normalized
+  **oracle-dependency expression** — `recursive | input | answer | input ⊕ answer` —
+  supporting Turing-ideal closure, answer-only vs input-plus-answer access, future
+  strong/ordinary Weihrauch analysis, and dataflow auditing. Trocq is the precedent for
+  relation-directed transfer, but ambient-set-vs-internal-set is not a datatype
+  equivalence: the internal-set and comprehension obligations stay target-specific.
+- **`OracleProg` ownership**: the free oracle IR and query-pattern checker live in
+  `cameronfreer/computable-analysis`, never here — and a free syntax certifies only the
+  query pattern: its pure fragments must either be built from `OracleCode`s or carry
+  explicit computability certificates, or the "reduction" is not one. Imports arrive under
+  #28's trust rule.
+- **The effect calculus** (one construction program, many handlers: RM contraction-free,
+  Weihrauch call-pattern-preserving, proof-mining functional-interpretation, model-relative
+  internality) is the **convergence destination** of this pipeline, not an implementation
+  project: build no shared abstraction until the same construction has at least two working
+  handlers (plausibly the ω handler from slices 3–4 and the Weihrauch handler from
+  #27/#28).
+
+Governance note (from the mathematics-indexed-metamathematics review): "organize by
+mathematics" is **catalog and site-navigation** doctrine (mathematical families and hubs on
+#16: compactness, completion/exactification, bad sequences and recursion, matching,
+convergence, algebraic closures) — not a module-layout rule; the Lean source tree stays
+organized by technical dependency layer precisely to prevent cycles and trust escalation.
+No generic `AnalysisRecord`: every new lens gets its own typed claim family only when a
+concrete record is ready, and cross-lens movement always requires a bridge certificate.
+`ConstructionCoreId` enters minimally through the #25 pilot (id, description, sources,
+attributed assignments; no fixed strength, never a fact endpoint, enters no closure, no
+privileged Lean declaration; automated detection is evidence for an assignment, never the
+definition), with the Hall fixture forcing the initial vocabulary — likely "finite
+approximation system" and "coherent branch/section selection" — and completion /
+minimal-bad-sequence cores entering only with their pilots.
+
 ## Further programs (roadmap-only horizons)
 
 - **Constructive/intuitionistic RM**: not a separate database — a refined *logic context*
@@ -781,7 +854,16 @@ for tranche 8.
 - Q3. Kohlenbach Proposition 2.27: explicit metastability for bounded monotone sequences.
 - Q4. Finite convergence principle, including the [0,C] bound.
 - Q5. Executable rational/dyadic bounded-search realizer.
-- Q6. Occurrence/effect audit: Prop → Prop, Prop → Type, finite-search repair, residual oracle.
+- Q6. Occurrence/effect audit: Prop → Prop, Prop → Type, finite-search repair, residual
+  oracle; plus **witness extraction** (`#rm_extract_witness`: when controlled reduction of a
+  proof artifact exposes `Exists.intro`/`Subtype.mk`/`Sigma.mk`, emit `extractedWitness` +
+  `extractedWitness_correct` as separate declarations and mine their closures separately)
+  and **fail-closed occurrence/dataflow analysis** with **four** outcomes — constructive |
+  oracle-relative | noncomputable | **unknown/analysis-incomplete** (dependent terms, opaque
+  bodies, instance-generated code, and proof arguments can defeat sound taint
+  classification; unknown is mandatory). "Noncomputable"/"unknown" verdicts on mathlib
+  artifacts are useful atlas data, not failures. This is source-artifact recovery, never
+  generic elimination from `Exists`.
 - Q7. Quantitative certificate registry: uniform parameters, intensional dependencies, term
   class, residual oracles, source hash; plus **artifact-strength dimensions** for uniform
   and quantitative evidence — `UniformArtifact` (propositionOnly | bundledTransformer |
