@@ -18,3 +18,5 @@ import ReverseMathlib.Omega.Computability
 import ReverseMathlib.Omega.InternalSet
 import ReverseMathlib.Omega.Coding
 import ReverseMathlib.Omega.Graph
+import ReverseMathlib.Omega.Tree
+import ReverseMathlib.Omega.InverseSystem

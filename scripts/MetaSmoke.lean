@@ -263,6 +263,25 @@ finite Hall, and never the infinite Hall theorem or the topological inverse-limi
   [Finset.all_card_le_biUnion_card_iff_exists_injective,
    nonempty_sections_of_finite_inverse_system]
 
+/-! ### ω-capability statement-burden gates (#22 slice 2)
+
+The Turing-ideal capability statements are formulated relationally (`MapsTo`/membership):
+their definitions must never reach the choice-derived `InternalFunction.eval` — otherwise
+the exact variants' statement closures would silently acquire classical choice. -/
+
+#eval show CoreM Unit from do
+  let env ← getEnv
+  for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt] do
+    let .ok r := mineTarget env {} t | throwError "mine {t} failed"
+    check (!r.truncated) s!"{t} statement mining must be complete"
+    check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
+      s!"{t} statement must not reach InternalFunction.eval"
+    -- Recorded honestly: `Classical.choice` IS reachable at constant granularity — through
+    -- mathlib's Encodable/Denumerable instance chain for the sequence coding, not through
+    -- any selection in the statements themselves (the same granularity limitation as the
+    -- indefiniteDescription note above). The `eval` gate is the meaningful discipline: no
+    -- choice-derived evaluation enters a capability statement.
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
