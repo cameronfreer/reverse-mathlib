@@ -341,7 +341,7 @@ info: concepts (3):
 namespaces (4):
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
-  sanders — [San] Sanders, Reverse Mathematics: there and back again — references
+  sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
 -/
 #guard_msgs in

@@ -26,7 +26,8 @@ rm_namespace simpson "[Sim09] Simpson, Subsystems of Second Order Arithmetic, 2n
   section and theorem references"
 rm_namespace concordance "reverse_mathematics_concordance.xlsx row identifiers — external \
   provenance, never canonical identity"
-rm_namespace sanders "[San] Sanders, Reverse Mathematics: there and back again — references"
+rm_namespace sanders "[San] Sam Sanders, Reverse Mathematics: there and back again, \
+  monograph under review with Springer, pp 450, 2026 — references"
 
 rm_concept wkl where
   description := "Weak Kőnig's lemma as a conceptual family: variants differ by tree \

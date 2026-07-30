@@ -557,8 +557,8 @@ possible.
   Perspectives in Logic, Cambridge University Press / Association for Symbolic Logic, 2009.
 - **[Koh08]** Ulrich Kohlenbach, *Applied Proof Theory: Proof Interpretations and their Use in
   Mathematics*, Springer Monographs in Mathematics, Springer, 2008.
-- **[San]** Sam Sanders, *Reverse Mathematics: there and back again*, book manuscript,
-  <https://sasander.wixsite.com/academic/book>.
+- **[San]** Sam Sanders, *Reverse Mathematics: there and back again*, monograph under review
+  with Springer, pp 450, 2026. <https://sasander.wixsite.com/academic/book>.
 - **RMZoo**: E. P. Astor et al., *The Reverse Mathematics Zoo*,
   <https://github.com/ericastor/rmzoo> (MIT license); documentation at
   <https://rmzoo.math.uconn.edu/documentation/>.
