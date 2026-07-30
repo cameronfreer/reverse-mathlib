@@ -14,3 +14,4 @@ import ReverseMathlib.Quantitative.Metastability
 import ReverseMathlib.Quantitative.MonotoneSequence
 import ReverseMathlib.Quantitative.FiniteConvergence
 import ReverseMathlib.Quantitative.RationalSearch
+import ReverseMathlib.Omega.Computability
