@@ -30,6 +30,20 @@ structure InternalFunction (Ω : OmegaPart) where
 def IsGraphOf (G : Set ℕ) (f : ℕ → ℕ) : Prop :=
   ∀ x y, Nat.pair x y ∈ G ↔ f x = y
 
+/-- The **relational surface**: `F` maps `x` to `y`. RM-facing statement definitions
+(`WeakKonigAt`, `EFILCAt`, sections, `CountableHallAt`) are formulated entirely with
+`MapsTo`/graph membership — never with `eval`, whose derivation uses choice; otherwise the
+exact variant's statement closure would acquire `InternalFunction.eval` and ultimately
+classical choice. `eval` is for proofs and adapter lemmas only, and a statement-dependency
+gate pins the discipline. -/
+def InternalFunction.MapsTo {Ω : OmegaPart} (F : InternalFunction Ω) (x y : ℕ) : Prop :=
+  Nat.pair x y ∈ F.graph.1
+
+theorem InternalFunction.existsUnique_mapsTo {Ω : OmegaPart} (F : InternalFunction Ω)
+    (x : ℕ) : ∃! y, F.MapsTo x y := by
+  obtain ⟨y, hy⟩ := F.total x
+  exact ⟨y, hy, fun y' hy' => F.singleValued x y' y hy' hy⟩
+
 /-- Ambient evaluation, derived **noncomputably** for proof convenience only. -/
 noncomputable def InternalFunction.eval {Ω : OmegaPart} (F : InternalFunction Ω)
     (x : ℕ) : ℕ :=
@@ -43,6 +57,11 @@ theorem InternalFunction.pair_eval_mem {Ω : OmegaPart} (F : InternalFunction Ω
 theorem InternalFunction.graph_mem_iff {Ω : OmegaPart} (F : InternalFunction Ω)
     {x y : ℕ} : Nat.pair x y ∈ F.graph.1 ↔ F.eval x = y :=
   ⟨fun h => F.singleValued x _ _ (F.pair_eval_mem x) h, fun h => h ▸ F.pair_eval_mem x⟩
+
+/-- The adapter between the relational surface and the proof-layer evaluation. -/
+theorem InternalFunction.mapsTo_iff_eval_eq {Ω : OmegaPart} (F : InternalFunction Ω)
+    {x y : ℕ} : F.MapsTo x y ↔ F.eval x = y :=
+  F.graph_mem_iff
 
 /-- The derived evaluation is what the graph codes. -/
 theorem InternalFunction.isGraphOf_eval {Ω : OmegaPart} (F : InternalFunction Ω) :

@@ -21,8 +21,11 @@ primitive-recursive coding to the object-theory coding when the syntax layer arr
 switching codings now would trade away ready computability lemmas for surface resemblance to
 arithmetic syntax.
 
-`decodeSeq` is total: invalid codes decode to `[]` — every consumer must therefore state its
-validity predicate explicitly rather than relying on decode failure.
+The coding is a **bijection**: `List ℕ` is denumerable, so every natural number is the
+canonical code of exactly one finite sequence (`decodeSeq_seqCode` and `seqCode_decodeSeq`;
+`seqEquiv` packages the equivalence). There is consequently no code-validity predicate —
+one would be identically true. `IsBitSeqCode`/`IsBoundedSeqCode` describe sequence
+*contents*, not code validity.
 -/
 
 namespace ReverseMathlib.Omega
@@ -31,7 +34,7 @@ namespace ReverseMathlib.Omega
 def seqCode (l : List ℕ) : ℕ :=
   Encodable.encode l
 
-/-- Total decoding; invalid codes decode to `[]`. -/
+/-- Decoding; a two-sided inverse of `seqCode` since `List ℕ` is denumerable. -/
 def decodeSeq (n : ℕ) : List ℕ :=
   ((Encodable.decode n : Option (List ℕ))).getD []
 
@@ -39,9 +42,20 @@ def decodeSeq (n : ℕ) : List ℕ :=
 theorem decodeSeq_seqCode (l : List ℕ) : decodeSeq (seqCode l) = l := by
   simp [decodeSeq, seqCode]
 
-/-- The coding is injective. -/
+@[simp]
+theorem seqCode_decodeSeq (n : ℕ) : seqCode (decodeSeq n) = n := by
+  simp [seqCode, decodeSeq, Denumerable.decode_eq_ofNat]
+
+/-- The coding is injective (indeed bijective — see `seqEquiv`). -/
 theorem seqCode_injective : Function.Injective seqCode := fun _ _ h => by
   simpa using congrArg decodeSeq h
+
+/-- The canonical coding as an equivalence: every natural is a sequence code. -/
+def seqEquiv : List ℕ ≃ ℕ where
+  toFun := seqCode
+  invFun := decodeSeq
+  left_inv := decodeSeq_seqCode
+  right_inv := seqCode_decodeSeq
 
 /-- Encoding is primitive recursive. -/
 theorem primrec_seqCode : Primrec seqCode :=
