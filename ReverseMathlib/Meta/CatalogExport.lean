@@ -120,7 +120,7 @@ def ambientEdgesOf (cat : ConceptCatalog) (p : PortEntry) :
 sorted, order-bearing (evidence) arrays preserved. -/
 def CatalogSnapshot.ofEnv (env : Environment) : CatalogSnapshot :=
   let cat := ConceptCatalog.ofEnv env
-  let ports := (portExt.getState env).qsort fun a b => Name.lt a.id b.id
+  let ports := (portExt.getState env).qsort fun a b => toString a.id < toString b.id
   let edges := (ports.flatMap (ambientEdgesOf cat)).qsort fun a b =>
     Name.lt a.source b.source ||
       (a.source == b.source && (Name.lt a.target b.target ||
@@ -319,20 +319,25 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("target", Json.mkObj
          [("kind", Json.str r.target.kindTag),
           ("id", Json.str s!"reverse-mathlib:{r.target.name}")])]
-  let concepts := cat.concepts.qsort fun a b => Name.lt a.id.name b.id.name
-  let layers := cat.layers.qsort fun a b => Name.lt a.id.name b.id.name
-  let variants := cat.variants.qsort fun a b => Name.lt a.id.name b.id.name
-  let problems := cat.problems.qsort fun a b => Name.lt a.id.name b.id.name
-  let namespaces := cat.namespaces.qsort fun a b => Name.lt a.id.name b.id.name
+  -- Canonical section order is SERIALIZED-STRING order, not `Name.lt`: the two differ on
+  -- names of different depth (`Name.lt` compares prefixes first), and the machine contract
+  -- is what a JSON consumer can check by comparing the id strings.
+  let concepts := cat.concepts.qsort fun a b => toString a.id.name < toString b.id.name
+  let layers := cat.layers.qsort fun a b => toString a.id.name < toString b.id.name
+  let variants := cat.variants.qsort fun a b => toString a.id.name < toString b.id.name
+  let problems := cat.problems.qsort fun a b => toString a.id.name < toString b.id.name
+  let namespaces := cat.namespaces.qsort fun a b => toString a.id.name < toString b.id.name
   let refs := cat.refs.qsort fun a b =>
     Name.lt a.ns.name b.ns.name || (a.ns.name == b.ns.name && (a.key < b.key ||
       (a.key == b.key && Name.lt a.target.name b.target.name)))
-  let baseTheories := cat.baseTheories.qsort fun a b => Name.lt a.id.name b.id.name
-  let formulaClasses := cat.formulaClasses.qsort fun a b => Name.lt a.id.name b.id.name
+  let baseTheories := cat.baseTheories.qsort fun a b => toString a.id.name < toString b.id.name
+  let formulaClasses := cat.formulaClasses.qsort fun a b =>
+    toString a.id.name < toString b.id.name
   let reducibilityNotions := cat.reducibilityNotions.qsort fun a b =>
-    Name.lt a.id.name b.id.name
-  let facts := cat.facts.qsort fun a b => Name.lt a.id.name b.id.name
-  let semanticContexts := cat.semanticContexts.qsort fun a b => Name.lt a.id.name b.id.name
+    toString a.id.name < toString b.id.name
+  let facts := cat.facts.qsort fun a b => toString a.id.name < toString b.id.name
+  let semanticContexts := cat.semanticContexts.qsort fun a b =>
+    toString a.id.name < toString b.id.name
   let contextEntryJson (c : SemanticContextEntry) : Json :=
     Json.mkObj
       [("id", Json.str (toString c.id.name)),

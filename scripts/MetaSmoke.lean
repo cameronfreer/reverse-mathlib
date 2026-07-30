@@ -266,16 +266,17 @@ finite Hall, and never the infinite Hall theorem or the topological inverse-limi
 /-! ### ω-capability statement-burden gates (#22 slice 2)
 
 The Turing-ideal capability statements are formulated relationally (`MapsTo`/membership):
-their definitions must never reach the choice-derived `InternalFunction.eval` — otherwise
-the exact variants' statement closures would silently acquire classical choice. -/
+their **capability-definition closures** (the value closure of each defining constant) must
+never reach the choice-derived `InternalFunction.eval` — otherwise the exact variants would
+silently acquire an explicit selection route. -/
 
 #eval show CoreM Unit from do
   let env ← getEnv
   for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
-    check (!r.truncated) s!"{t} statement mining must be complete"
+    check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
-      s!"{t} statement must not reach InternalFunction.eval"
+      s!"{t} capability-definition closure must not reach InternalFunction.eval"
     -- Recorded honestly: `Classical.choice` IS reachable at constant granularity — through
     -- mathlib's Encodable/Denumerable instance chain for the sequence coding, not through
     -- any selection in the statements themselves (the same granularity limitation as the
@@ -303,7 +304,7 @@ renders its honest verdict. -/
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
 /--
-info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 3; variants: 5; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -340,6 +341,23 @@ info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claim
   -- Prop-only interface validation is byte-for-byte the pre-#5 behavior.
   check ((cat.layers.find? (·.id.name == `ambient)).any (·.interfaceSchema?.isNone))
     "the production ambient layer must carry no interface schema (Prop-only preserved)"
+  -- ω-layer registration pins (#22 slice 2): base theory, layer schema, semantic context,
+  -- and the exact interface owners. Certified counts stay 0/0/0 (stats goldens) and the
+  -- ambient graph is untouched (3-edge pin above) — registration adds no evidence.
+  check (cat.baseTheories.any (·.id.name == `rca0)) "rca0 base theory registered"
+  check ((cat.layers.find? (·.id.name == `turingIdealOmega)).any
+      (·.interfaceSchema? == some `ReverseMathlib.Ports.OmegaInterface))
+    "turingIdealOmega layer carries the OmegaInterface schema"
+  check ((cat.semanticContexts.find? (·.id.name == `rca0.turingIdealOmega)).any fun c =>
+      c.base.name == `rca0 && c.scope == .omegaModels &&
+        c.contextDecl == `ReverseMathlib.Omega.IsTuringIdeal)
+    "rca0.turingIdealOmega context pins base, scope, and the IsTuringIdeal predicate"
+  check (cat.interfaceOwner[`ReverseMathlib.Omega.WeakKonigAt]? ==
+      some ⟨`wkl.binaryTree.turingIdealOmega⟩)
+    "WeakKonigAt is owned by wkl.binaryTree.turingIdealOmega"
+  check (cat.interfaceOwner[`ReverseMathlib.Omega.EFILCAt]? ==
+      some ⟨`efilc.explicitSequential.enumeratedFibers.turingIdealOmega⟩)
+    "EFILCAt is owned by efilc.explicitSequential.enumeratedFibers.turingIdealOmega"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 
@@ -356,8 +374,10 @@ info: concepts (3):
     simpson:"X.3.16" [relatedVariant]
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
+    variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
   reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax); explicitly bounded formulations may join once their relationship is fixed. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
+    variant reverse-mathlib:wkl.binaryTree.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.WeakKonigAt⟩
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
@@ -633,7 +653,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 5; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 4; variants: 7; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified ω-model implications: 0; all-model implications: 0; syntactic RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -771,10 +791,10 @@ info: facts (4):
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
-base theories (1): fixRca0
+base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
 reducibility notions (1): fixWeihrauch
-semantic contexts (0): (none)
+semantic contexts (1): rca0.turingIdealOmega
 -/
 #guard_msgs in
 #rm_facts
@@ -972,7 +992,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 4; variants: 7; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified ω-model implications: 1; all-model implications: 0; syntactic RM bounds: 0
+info: concepts: 4; variants: 9; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified ω-model implications: 1; all-model implications: 0; syntactic RM bounds: 0
 -/
 #guard_msgs in
 #revmath_stats

@@ -12,7 +12,9 @@ An internal binary tree is an **internal set of sequence codes** (the canonical 
 coding); binary-valuedness and prefix closure are ordinary properties of that internal set.
 A path is an internal set of bit-`1` positions; matching the tree is stated relationally
 against decoded prefixes — no classical `if` and no `InternalFunction.eval` appears in any
-statement here, so the capability's statement closure stays choice-free by construction.
+statement here, so the capability definitions avoid the explicit choice-derived
+`InternalFunction.eval` route (the encoding instance chain still reaches
+`Classical.choice` at constant granularity; see the gate in `scripts/MetaSmoke.lean`).
 
 `WeakKonigAt Ω` deliberately carries **no base-theory premise**: the RCAω/Turing-ideal
 context enters through the registered semantic context of a certificate, never through the
