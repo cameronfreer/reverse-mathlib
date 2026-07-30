@@ -317,6 +317,10 @@ info: concepts: 3; variants: 3; ports: 2; evidence: 3 (3 kernel checked, 0 claim
     "variant owns the WeakKonig interface"
   check (cat.interfaceOwner[`ReverseMathlib.Standard.WeakKonig]? == some ⟨`wkl.binaryTree.ambient⟩)
     "interface ownership is indexed"
+  -- Layer-indexed interface schemas (#5): the production ambient layer has no schema, so its
+  -- Prop-only interface validation is byte-for-byte the pre-#5 behavior.
+  check ((cat.layers.find? (·.id.name == `ambient)).any (·.interfaceSchema?.isNone))
+    "the production ambient layer must carry no interface schema (Prop-only preserved)"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 

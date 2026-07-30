@@ -19,6 +19,10 @@ import ReverseMathlibFixtures.MixB
 import ReverseMathlibFixtures.MergeVar
 import ReverseMathlibFixtures.MergeIface
 import ReverseMathlibFixtures.MergeMix
+import ReverseMathlibFixtures.SchemaFix
+import ReverseMathlibFixtures.SchemaA
+import ReverseMathlibFixtures.SchemaB
+import ReverseMathlibFixtures.MergeSchema
 
 /-!
 # Collision-test fixtures

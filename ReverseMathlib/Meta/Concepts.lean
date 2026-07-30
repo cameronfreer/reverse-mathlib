@@ -182,6 +182,13 @@ structure SemanticLayerEntry where
   id : SemanticLayerId
   /-- What statements at this layer concern. -/
   description : String
+  /-- Optional **interface schema**: the name of a universe-monomorphic type-valued
+  definition giving the expected type of every Lean interface owned by a variant at this
+  layer (e.g. an abbreviation unfolding to `OmegaPart → Prop` for a model-indexed layer).
+  Candidate interfaces are validated by definitional equality against this type. `none`
+  keeps the ambient default: interfaces must be `Prop`-valued — the pre-existing behavior,
+  preserved exactly. Ownership is never weakened to "any declaration". -/
+  interfaceSchema? : Option Name := none
   deriving Inhabited, Repr, BEq
 
 /-- A problem operation, preserved as shallow metadata (reduction rules arrive after the
@@ -473,18 +480,36 @@ elab "rm_external_ref " ns:ident key:str rel:ident kind:ident tgt:ident : comman
   modifyEnv fun env => externalRefExt.addEntry env
     ⟨⟨nsName⟩, key.getString, target, relation⟩
 
-/-- `rm_semantic_layer id "description"`: register a semantic layer. Extensible by
-registration; layers classify what a statement's objects are, and are never identified with
-evidence scopes. -/
-elab "rm_semantic_layer " id:ident descr:str : command => do
-  let n := id.getId
-  if (layerExt.getState (← getEnv)).any (·.id.name == n) then
-    throwErrorAt id "concept catalog: duplicate semantic layer '{n}'"
-  modifyEnv fun env => layerExt.addEntry env ⟨⟨n⟩, descr.getString⟩
+/-- `rm_semantic_layer id "description" [interfaceSchema := T]`: register a semantic layer.
+Extensible by registration; layers classify what a statement's objects are, and are never
+identified with evidence scopes. A layer may name an **interface schema** — a
+universe-monomorphic type-valued definition giving the expected type of every Lean interface
+owned by a variant at this layer; candidate interfaces are checked against it by definitional
+equality. Layers without a schema keep the ambient default: interfaces must be
+`Prop`-valued. -/
+syntax (name := rmLayerCmd) "rm_semantic_layer " ident str
+  (&"interfaceSchema" " := " ident)? : command
+
+@[command_elab rmLayerCmd]
+def elabRmLayer : CommandElab := fun stx => do
+  let id := stx[1].getId
+  let descr := (⟨stx[2]⟩ : TSyntax `str).getString
+  let schemaStx? := if stx[3].getNumArgs == 0 then none else some stx[3][2]
+  if (layerExt.getState (← getEnv)).any (·.id.name == id) then
+    throwErrorAt stx[1] "concept catalog: duplicate semantic layer '{id}'"
+  let interfaceSchema? ← schemaStx?.mapM fun sstx => do
+    let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo sstx
+    let info ← getConstInfo n
+    unless info.levelParams.isEmpty && info.type.isSort do
+      throwErrorAt sstx "concept catalog: interface schema '{n}' must be a \
+        universe-monomorphic type-valued definition (a name whose type is a Sort)"
+    pure n
+  modifyEnv fun env => layerExt.addEntry env ⟨⟨id⟩, descr, interfaceSchema?⟩
 
 /-- `rm_statement_variant id where concept := c layer := l [interface := I]
 description := "…"`: register an exact statement variant. The parent concept is explicit data,
-never inferred from the dotted identifier. An interface must be a Prop-valued declaration
+never inferred from the dotted identifier. An interface must match the registered layer's
+interface schema up to definitional equality — `Prop` for layers without a schema — and be
 owned by no other variant; literature-only variants omit it. -/
 syntax (name := rmVariantCmd) "rm_statement_variant " ident " where "
   &"concept" " := " ident
@@ -506,11 +531,20 @@ def elabRmVariant : CommandElab := fun stx => do
     throwErrorAt stx[5] "concept catalog: unknown concept '{conceptName}'"
   unless cat.layers.any (·.id.name == layerName) do
     throwErrorAt stx[8] "concept catalog: unregistered semantic layer '{layerName}'"
+  let layerEntry? := cat.layers.find? (·.id.name == layerName)
   let interface? ← interfaceStx?.mapM fun istx => do
     let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo istx
     let info ← getConstInfo n
-    unless info.type.isProp do
-      throwErrorAt istx "concept catalog: interface '{n}' must be a Prop-valued declaration"
+    match layerEntry?.bind (·.interfaceSchema?) with
+    | none =>
+      -- The ambient default, preserved exactly: schema-less layers demand a Prop.
+      unless info.type.isProp do
+        throwErrorAt istx "concept catalog: interface '{n}' must be a Prop-valued declaration"
+    | some schemaName =>
+      let ok ← liftTermElabM <| Meta.isDefEq info.type (Expr.const schemaName [])
+      unless ok do
+        throwErrorAt istx "concept catalog: interface '{n}' must have type '{schemaName}' \
+          (the interface schema of layer '{layerName}') up to definitional equality"
     if let some owner := cat.interfaceOwner[n]? then
       throwErrorAt istx "concept catalog: Lean interface '{n}' is already owned by \
         statement variant '{owner.name}'"
