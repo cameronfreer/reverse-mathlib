@@ -8,10 +8,15 @@ grown through concrete mathematical pressure — not designed as an encyclopedia
 ## Thesis
 
 **reverse-mathlib is a typed, proof-carrying atlas of statements, presentations, proof
-routes, and resource use in Lean.** The primary object is the *proof incident* — (exact
-statement variant, presentation, particular proof artifact, named resources with roles,
-output effect, evidence scope) — and each research program is a deliberately lossy
-projection of it: mathlib archaeology (what this elaborated proof traverses; forgets
+routes, and resource use in Lean.** Its object families are **peers** — exact statement
+variants, presentations, uniform problems, and literature facts (including nonimplications)
+exist with or without any proof; on the proof side, a *ProofRoute* (a stable conceptual
+architecture) is realized by *ProofArtifacts* (concrete Lean declarations, derivations,
+programs, or literature proofs, carried with revision and hash), and a *ProofIncident* is
+evidence that an artifact realizes a route for an exact variant and presentation. One route
+can have several artifacts; one artifact can support several route analyses; refactoring
+changes hashes without changing the route. Each research program is a deliberately lossy
+projection of this record: mathlib archaeology (what this elaborated proof traverses; forgets
 minimality), ordinary RM/RMZoo (which exact variants imply which over a base; forgets the
 proof used), strict/higher-order RM (the cost of presentation and interpretation), Weihrauch
 analysis (uniform transformations under representations; forgets verification difficulty),
@@ -684,27 +689,41 @@ Mining-track items (issues open only as their prerequisites land):
   on the critical path of, the turnstile track): a separate `ProofRouteId`/`ProofRouteEntry`
   catalog for named derivations `Γ ; A₁,…,Aₙ ⟹ρ B`, distinguishing **background
   resources** from **designated active premises** and **presentation adapters**, with the
-  output effect and — crucially — whether the background alone is already known to prove
-  the target (the marker of an *explanatory* route rather than a calibrating implication).
-  A kernel-checked route may cite a typed `ContextualRouteCertificate (background active
-  target)`, which checks the stated factorization and nothing more; graded "uses A"
-  evidence stays separate: designated intent → syntactic liveness (#19) → explicit
-  factorization → restricted replay (#20) → transformational content (Type-level
-  data/realizer) → necessity (a different theorem). Evidence-bearing route comparisons
+  output effect and — crucially — `backgroundSufficiencyFact? : Option FactId`: a **link**
+  to the separate fact that the background alone proves the target (its truth depends on
+  exact variants, base theory, and scope; absence means *not recorded*, never false). The
+  presence of such a fact marks an *explanatory* route rather than a calibrating
+  implication. A kernel-checked route may cite a typed `ContextualRouteCertificate
+  (background active target)` — **ambient-Prop only in the MVP** (model-indexed and
+  syntactic routes need their own typed schemas later) — which checks the stated
+  factorization and nothing more: role assignments are author-designated metadata, and the
+  certificate never certifies that "active" is philosophically the active ingredient.
+  "Uses A" evidence is a set of **independent `RouteEvidenceKind`s, deliberately not a
+  linear maturity ladder**: designated intent; syntactic liveness (#19); explicit
+  factorization; restricted replay (#20); transformational artifact (Type-level
+  data/realizer — which may exist before its correctness has undergone replay). Necessity
+  is never route evidence: it is a link to a separate reversal, nonimplication, or
+  separation `FactId`. Evidence-bearing route comparisons
   (`factorsThrough`, `weakensBackground`, `refinesGenericInterface`,
   `replacesCompletionPrinciple`, `proofByStrengthening`, `sharesCoreWith`,
   `hasLowerUniformUseThan`, `hasBetterQuantitativeOutputThan`) use an extensible
   registered vocabulary; standardness/elegance/"same central idea" are attributed
   assessments under the strict-RM policy, never inference edges. Route entries live outside
   `FactEntry` and never enter RM or Weihrauch closure without a bridge certificate; the
-  site renders the fact graph and the route graph as visibly different structures. Pilots
-  (which pressure-test the vocabulary before the schema stabilizes): Higman via mathlib's
-  Nash-Williams route vs a minimal-bad-sequence interface (canonical-proof overshoot;
-  ACA₀-equivalent theorem, candidate Π¹₁-CA-level route resource); Sperner/Brouwer as
-  shared finite core + completion bridge; countable de Bruijn–Erdős via first-order vs
-  propositional compactness (generic-interface overshoot); Borel determinacy via
-  measurable-cardinal strengthening (base pinned to the exact source, never flattened to
-  "ordinary set theory"); Hahn–Banach via Zorn (choice/maximality overshoot). The
+  site renders the fact graph and the route graph as visibly different structures.
+  **Fixture vs pilots**: the **Hall walking slice is the schema smoke fixture** — it
+  already has exact variants, two concrete proof artifacts with source hashes, dependency
+  snapshots, explicit factorization, and the background-already-proves-the-target
+  phenomenon, so it validates the schema with no new mathematics; **Higman is the first
+  substantive overshoot-research pilot** (mathlib's own file follows Nash-Williams: mine
+  it, test whether it genuinely factors through a minimal-bad-sequence interface —
+  ACA₀-equivalent theorem, candidate Π¹₁-CA-level route resource, claim rendered as
+  proof-route overshoot, never a lower bound); the remaining studies are roadmap-ordered
+  follow-ups, not acceptance criteria: Sperner/Brouwer as shared finite core + completion
+  bridge; countable de Bruijn–Erdős via first-order vs propositional compactness
+  (generic-interface overshoot); Borel determinacy via measurable-cardinal strengthening
+  (base pinned to the exact source, never flattened to "ordinary set theory"); Hahn–Banach
+  via Zorn (choice/maximality overshoot). The
   research-query program this enables (overshooting frontiers, finite-core+completion
   families, same-RM-different-oracle-pattern, route changes across mathlib revisions)
   merges into the empirical capability-basis program below, not a separate track.

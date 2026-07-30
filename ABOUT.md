@@ -1,8 +1,10 @@
 # About the reverse-mathlib project
 
 reverse-mathlib is a **typed, proof-carrying atlas** of statements, presentations, proof
-routes, and resource use in Lean. It records both the intrinsic foundational or
-computational classification of a theorem and the architecture of particular proofs of it;
+routes, and resource use in Lean. It records both the extensional/contextual
+classification of an exact theorem variant — always relative to a base, a semantic scope,
+and a presentation, never "intrinsic" independently of them — and the architecture of
+particular proofs of it;
 reverse mathematics (ordinary, strict, higher-order), Weihrauch reducibility, quantitative
 proof mining, and mathlib proof-route archaeology are distinct projections of that record —
 none is the master ordering, and a route result ("this canonical proof overshoots the
