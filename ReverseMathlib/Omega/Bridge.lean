@@ -560,4 +560,58 @@ def sectionPathInternal {Ω : OmegaPart} (h : IsTuringIdeal Ω)
     (s : InternalFunction Ω) : Ω.InternalSet :=
   ⟨sectionPathSet s, h.mem_of_reducible s.graph.2 (sectionPathSet_le_graph s)⟩
 
+/-! ### `systemToTree`: compiling an inverse system to a binary tree
+
+Chunk widths are **deliberately inefficient**: the level-`k` chunk has width equal to the
+level-`k` fiber-list length `m`, so the width is at least `1` automatically for nonempty
+fibers and `m ≤ 2 ^ m` leaves room to encode every index — there is no
+reverse-mathematical value in optimizing to `⌈log₂ m⌉`, while logarithmic arithmetic would
+complicate the primitive-recursive proofs. Tree membership is **extensional**: a
+bit-sequence code whose decoding is a prefix of the encoding of some finite coherent
+tuple — prefix closure is immediate, and incomplete chunks are treated uniformly as
+genuine nodes. Everything is relational: fiber lists enter through `MapsTo`, never through
+evaluation. -/
+
+/-- Coherence of a level-`k` chosen element with the previous level's element (`none` at
+the root): the bonding map sends the new element down to the previous one. -/
+def BondOk {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) :
+    Option ℕ → ℕ → Prop
+  | none, _ => True
+  | some x, y => F.bonding.MapsTo (Nat.pair (k - 1) y) x
+
+/-- Relational chunk encoding of a coherent tuple from level `k` upward, threading the
+previously chosen element for the coherence check. The level-`k` chunk is
+`bitListOfIndex (fiber-list length) idx` for the chosen index `idx`. -/
+inductive CoherentEncoding {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ℕ → Option ℕ → List ℕ → Prop
+  /-- The empty tuple encodes to no bits, at any level. -/
+  | nil (k : ℕ) (prev : Option ℕ) : CoherentEncoding F k prev []
+  /-- Choose index `idx` in the level-`k` fiber, coherent with the previous element, and
+  continue upward. -/
+  | cons {k : ℕ} {prev : Option ℕ} {fc idx : ℕ} {rest : List ℕ} :
+      F.fibers.MapsTo k fc →
+      idx < (decodeSeq fc).length →
+      BondOk F k prev ((decodeSeq fc).getD idx 0) →
+      CoherentEncoding F (k + 1) (some ((decodeSeq fc).getD idx 0)) rest →
+      CoherentEncoding F k prev (bitListOfIndex (decodeSeq fc).length idx ++ rest)
+
+/-- Layer 1 (raw): the compiled tree — bit-sequence codes whose decoding is a prefix of
+the encoding of some finite coherent tuple. -/
+def systemTreeSet {Ω : OmegaPart} (F : InternalInverseSystem Ω) : Set ℕ :=
+  {c | IsBitSeqCode c ∧ ∃ full, CoherentEncoding F 0 none full ∧ decodeSeq c <+: full}
+
+/-- The compiled tree is a binary tree code: bit content by definition; prefix closure is
+immediate from the extensional prefix formulation — incomplete chunks are nodes. -/
+theorem isBinaryTreeCode_systemTreeSet {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    IsBinaryTreeCode (systemTreeSet F) := by
+  constructor
+  · exact fun c hc => hc.1
+  · rintro c ⟨hbits, full, henc, hpre⟩ k
+    refine ⟨?_, full, henc, ?_⟩
+    · intro x hx
+      rw [decodeSeq_seqCode] at hx
+      exact hbits x (List.mem_of_mem_take hx)
+    · rw [decodeSeq_seqCode]
+      exact (List.take_prefix k _).trans hpre
+
 end ReverseMathlib.Omega
