@@ -296,4 +296,37 @@ theorem treeFiberGraph_le_tree (T : Set ℕ) : treeFiberGraph T ≤ᵀ T := by
   · rw [if_neg (fun hc => h (mem_treeFiberGraph_iff.mpr
       (by rw [seqCode_treeLevelList]; exact hc))), if_neg h]
 
+/-! ### Layer 3: internal packaging — no tree hypotheses
+
+Totality and single-valuedness of the fiber and bonding graphs hold for an **arbitrary**
+set `T`; Ω-membership comes from ideal closure applied to the layer-2 theorems. The
+mathematical tree properties (`IsBinaryTreeCode`, `HasNodeAtEveryLevel`) enter only in
+layer 4, where the `InternalInverseSystem` record is assembled — so "no selected node in
+the constructed data" is literally true. -/
+
+/-- The fiber enumerator of an internal set, as an internal graph-coded function. -/
+def treeFiberFunction {Ω : OmegaPart} (h : IsTuringIdeal Ω) (T : Ω.InternalSet) :
+    InternalFunction Ω where
+  graph := ⟨treeFiberGraph T.1, h.mem_of_reducible T.2 (treeFiberGraph_le_tree T.1)⟩
+  total := fun n => ⟨seqCode (treeLevelList T.1 n), ⟨n, rfl⟩⟩
+  singleValued := fun n y y' hy hy' => by
+    obtain ⟨m, hm⟩ := hy
+    obtain ⟨m', hm'⟩ := hy'
+    obtain ⟨rfl, rfl⟩ := Nat.pair_eq_pair.mp hm
+    obtain ⟨h1, rfl⟩ := Nat.pair_eq_pair.mp hm'
+    rw [h1]
+
+/-- The bonding map (truncation of the decoded node), as an internal graph-coded function —
+internal to **every** Turing ideal, since its graph is recursive. -/
+def treeBondingFunction {Ω : OmegaPart} (h : IsTuringIdeal Ω) : InternalFunction Ω where
+  graph := ⟨treeBondingGraph, h.mem_of_recursive recursiveSet_treeBondingGraph⟩
+  total := fun q => ⟨seqCode ((decodeSeq q.unpair.2).take q.unpair.1), by
+    change _ ∈ treeBondingGraph
+    rw [mem_treeBondingGraph_iff, Nat.unpair_pair]⟩
+  singleValued := fun q y y' hy hy' => by
+    have h1 := mem_treeBondingGraph_iff.mp hy
+    have h2 := mem_treeBondingGraph_iff.mp hy'
+    simp only [Nat.unpair_pair] at h1 h2
+    rw [h1, h2]
+
 end ReverseMathlib.Omega
