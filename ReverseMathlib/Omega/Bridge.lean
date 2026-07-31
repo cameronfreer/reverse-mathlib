@@ -966,4 +966,273 @@ theorem systemTreeVerifier_correct {Ω : OmegaPart} (F : InternalInverseSystem �
     systemTreeVerifier F c = true ↔ c ∈ systemTreeSet F :=
   ⟨systemTreeVerifier_sound F, systemTreeVerifier_complete F⟩
 
+/-! ### The table-driven implementation: finite oracle transcript, then pure verifier
+
+`systemTreeVerifier` is the **semantic specification**, and stays so — the soundness and
+completeness stack above is proved against it and is not touched here. What it cannot be is
+`Nat.RecursiveIn`: it queries `F.fibers.eval` and `F.bonding.eval` at positions nested
+inside list operations, and mathlib's oracle-relative library has no closure lemma for that
+shape.
+
+The reduction is therefore restructured into the normal form *finite oracle transcript,
+then pure verifier*: the oracle is consulted only to build two finite tables, and
+everything after that is a primitive-recursive function of those tables and the node code.
+An agreement lemma attaches the implementation to the specification, so no correctness
+proof moves. The same normal form is what later extraction and uniform-artifact work want —
+the computability structure becomes an artifact rather than a proof detail.
+
+Both tables are ragged lists of codes, each coded as one natural by `seqCode`:
+
+* the **fiber table**'s row `base` is the fiber code `F.fibers.eval base`;
+* the **bond table**'s row `base` lists, at index `idx`, the bonding image of the
+  level-`base` element with index `idx`.
+
+The bond table is keyed by `(base, idx)` — the level of the *argument*, not the first
+coordinate of the bonding query. At level `base` the query is
+`Nat.pair (base - 1) (elemAt F base idx)`, so a query whose first coordinate is `k` has its
+argument in fiber `k + 1`; keying by `(k, y)` would be off by one, and would additionally
+require searching a row for `y`, which positional keying avoids — so the pure verifier does
+not depend on fiber `Nodup` even computationally. Row `0` of the bond table is unused.
+
+Every accessor is total, falling back on `0` — the code of the empty list — for a missing
+row or index, so the verifier is a total function of three naturals, primitive recursive
+and (unlike the specification) genuinely computable. -/
+
+/-- Row `base` of a table of codes; `0`, the code of `[]`, when the row is absent. -/
+def tableRow (tbl base : ℕ) : ℕ :=
+  (decodeSeq tbl).getD base 0
+
+/-- The number of entries in row `base` of a table — for a fiber table, the chunk width. -/
+def tableWidth (tbl base : ℕ) : ℕ :=
+  (decodeSeq (tableRow tbl base)).length
+
+/-- Entry `idx` of row `base` of a table; `0` when absent. For a fiber table this is the
+selected element, for a bond table its bonding image. -/
+def tableEntry (tbl base idx : ℕ) : ℕ :=
+  (decodeSeq (tableRow tbl base)).getD idx 0
+
+/-- One step of the table-driven tuple check. The state is
+`(level, previously selected element, accepted so far)`; level `0` is the sentinel for
+"no previous element", where the bonding check is skipped — matching `BondOk F 0 none`,
+which is the only way the specification is ever entered. -/
+def tupleOkStep (ft bt : ℕ) (st : ℕ × ℕ × Bool) (idx : ℕ) : ℕ × ℕ × Bool :=
+  (st.1 + 1, tableEntry ft st.1 idx,
+    st.2.2 && decide (idx < tableWidth ft st.1) &&
+      (decide (st.1 = 0) || decide (tableEntry bt st.1 idx = st.2.1)))
+
+/-- The table-driven tuple check: `tupleOk` read off the tables, as a left fold carrying
+the level and the previously selected element. -/
+def tupleOkT (ft bt : ℕ) (t : List ℕ) : Bool :=
+  (t.foldl (tupleOkStep ft bt) (0, 0, true)).2.2
+
+/-- One step of the table-driven chunk encoding; the state is `(level, bits so far)`. -/
+def encodeTupleStep (ft : ℕ) (st : ℕ × List ℕ) (idx : ℕ) : ℕ × List ℕ :=
+  (st.1 + 1, st.2 ++ bitListOfIndex (tableWidth ft st.1) idx)
+
+/-- The table-driven chunk encoding of an index tuple, from level `0` upward. -/
+def encodeTupleT (ft : ℕ) (t : List ℕ) : List ℕ :=
+  (t.foldl (encodeTupleStep ft) (0, [])).2
+
+/-- All in-range index tuples for levels `0, …, j - 1`, read off the fiber table. Tuples
+are extended at the **end**, so the recursion carries no varying level parameter and is
+primitive recursive in `(ft, j)` directly; the enumeration order differs from
+`candidateTuples`, which is immaterial because only membership is ever used. -/
+def tableTuples (ft : ℕ) : ℕ → List (List ℕ)
+  | 0 => [[]]
+  | j + 1 =>
+      (tableTuples ft j).flatMap fun t =>
+        (List.range (tableWidth ft j)).map fun idx => t ++ [idx]
+
+/-- **The table-driven verifier**: the specification's bounded search, with every oracle
+query replaced by a table lookup. Prefixhood is phrased through `List.take` because that is
+the form with primitive-recursive support. -/
+def systemTreeVerifierFromTables (ft bt c : ℕ) : Bool :=
+  (decodeSeq c).all (fun x => decide (x ≤ 1)) &&
+  ((List.range ((decodeSeq c).length + 1)).any fun j =>
+    (tableTuples ft j).any fun t =>
+      tupleOkT ft bt t &&
+        decide (decodeSeq c = (encodeTupleT ft t).take (decodeSeq c).length))
+
+/-! #### The table-driven verifier is primitive recursive -/
+
+theorem primrec_tableRow : Primrec₂ tableRow :=
+  Primrec₂.comp (f := fun (l : List ℕ) (i : ℕ) => l.getD i 0) (Primrec.list_getD 0)
+    (primrec_decodeSeq.comp .fst) .snd
+
+theorem primrec_tableWidth : Primrec₂ tableWidth :=
+  Primrec.list_length.comp (primrec_decodeSeq.comp primrec_tableRow)
+
+theorem primrec_tableEntry :
+    Primrec fun p : ℕ × ℕ × ℕ => tableEntry p.1 p.2.1 p.2.2 :=
+  Primrec₂.comp (f := fun (l : List ℕ) (i : ℕ) => l.getD i 0) (Primrec.list_getD 0)
+    (primrec_decodeSeq.comp
+      (Primrec₂.comp primrec_tableRow .fst (Primrec.fst.comp .snd)))
+    (Primrec.snd.comp .snd)
+
+theorem primrec_natPow : Primrec₂ ((· ^ ·) : ℕ → ℕ → ℕ) :=
+  Primrec₂.unpaired'.1 Nat.Primrec.pow
+
+theorem primrec_bitListOfIndex : Primrec₂ bitListOfIndex := by
+  have h : Primrec fun p : ℕ × ℕ => (List.range p.1).map fun j => p.2 / 2 ^ j % 2 :=
+    Primrec.list_map (Primrec.list_range.comp .fst)
+      (Primrec.nat_mod.comp
+        (Primrec.nat_div.comp (Primrec.snd.comp .fst)
+          (Primrec₂.comp primrec_natPow (Primrec.const 2) .snd))
+        (Primrec.const 2)).to₂
+  exact h.of_eq fun p => (bitListOfIndex_eq_div_mod p.1 p.2).symm
+
+set_option maxHeartbeats 1000000 in
+-- The fold state `ℕ × ℕ × Bool` and the parameter tuple `ℕ × ℕ × List ℕ` make
+-- `Primcodable` instance elaboration for the composed product types expensive.
+theorem primrec_tupleOkT :
+    Primrec fun p : ℕ × ℕ × List ℕ => tupleOkT p.1 p.2.1 p.2.2 := by
+  have hft : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.1.1 :=
+    Primrec.fst.comp .fst
+  have hbt : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.1.2.1 :=
+    Primrec.fst.comp (Primrec.snd.comp .fst)
+  have hlvl : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.2.1.1 :=
+    Primrec.fst.comp (Primrec.fst.comp .snd)
+  have hprev : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.2.1.2.1 :=
+    Primrec.fst.comp (Primrec.snd.comp (Primrec.fst.comp .snd))
+  have hacc : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.2.1.2.2 :=
+    Primrec.snd.comp (Primrec.snd.comp (Primrec.fst.comp .snd))
+  have hidx : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ => q.2.2 :=
+    Primrec.snd.comp .snd
+  have hfib : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ =>
+      tableEntry q.1.1 q.2.1.1 q.2.2 :=
+    primrec_tableEntry.comp (hft.pair (hlvl.pair hidx))
+  have hbond : Primrec fun q : (ℕ × ℕ × List ℕ) × (ℕ × ℕ × Bool) × ℕ =>
+      tableEntry q.1.2.1 q.2.1.1 q.2.2 :=
+    primrec_tableEntry.comp (hbt.pair (hlvl.pair hidx))
+  have hstep : Primrec₂ fun (p : ℕ × ℕ × List ℕ) (q : (ℕ × ℕ × Bool) × ℕ) =>
+      tupleOkStep p.1 p.2.1 q.1 q.2 :=
+    (Primrec.pair (Primrec.succ.comp hlvl)
+      (Primrec.pair hfib
+        (Primrec.and.comp
+          (Primrec.and.comp hacc
+            ((Primrec.nat_lt.comp hidx (Primrec₂.comp primrec_tableWidth hft hlvl)).decide))
+          (Primrec.or.comp
+            ((Primrec.eq.comp hlvl (Primrec.const 0)).decide)
+            ((Primrec.eq.comp hbond hprev).decide))))).to₂
+  have hfold : Primrec fun p : ℕ × ℕ × List ℕ =>
+      p.2.2.foldl (fun s b => tupleOkStep p.1 p.2.1 s b) ((0, 0, true) : ℕ × ℕ × Bool) :=
+    Primrec.list_foldl (f := fun p : ℕ × ℕ × List ℕ => p.2.2)
+      (g := fun _ : ℕ × ℕ × List ℕ => ((0, 0, true) : ℕ × ℕ × Bool))
+      (h := fun (p : ℕ × ℕ × List ℕ) (q : (ℕ × ℕ × Bool) × ℕ) => tupleOkStep p.1 p.2.1 q.1 q.2)
+      (Primrec.snd.comp .snd) (Primrec.const _) hstep
+  exact Primrec.snd.comp (Primrec.snd.comp hfold)
+
+theorem primrec_encodeTupleT : Primrec₂ encodeTupleT := by
+  have hft : Primrec fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ => q.1.1 := Primrec.fst.comp .fst
+  have hlvl : Primrec fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ => q.2.1.1 :=
+    Primrec.fst.comp (Primrec.fst.comp .snd)
+  have hbits : Primrec fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ => q.2.1.2 :=
+    Primrec.snd.comp (Primrec.fst.comp .snd)
+  have hidx : Primrec fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ => q.2.2 := Primrec.snd.comp .snd
+  have hstep : Primrec₂ fun (p : ℕ × List ℕ) (q : (ℕ × List ℕ) × ℕ) =>
+      encodeTupleStep p.1 q.1 q.2 :=
+    (Primrec.pair (Primrec.succ.comp hlvl)
+      (Primrec₂.comp (f := fun l r : List ℕ => l ++ r)
+        (g := fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ => q.2.1.2)
+        (h := fun q : (ℕ × List ℕ) × (ℕ × List ℕ) × ℕ =>
+          bitListOfIndex (tableWidth q.1.1 q.2.1.1) q.2.2)
+        Primrec.list_append hbits
+        (Primrec₂.comp primrec_bitListOfIndex
+          (Primrec₂.comp primrec_tableWidth hft hlvl) hidx))).to₂
+  have hfold : Primrec fun p : ℕ × List ℕ =>
+      p.2.foldl (fun s b => encodeTupleStep p.1 s b) ((0, []) : ℕ × List ℕ) :=
+    Primrec.list_foldl (f := fun p : ℕ × List ℕ => p.2)
+      (g := fun _ : ℕ × List ℕ => ((0, []) : ℕ × List ℕ))
+      (h := fun (p : ℕ × List ℕ) (q : (ℕ × List ℕ) × ℕ) => encodeTupleStep p.1 q.1 q.2)
+      Primrec.snd (Primrec.const _) hstep
+  exact Primrec.snd.comp hfold
+
+theorem tableTuples_eq_nat_rec (ft : ℕ) (j : ℕ) :
+    tableTuples ft j =
+      Nat.rec (motive := fun _ => List (List ℕ)) [[]]
+        (fun j IH => IH.flatMap fun t => (List.range (tableWidth ft j)).map fun idx => t ++ [idx])
+        j := by
+  induction j with
+  | zero => rfl
+  | succ j ih => rw [tableTuples, ih]
+
+theorem primrec_tableTuples : Primrec₂ tableTuples := by
+  have hinner : Primrec₂ fun (z : ℕ × ℕ × List (List ℕ)) (t : List ℕ) =>
+      (List.range (tableWidth z.1 z.2.1)).map fun idx => t ++ [idx] :=
+    Primrec.list_map
+      (f := fun w : (ℕ × ℕ × List (List ℕ)) × List ℕ => List.range (tableWidth w.1.1 w.1.2.1))
+      (g := fun (w : (ℕ × ℕ × List (List ℕ)) × List ℕ) (idx : ℕ) => w.2 ++ [idx])
+      (Primrec.list_range.comp
+        (Primrec₂.comp primrec_tableWidth (Primrec.fst.comp .fst)
+          (Primrec.fst.comp (Primrec.snd.comp .fst))))
+      (Primrec₂.comp (f := fun (l : List ℕ) (a : ℕ) => l ++ [a])
+        (g := fun w : ((ℕ × ℕ × List (List ℕ)) × List ℕ) × ℕ => w.1.2)
+        (h := fun w : ((ℕ × ℕ × List (List ℕ)) × List ℕ) × ℕ => w.2)
+        Primrec.list_concat (Primrec.snd.comp .fst) .snd)
+  have hg : Primrec₂ fun (ft : ℕ) (q : ℕ × List (List ℕ)) =>
+      q.2.flatMap fun t => (List.range (tableWidth ft q.1)).map fun idx => t ++ [idx] :=
+    Primrec.list_flatMap
+      (f := fun z : ℕ × ℕ × List (List ℕ) => z.2.2)
+      (g := fun (z : ℕ × ℕ × List (List ℕ)) (t : List ℕ) =>
+        (List.range (tableWidth z.1 z.2.1)).map fun idx => t ++ [idx])
+      (Primrec.snd.comp .snd) hinner
+  exact (Primrec.nat_rec (Primrec.const [[]]) hg).of_eq fun ft j =>
+    (tableTuples_eq_nat_rec ft j).symm
+
+set_option maxHeartbeats 2000000 in
+-- Three nested bounded searches over deeply nested product types; each `PrimrecRel`
+-- composition re-elaborates the `Primcodable` instance for the enclosing product.
+theorem systemTreeVerifierFromTables_primrec :
+    Primrec fun p : ℕ × ℕ × ℕ => systemTreeVerifierFromTables p.1 p.2.1 p.2.2 := by
+  classical
+  -- The innermost parameter shape is `(tuple, ((fiberTable, bondTable, node), chunkCount))`.
+  have hnode : Primrec fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => decodeSeq w.2.1.2.2 :=
+    primrec_decodeSeq.comp (Primrec.snd.comp (Primrec.snd.comp (Primrec.fst.comp .snd)))
+  have hok : Primrec fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) =>
+      tupleOkT w.2.1.1 w.2.1.2.1 w.1 :=
+    primrec_tupleOkT.comp
+      (g := fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => (w.2.1.1, w.2.1.2.1, w.1))
+      ((Primrec.fst.comp (Primrec.fst.comp .snd)).pair
+        ((Primrec.fst.comp (Primrec.snd.comp (Primrec.fst.comp .snd))).pair .fst))
+  have henc : Primrec fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => encodeTupleT w.2.1.1 w.1 :=
+    Primrec₂.comp (f := encodeTupleT)
+      (g := fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => w.2.1.1)
+      (h := fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => w.1)
+      primrec_encodeTupleT (Primrec.fst.comp (Primrec.fst.comp .snd)) .fst
+  have hR₃ : PrimrecRel fun (t : List ℕ) (q : (ℕ × ℕ × ℕ) × ℕ) =>
+      tupleOkT q.1.1 q.1.2.1 t = true ∧
+        decodeSeq q.1.2.2 = (encodeTupleT q.1.1 t).take (decodeSeq q.1.2.2).length :=
+    PrimrecPred.and (Primrec.eq.comp hok (Primrec.const true))
+      (Primrec.eq.comp hnode
+        (Primrec₂.comp (f := (List.take : ℕ → List ℕ → List ℕ))
+          (g := fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => (decodeSeq w.2.1.2.2).length)
+          (h := fun w : List ℕ × ((ℕ × ℕ × ℕ) × ℕ) => encodeTupleT w.2.1.1 w.1)
+          Primrec.list_take (Primrec.list_length.comp hnode) henc))
+  have hR₂ : PrimrecRel fun (j : ℕ) (p : ℕ × ℕ × ℕ) =>
+      ∃ t ∈ tableTuples p.1 j, tupleOkT p.1 p.2.1 t = true ∧
+        decodeSeq p.2.2 = (encodeTupleT p.1 t).take (decodeSeq p.2.2).length :=
+    PrimrecRel.comp hR₃.exists_mem_list
+      (Primrec₂.comp (f := tableTuples) (g := fun z : ℕ × ℕ × ℕ × ℕ => z.2.1)
+        (h := fun z : ℕ × ℕ × ℕ × ℕ => z.1)
+        primrec_tableTuples (Primrec.fst.comp .snd) .fst)
+      (Primrec.pair (Primrec.snd) (Primrec.fst) :
+        Primrec fun z : ℕ × ℕ × ℕ × ℕ => ((z.2, z.1) : (ℕ × ℕ × ℕ) × ℕ))
+  have hlen : Primrec fun p : ℕ × ℕ × ℕ => (decodeSeq p.2.2).length + 1 :=
+    Primrec.succ.comp (Primrec.list_length.comp (primrec_decodeSeq.comp (Primrec.snd.comp .snd)))
+  have hsearch : PrimrecPred fun p : ℕ × ℕ × ℕ =>
+      ∃ j ∈ List.range ((decodeSeq p.2.2).length + 1), ∃ t ∈ tableTuples p.1 j,
+        tupleOkT p.1 p.2.1 t = true ∧
+          decodeSeq p.2.2 = (encodeTupleT p.1 t).take (decodeSeq p.2.2).length :=
+    PrimrecRel.comp hR₂.exists_mem_list (Primrec.list_range.comp hlen)
+      (Primrec.id : Primrec fun p : ℕ × ℕ × ℕ => p)
+  have hbit : PrimrecPred fun p : ℕ × ℕ × ℕ => ∀ x ∈ decodeSeq p.2.2, x ≤ 1 :=
+    (PrimrecPred.forall_mem_list (p := fun x : ℕ => x ≤ 1)
+      (Primrec.nat_le.comp Primrec.id (Primrec.const 1))).comp
+      (primrec_decodeSeq.comp (Primrec.snd.comp .snd))
+  obtain ⟨_inst, hmain⟩ := PrimrecPred.and hbit hsearch
+  refine hmain.of_eq fun p => ?_
+  rw [Bool.eq_iff_iff]
+  simp only [systemTreeVerifierFromTables, decide_eq_true_eq, Bool.and_eq_true,
+    List.all_eq_true, List.any_eq_true, List.mem_range, decide_eq_true_eq]
+
 end ReverseMathlib.Omega
