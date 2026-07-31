@@ -186,4 +186,114 @@ theorem seqCode_treeLevelList (T : Set ℕ) (n : ℕ) :
     seqCode (treeLevelList T n) = levelCodeUpTo T n (2 ^ n) :=
   rfl
 
+/-- The level-code loop is computable relative to the tree oracle: a primitive recursion
+whose step queries the tree at the structurally enumerated candidate and either appends it
+or keeps the accumulator. The tree enters **only** as the oracle. -/
+theorem levelCodeUpTo_recursiveIn (T : Set ℕ) :
+    Nat.RecursiveIn {charFn T}
+      (fun p => Part.some (levelCodeUpTo T p.unpair.1 p.unpair.2)) := by
+  classical
+  have hcand : Nat.Partrec fun q => Part.some
+      (seqCode (bitListOfIndex q.unpair.1 q.unpair.2.unpair.1)) := by
+    have hcomp := primrec_candidate.comp (Primrec₂.natPair.comp
+      (Primrec.fst.comp Primrec.unpair)
+      (Primrec.fst.comp (Primrec.unpair.comp (Primrec.snd.comp Primrec.unpair))))
+    have : Primrec fun q : ℕ =>
+        seqCode (bitListOfIndex q.unpair.1 q.unpair.2.unpair.1) :=
+      hcomp.of_eq fun q => by rw [Nat.unpair_pair]
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hid : Nat.RecursiveIn {charFn T} fun q => Part.some q :=
+    ((Nat.Partrec.of_primrec Nat.Primrec.id).recursiveIn).of_eq fun _ => rfl
+  have horacle : Nat.RecursiveIn {charFn T} fun q =>
+      charFn T (seqCode (bitListOfIndex q.unpair.1 q.unpair.2.unpair.1)) :=
+    recursiveIn_comp_partrec (Nat.RecursiveIn.oracle (O := {charFn T}) _ rfl) hcand
+  have hpair := hid.pair horacle
+  have hpost : Nat.Partrec fun m => Part.some (if m.unpair.2 = 1
+      then seqCode (decodeSeq m.unpair.1.unpair.2.unpair.2 ++
+        [seqCode (bitListOfIndex m.unpair.1.unpair.1 m.unpair.1.unpair.2.unpair.1)])
+      else m.unpair.1.unpair.2.unpair.2) := by
+    have hq : Primrec fun m : ℕ => m.unpair.1 := Primrec.fst.comp Primrec.unpair
+    have hi : Primrec fun m : ℕ => m.unpair.1.unpair.2.unpair.2 :=
+      Primrec.snd.comp (Primrec.unpair.comp (Primrec.snd.comp (Primrec.unpair.comp hq)))
+    have hcomp' := primrec_candidate.comp (Primrec₂.natPair.comp
+      (Primrec.fst.comp (Primrec.unpair.comp hq))
+      (Primrec.fst.comp (Primrec.unpair.comp (Primrec.snd.comp
+        (Primrec.unpair.comp hq)))))
+    have hcand' : Primrec fun m : ℕ =>
+        seqCode (bitListOfIndex m.unpair.1.unpair.1 m.unpair.1.unpair.2.unpair.1) :=
+      hcomp'.of_eq fun m => by rw [Nat.unpair_pair]
+    have hval : Primrec fun m : ℕ => if m.unpair.2 = 1
+        then seqCode (decodeSeq m.unpair.1.unpair.2.unpair.2 ++
+          [seqCode (bitListOfIndex m.unpair.1.unpair.1 m.unpair.1.unpair.2.unpair.1)])
+        else m.unpair.1.unpair.2.unpair.2 :=
+      Primrec.ite (Primrec.eq.comp (Primrec.snd.comp Primrec.unpair) (.const 1))
+        (Primrec₂.comp (f := fun ih x => seqCode (decodeSeq ih ++ [x]))
+          primrec_snocCode hi hcand')
+        hi
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp hval)).of_eq fun _ => rfl
+  have hstep := hpost.recursiveIn.comp hpair
+  refine (Nat.RecursiveIn.prec
+    (f := fun _ : ℕ => Part.some (seqCode ([] : List ℕ)))
+    (((Nat.Partrec.of_primrec (Primrec.nat_iff.mp
+      (Primrec.const (seqCode ([] : List ℕ))))).recursiveIn).of_eq fun _ => rfl)
+    hstep).of_eq fun p => ?_
+  rcases hp : Nat.unpair p with ⟨a, k⟩
+  clear hp
+  dsimp only
+  induction k with
+  | zero =>
+    rw [Nat.rec_zero]
+    simp [levelCodeUpTo]
+  | succ y ih =>
+    rw [← Nat.succ_eq_add_one]
+    dsimp only
+    rw [ih]
+    simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
+      Part.map_some, Nat.unpair_pair, levelCodeUpTo_succ]
+    by_cases hmem : seqCode (bitListOfIndex a y) ∈ T
+    · rw [if_pos hmem, if_pos rfl, if_pos hmem]
+    · rw [if_neg hmem, if_neg (by omega), if_neg hmem]
+
+/-- Membership in the fiber graph is an equation against the level code. -/
+theorem mem_treeFiberGraph_iff {T : Set ℕ} {p : ℕ} :
+    p ∈ treeFiberGraph T ↔ p.unpair.2 = seqCode (treeLevelList T p.unpair.1) := by
+  constructor
+  · rintro ⟨n, rfl⟩
+    simp [Nat.unpair_pair]
+  · intro h
+    exact ⟨p.unpair.1, by rw [← h, Nat.pair_unpair]⟩
+
+/-- **Layer 2, `treeToSystem`**: the fiber graph is Turing-reducible to the tree. -/
+theorem treeFiberGraph_le_tree (T : Set ℕ) : treeFiberGraph T ≤ᵀ T := by
+  classical
+  have hfull : Nat.RecursiveIn {charFn T}
+      (fun p => Part.some (levelCodeUpTo T p.unpair.1 (2 ^ p.unpair.1))) := by
+    have hpr : Nat.Partrec fun p => Part.some (Nat.pair p.unpair.1 (2 ^ p.unpair.1)) := by
+      have : Primrec fun p : ℕ => Nat.pair p.unpair.1 (2 ^ p.unpair.1) :=
+        Primrec₂.natPair.comp (Primrec.fst.comp Primrec.unpair)
+          (Primrec₂.comp (f := fun (a b : ℕ) => a ^ b)
+            (Primrec₂.unpaired'.mp Nat.Primrec.pow) (.const 2)
+            (Primrec.fst.comp Primrec.unpair))
+      exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+    exact (recursiveIn_comp_partrec (levelCodeUpTo_recursiveIn T) hpr).of_eq fun p => by
+      simp [Nat.unpair_pair]
+  have hpaired := (((Nat.Partrec.of_primrec Nat.Primrec.id).recursiveIn).of_eq
+    (fun (_ : ℕ) => rfl) : Nat.RecursiveIn {charFn T} fun q => Part.some q).pair hfull
+  have hpost : Nat.Partrec fun m => Part.some
+      (if m.unpair.1.unpair.2 = m.unpair.2 then 1 else 0) := by
+    have hval : Primrec fun m : ℕ =>
+        if m.unpair.1.unpair.2 = m.unpair.2 then 1 else 0 :=
+      Primrec.ite (Primrec.eq.comp
+        (Primrec.snd.comp (Primrec.unpair.comp (Primrec.fst.comp Primrec.unpair)))
+        (Primrec.snd.comp Primrec.unpair)) (.const 1) (.const 0)
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp hval)).of_eq fun _ => rfl
+  refine (hpost.recursiveIn.comp hpaired).of_eq fun p => ?_
+  simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
+    Part.map_some, Nat.unpair_pair]
+  by_cases h : p ∈ treeFiberGraph T
+  · rw [if_pos (by rw [← seqCode_treeLevelList]; exact mem_treeFiberGraph_iff.mp h),
+      if_pos h]
+  · rw [if_neg (fun hc => h (mem_treeFiberGraph_iff.mpr
+      (by rw [seqCode_treeLevelList]; exact hc))), if_neg h]
+
 end ReverseMathlib.Omega
