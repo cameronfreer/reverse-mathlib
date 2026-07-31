@@ -794,4 +794,93 @@ theorem weakKonigAt_of_efilcAt {Ω : OmegaPart} (h : IsTuringIdeal Ω)
     rw [s.singleValued _ c' ci hc' hci, hbit] at hone
     exact hone
 
+/-! ### `systemToTree` layer 2, stage 1: oracle-relative lookups
+
+The join of the fiber and bonding graphs is the single oracle. Level and bonding values are
+found by terminating searches — the **only** unbounded steps in the whole reduction;
+everything downstream is finite enumeration over the `≤ L`-chunk tuples that
+`systemTreeSet_bounded_witness` licenses. -/
+
+/-- The oracle of the compiled-tree reduction: the join of the two internal graphs. -/
+def systemOracle {Ω : OmegaPart} (F : InternalInverseSystem Ω) : Set ℕ :=
+  joinSet F.fibers.graph.1 F.bonding.graph.1
+
+open Classical in
+/-- The least fiber code at a level — the canonical proof-side value the search finds. -/
+noncomputable def fiberCodeAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) : ℕ :=
+  Nat.find (F.fibers.total k)
+
+theorem fibers_mapsTo_fiberCodeAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) :
+    F.fibers.MapsTo k (fiberCodeAt F k) := by
+  classical
+  exact Nat.find_spec (F.fibers.total k)
+
+open Classical in
+/-- The least bonding value at an input — the canonical proof-side value. -/
+noncomputable def bondingValueAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (q : ℕ) :
+    ℕ :=
+  Nat.find (F.bonding.total q)
+
+theorem bonding_mapsTo_bondingValueAt {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (q : ℕ) : F.bonding.MapsTo q (bondingValueAt F q) := by
+  classical
+  exact Nat.find_spec (F.bonding.total q)
+
+/-- Search for the least `y` with `Nat.pair a y` in the graph reached through the given
+side of the join oracle (`side = 0`: fibers at `2 * ·`; `side = 1`: bonding at
+`2 * · + 1`). Totality of the graph guarantees termination. -/
+private theorem joinSideSearch_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (side : ℕ)
+    (G : Set ℕ)
+    (hmem : ∀ z, (2 * z + side ∈ systemOracle F) ↔ z ∈ G)
+    (v : ℕ → ℕ) (hv : ∀ q, Nat.pair q (v q) ∈ G)
+    (hleast : ∀ q y, Nat.pair q y ∈ G → v q ≤ y) :
+    Nat.RecursiveIn {charFn (systemOracle F)} (fun q => Part.some (v q)) := by
+  classical
+  have hembed : Nat.Partrec fun q => Part.some (2 * q + side) := by
+    have : Primrec fun q : ℕ => 2 * q + side :=
+      Primrec.nat_add.comp
+        (Primrec₂.comp (f := fun (a b : ℕ) => a * b) Primrec.nat_mul (.const 2) .id)
+        (.const side)
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hqueried := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn (systemOracle F)}) _ rfl) hembed
+  have hsub : Nat.Partrec fun m => Part.some (1 - m) := by
+    have : Primrec fun m : ℕ => 1 - m := Primrec.nat_sub.comp (.const 1) .id
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  refine (Nat.RecursiveIn.rfind (hsub.recursiveIn.comp hqueried)).of_eq fun q => ?_
+  simp only [charFn, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some, Part.map_some]
+  rw [Part.eq_some_iff, Nat.mem_rfind]
+  constructor
+  · simp [hmem, hv q]
+  · intro m hm
+    have hnm : Nat.pair q m ∉ G := fun hc => absurd (hleast q m hc) (by omega)
+    simp [hmem, hnm]
+
+/-- **Oracle-relative fiber lookup**: the fiber code at a level is computable from the
+join oracle. -/
+theorem fiberCodeAt_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} (fun k => Part.some (fiberCodeAt F k)) := by
+  classical
+  refine joinSideSearch_recursiveIn F 0 F.fibers.graph.1
+    (fun z => by
+      change (2 * z + 0 ∈ joinSet F.fibers.graph.1 F.bonding.graph.1) ↔ _
+      rw [Nat.add_zero]
+      exact two_mul_mem_joinSet)
+    (fiberCodeAt F) (fibers_mapsTo_fiberCodeAt F) ?_
+  intro q y hy
+  exact Nat.find_le hy
+
+/-- **Oracle-relative bonding lookup**: the bonding value is computable from the join
+oracle. -/
+theorem bondingValueAt_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)}
+      (fun q => Part.some (bondingValueAt F q)) := by
+  classical
+  refine joinSideSearch_recursiveIn F 1 F.bonding.graph.1
+    (fun _ => two_mul_add_one_mem_joinSet) (bondingValueAt F)
+    (bonding_mapsTo_bondingValueAt F) ?_
+  intro q y hy
+  exact Nat.find_le hy
+
 end ReverseMathlib.Omega
