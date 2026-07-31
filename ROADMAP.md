@@ -836,6 +836,45 @@ minimal-bad-sequence cores entering only with their pilots.
 - **Ordinal analysis and conservation backend**: ordinal notations, well-ordering principles
   (already forced by Dickson/WO(ω^ω)), reflection, cut elimination, conservativity,
   interpretability, proof speed-up — the vertical resolution the Big Five lack.
+- **The forcing lens** (horizon; explicitly **off** the #22/turnstile critical path — the
+  mathematics lives in `cameronfreer/forcing`, and reverse-mathlib consumes its facts and
+  routes later). Forcing is an unusually good stress test of the project's central
+  distinction, because an extensional preservation theorem, a particular forcing
+  presentation, and the resolver structure one proof happens to use are three different
+  objects. The correspondence: posets / separative quotients / Boolean completions are
+  distinct **presentations** with certified translations; the ground model and coded-test
+  convention is a **semantic context**; a primitive test family is a **test-doctrine
+  object**; saturated coverage is derived presentation-level structure; fusion, direct
+  extension, strategies, and master conditions are **resolver artifacts**; totality,
+  preservation, forcing theorems, and well-foundedness are exact **statement variants**;
+  "every `J`-generic has `O`" is a typed **adequacy fact**; Mathias-style criteria and
+  compression theorems are **genericity-equivalence certificates**; a proof using
+  fusion/properness is a **proof route**; and a doctrine-separating counterexample is a
+  **separation fact**. Refinements to preserve: the doctrine is **context-indexed**
+  (`(M, P, J, Res, O)` — hiding the ground model inside `J` breaks transport and
+  comparison); raw primitive tests, the coverage they generate, Grothendieck saturation, and
+  the semantic closure of tests met by all generics stay **four separate notions** whose
+  coincidence is a theorem (and semantic closure is vacuous absent generics, so generic
+  existence needs its own evidence); resolver data is **heterogeneous** — fusion systems,
+  winning strategies, direct-extension relations, and master-condition assignments get their
+  own typed schemas, exactly like the no-universal-relation-enum rule for lenses; adequacy is
+  an extensional **fact** while resolution is a **route** (a forcing-equivalent presentation
+  may share the first without carrying the second — perhaps the cleanest example anywhere of
+  why theorem classification and proof architecture must stay separate); and a coverage
+  compression must certify something exact ("passes these object-level tests ↔ induces an
+  `M`-generic filter"; saturation = the selected doctrine), with faithful filter recovery a
+  further independent certificate. The connection to the Hall work is **structural, not
+  logical**: finite approximations → level/coherence requirements → branch/section resolver →
+  decoded observable is strikingly close to forcing's test–resolver–observable pattern, so
+  "finite approximation system" and "coherent resolution" may eventually become shared
+  `ConstructionCoreId` assignments — but `CoherentEncoding` is *not* to be generalized into a
+  forcing abstraction; the commonality belongs in the atlas first. The archaeology query this
+  unlocks: *which formal forcing proofs invoke full genericity or a broad resolver although
+  their target uses only a restricted class of tests, names, or formulas?* — forcing-specific
+  proof-route overshoot, which never calibrates the theorem. A reverse-mathlib adapter comes
+  only after `cameronfreer/forcing` has an actual checked artifact, imported under the same
+  source-revision/checking-mechanism trust rule as every other external backend (#28). No
+  monolithic `GenericityDoctrine` schema enters the core.
 - Nonstandard RM, set-theoretic RM, further reducibilities (Medvedev, Muchnik, enumeration,
   strong Weihrauch, game), concrete incompleteness, categorical/structural RM, and RM of type
   theory itself (truncation, resizing, extensionality) remain named horizons.
