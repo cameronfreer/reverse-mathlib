@@ -1235,4 +1235,216 @@ theorem systemTreeVerifierFromTables_primrec :
   simp only [systemTreeVerifierFromTables, decide_eq_true_eq, Bool.and_eq_true,
     List.all_eq_true, List.any_eq_true, List.mem_range, decide_eq_true_eq]
 
+/-! #### The ideal tables, and their bounded lookup equations
+
+The transcripts the oracle has to produce. Both are truncations at a level bound `L`:
+outside the bound the accessors return their fallbacks, and every agreement statement below
+carries the bound it needs as `base + t.length ≤ L`. -/
+
+/-- The **fiber transcript** up to level `L`: row `base` is the level-`base` fiber code. -/
+noncomputable def fiberTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) : ℕ :=
+  seqCode ((List.range L).map fun base => F.fibers.eval base)
+
+/-- The **bond transcript** up to level `L`: row `base` lists, at index `idx`, the bonding
+image of the level-`base` element with index `idx`. Row `0` is never read. -/
+noncomputable def bondTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) : ℕ :=
+  seqCode ((List.range L).map fun base =>
+    seqCode ((List.range (chunkWidth F base)).map fun idx =>
+      F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx))))
+
+theorem tableRow_fiberTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L base : ℕ}
+    (h : base < L) : tableRow (fiberTable F L) base = F.fibers.eval base := by
+  rw [tableRow, fiberTable, decodeSeq_seqCode, List.getD_eq_getElem?_getD,
+    List.getElem?_map, List.getElem?_range h, Option.map_some, Option.getD_some]
+
+theorem tableWidth_fiberTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L base : ℕ}
+    (h : base < L) : tableWidth (fiberTable F L) base = chunkWidth F base := by
+  rw [tableWidth, tableRow_fiberTable F h, chunkWidth, fiberList]
+
+theorem tableEntry_fiberTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L base : ℕ}
+    (h : base < L) (idx : ℕ) : tableEntry (fiberTable F L) base idx = elemAt F base idx := by
+  rw [tableEntry, tableRow_fiberTable F h, elemAt, fiberList]
+
+theorem tableRow_bondTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L base : ℕ}
+    (h : base < L) : tableRow (bondTable F L) base =
+      seqCode ((List.range (chunkWidth F base)).map fun idx =>
+        F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx))) := by
+  rw [tableRow, bondTable, decodeSeq_seqCode, List.getD_eq_getElem?_getD,
+    List.getElem?_map, List.getElem?_range h, Option.map_some, Option.getD_some]
+
+theorem tableEntry_bondTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L base : ℕ}
+    (h : base < L) {idx : ℕ} (hidx : idx < chunkWidth F base) :
+    tableEntry (bondTable F L) base idx =
+      F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx)) := by
+  rw [tableEntry, tableRow_bondTable F h, decodeSeq_seqCode, List.getD_eq_getElem?_getD,
+    List.getElem?_map, List.getElem?_range hidx, Option.map_some, Option.getD_some]
+
+/-! #### Agreement with the specification
+
+Each lemma is an induction over the candidate tuple, with the level bound threaded through
+as `base + t.length ≤ L`. The oracle-facing definitions are never unfolded: the tables enter
+only through the four lookup equations above. -/
+
+private theorem getD_concat_lt {t : List ℕ} {idx i : ℕ} (h : i < t.length) :
+    (t ++ [idx]).getD i 0 = t.getD i 0 := by
+  rw [List.getD_eq_getElem?_getD, List.getD_eq_getElem?_getD, List.getElem?_append_left h]
+
+private theorem getD_concat_self (t : List ℕ) (idx : ℕ) :
+    (t ++ [idx]).getD t.length 0 = idx := by
+  rw [List.getD_eq_getElem?_getD, List.getElem?_append_right (le_refl _)]
+  simp
+
+/-- The table-driven chunk encoding agrees with the specification's, level by level. -/
+theorem encodeTupleStep_foldl {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) :
+    ∀ (t : List ℕ) (base : ℕ) (acc : List ℕ), base + t.length ≤ L →
+      (t.foldl (encodeTupleStep (fiberTable F L)) (base, acc)).2 =
+        acc ++ encodeTuple F base t := by
+  intro t
+  induction t with
+  | nil => intro base acc _; simp [encodeTuple]
+  | cons idx rest ih =>
+    intro base acc h
+    have hbase : base < L := by simp only [List.length_cons] at h; omega
+    rw [List.foldl_cons, encodeTupleStep, tableWidth_fiberTable F hbase,
+      ih (base + 1) _ (by simp only [List.length_cons] at h; omega), encodeTuple,
+      List.append_assoc]
+
+theorem encodeTupleT_eq {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L : ℕ} {t : List ℕ}
+    (h : t.length ≤ L) : encodeTupleT (fiberTable F L) t = encodeTuple F 0 t := by
+  have := encodeTupleStep_foldl F L t 0 [] (by omega)
+  rw [encodeTupleT, this, List.nil_append]
+
+/-- The table-driven tuple check agrees with the specification's above the root level. -/
+theorem tupleOkStep_foldl_succ {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) :
+    ∀ (t : List ℕ) (base x : ℕ) (b : Bool), 1 ≤ base → base + t.length ≤ L →
+      (t.foldl (tupleOkStep (fiberTable F L) (bondTable F L)) (base, x, b)).2.2 =
+        (b && tupleOk F base (some x) t) := by
+  intro t
+  induction t with
+  | nil => intro base x b _ _; simp [tupleOk]
+  | cons idx rest ih =>
+    intro base x b hb h
+    have hbase : base < L := by simp only [List.length_cons] at h; omega
+    have hrest : base + 1 + rest.length ≤ L := by simp only [List.length_cons] at h; omega
+    have hzero : decide (base = 0) = false := by simp only [decide_eq_false_iff_not]; omega
+    rw [List.foldl_cons]
+    simp only [tupleOkStep, hzero, Bool.false_or, tableWidth_fiberTable F hbase,
+      tableEntry_fiberTable F hbase]
+    by_cases hlt : idx < chunkWidth F base
+    · rw [tableEntry_bondTable F hbase hlt, ih (base + 1) _ _ (by omega) hrest, tupleOk]
+      have hbond : bondOkB F base (some x) (elemAt F base idx) =
+          decide (F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx)) = x) := rfl
+      rw [hbond]
+      simp [hlt, Bool.and_assoc]
+    · rw [ih (base + 1) _ _ (by omega) hrest, tupleOk]
+      simp [hlt]
+
+theorem tupleOkT_eq {Ω : OmegaPart} (F : InternalInverseSystem Ω) {L : ℕ} {t : List ℕ}
+    (h : t.length ≤ L) :
+    tupleOkT (fiberTable F L) (bondTable F L) t = tupleOk F 0 none t := by
+  match t with
+  | [] => simp [tupleOkT, tupleOk]
+  | idx :: rest =>
+    have hzero : (0 : ℕ) < L := by simp only [List.length_cons] at h; omega
+    have hrest : 1 + rest.length ≤ L := by simp only [List.length_cons] at h; omega
+    rw [tupleOkT, List.foldl_cons, tupleOkStep, tableWidth_fiberTable F hzero,
+      tableEntry_fiberTable F hzero]
+    rw [tupleOkStep_foldl_succ F L rest 1 _ _ (le_refl 1) hrest, tupleOk]
+    have hbond : bondOkB F 0 none (elemAt F 0 idx) = true := rfl
+    rw [hbond]
+    simp
+
+/-! #### The two candidate enumerations have the same members -/
+
+theorem mem_tableTuples_iff (ft : ℕ) : ∀ (j : ℕ) (t : List ℕ),
+    t ∈ tableTuples ft j ↔ t.length = j ∧ ∀ i < j, t.getD i 0 < tableWidth ft i := by
+  intro j
+  induction j with
+  | zero =>
+    intro t
+    simp only [tableTuples, List.mem_singleton, Nat.not_lt_zero, false_implies,
+      implies_true, and_true, List.length_eq_zero_iff]
+  | succ j ih =>
+    intro t
+    simp only [tableTuples, List.mem_flatMap, List.mem_map, List.mem_range]
+    constructor
+    · rintro ⟨t', ht', idx, hidx, rfl⟩
+      obtain ⟨hlen, hall⟩ := (ih t').mp ht'
+      refine ⟨by simp [hlen], fun i hi => ?_⟩
+      rcases Nat.lt_or_ge i t'.length with hi' | hi'
+      · rw [getD_concat_lt hi']; exact hall i (hlen ▸ hi')
+      · obtain rfl : i = t'.length := by omega
+        rw [getD_concat_self]; exact hlen ▸ hidx
+    · rintro ⟨hlen, hall⟩
+      rcases List.eq_nil_or_concat t with rfl | ⟨t', idx, ht⟩
+      · simp at hlen
+      · rw [List.concat_eq_append] at ht
+        subst ht
+        have hlen' : t'.length = j := by simpa using hlen
+        refine ⟨t', (ih t').mpr ⟨hlen', fun i hi => ?_⟩, idx, ?_, rfl⟩
+        · rw [← getD_concat_lt (idx := idx) (by omega)]
+          exact hall i (by omega)
+        · have := hall t'.length (by omega)
+          rwa [getD_concat_self, hlen'] at this
+
+theorem mem_candidateTuples_iff {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ∀ (j base : ℕ) (t : List ℕ), t ∈ candidateTuples F base j ↔
+      t.length = j ∧ ∀ i < j, t.getD i 0 < chunkWidth F (base + i) := by
+  intro j
+  induction j with
+  | zero =>
+    intro base t
+    simp only [candidateTuples, List.mem_singleton, Nat.not_lt_zero, false_implies,
+      implies_true, and_true, List.length_eq_zero_iff]
+  | succ j ih =>
+    intro base t
+    simp only [candidateTuples, List.mem_flatMap, List.mem_map, List.mem_range]
+    constructor
+    · rintro ⟨idx, hidx, t', ht', rfl⟩
+      obtain ⟨hlen, hall⟩ := (ih (base + 1) t').mp ht'
+      refine ⟨by simp [hlen], fun i hi => ?_⟩
+      match i with
+      | 0 => simpa using hidx
+      | i + 1 =>
+        have := hall i (by omega)
+        simpa [List.getD_cons_succ, Nat.add_assoc, Nat.add_comm 1 i] using this
+    · rintro ⟨hlen, hall⟩
+      match t with
+      | [] => simp at hlen
+      | idx :: t' =>
+        refine ⟨idx, by simpa using hall 0 (by omega), t',
+          (ih (base + 1) t').mpr ⟨by simpa using hlen, fun i hi => ?_⟩, rfl⟩
+        have := hall (i + 1) (by omega)
+        simpa [List.getD_cons_succ, Nat.add_assoc, Nat.add_comm 1 i] using this
+
+/-! #### The agreement lemma
+
+The table-driven verifier computes the specification's verdict, provided the transcripts
+reach the node's length. Every correctness theorem proved against the specification
+therefore transports to the implementation unchanged. -/
+
+theorem systemTreeVerifierFromTables_agrees {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (c : ℕ) {L : ℕ} (hL : (decodeSeq c).length ≤ L) :
+    systemTreeVerifierFromTables (fiberTable F L) (bondTable F L) c =
+      systemTreeVerifier F c := by
+  rw [Bool.eq_iff_iff]
+  simp only [systemTreeVerifierFromTables, systemTreeVerifier, Bool.and_eq_true,
+    List.all_eq_true, List.any_eq_true, List.mem_range, decide_eq_true_eq]
+  refine and_congr Iff.rfl ⟨?_, ?_⟩
+  · rintro ⟨j, hj, t, ht, hok, hpre⟩
+    have hlen : t.length = j := ((mem_tableTuples_iff _ j t).mp ht).1
+    have hle : t.length ≤ L := by omega
+    rw [tupleOkT_eq F hle] at hok
+    rw [encodeTupleT_eq F hle] at hpre
+    exact ⟨j, hj, t, hlen ▸ tupleOk_mem_candidateTuples F 0 none t hok, hok,
+      List.prefix_iff_eq_take.mpr hpre⟩
+  · rintro ⟨j, hj, t, ht, hok, hpre⟩
+    have hmem := (mem_candidateTuples_iff F j 0 t).mp ht
+    have hle : t.length ≤ L := by omega
+    refine ⟨j, hj, t, (mem_tableTuples_iff _ j t).mpr ⟨hmem.1, fun i hi => ?_⟩,
+      by rw [tupleOkT_eq F hle]; exact hok,
+      by rw [encodeTupleT_eq F hle]; exact List.prefix_iff_eq_take.mp hpre⟩
+    rw [tableWidth_fiberTable F (by omega : i < L)]
+    simpa using hmem.2 i hi
+
 end ReverseMathlib.Omega
