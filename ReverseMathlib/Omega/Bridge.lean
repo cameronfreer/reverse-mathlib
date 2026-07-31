@@ -661,4 +661,92 @@ theorem systemTreeSet_bounded_witness {Ω : OmegaPart} {F : InternalInverseSyste
     exact ⟨_, full', le_refl _, henc',
       List.prefix_of_prefix_length_le hpre hpre' henc'.le_length⟩
 
+/-- Every coherent encoding is a bit list (chunks are `bitListOfIndex` blocks). -/
+theorem CoherentEncoding.mem_le_one {Ω : OmegaPart} {F : InternalInverseSystem Ω}
+    {k : ℕ} {prev : Option ℕ} {j : ℕ} {full : List ℕ}
+    (h : CoherentEncoding F k prev j full) : ∀ x ∈ full, x ≤ 1 := by
+  induction h with
+  | nil => simp
+  | cons hfc hidx _ _ ih =>
+    intro x hx
+    rcases List.mem_append.mp hx with hx | hx
+    · simp only [bitListOfIndex, List.mem_map] at hx
+      obtain ⟨j', -, rfl⟩ := hx
+      split <;> omega
+    · exact ih x hx
+
+/-- **Top-parameterized downward completion**: a chosen member of the level-`n` fiber,
+together with any coherent continuation above it, extends to a full coherent encoding from
+level `0`. Induction pushes the element down through the bonding function — no
+surjectivity of bonding maps is ever assumed (extending an arbitrary lower chain upward
+would require exactly that). -/
+theorem exists_coherentEncoding_of_top {Ω : OmegaPart} {F : InternalInverseSystem Ω} :
+    ∀ n fc x, F.fibers.MapsTo n fc → x ∈ decodeSeq fc →
+      ∀ j rest, CoherentEncoding F (n + 1) (some x) j rest →
+        ∃ m full, m = n + 1 + j ∧ CoherentEncoding F 0 none m full := by
+  intro n
+  induction n with
+  | zero =>
+    intro fc x hfc hx j rest hrest
+    obtain ⟨i, hi, hgi⟩ := List.mem_iff_getElem.mp hx
+    have hval : (decodeSeq fc).getD i 0 = x := by
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, hgi, Option.getD_some]
+    refine ⟨j + 1, bitListOfIndex (decodeSeq fc).length i ++ rest, by omega, ?_⟩
+    refine CoherentEncoding.cons hfc hi trivial ?_
+    rw [hval]
+    exact hrest
+  | succ n ih =>
+    intro fc x hfc hx j rest hrest
+    -- push x down through the bonding function; place the image in the level-n fiber
+    obtain ⟨y, hy⟩ := F.bonding.total (Nat.pair n x)
+    obtain ⟨fc', hfc'⟩ := F.fibers.total n
+    have hymem : y ∈ decodeSeq fc' := F.bonding_mem n fc fc' x y hfc hfc' hx hy
+    -- the level-(n+1) chunk for x, continuing into rest
+    obtain ⟨i, hi, hgi⟩ := List.mem_iff_getElem.mp hx
+    have hval : (decodeSeq fc).getD i 0 = x := by
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hi, hgi, Option.getD_some]
+    have hrest' : CoherentEncoding F (n + 1) (some y) (j + 1)
+        (bitListOfIndex (decodeSeq fc).length i ++ rest) := by
+      refine CoherentEncoding.cons hfc hi ?_ ?_
+      · change F.bonding.MapsTo (Nat.pair n ((decodeSeq fc).getD i 0)) y
+        rwa [hval]
+      · rw [hval]
+        exact hrest
+    obtain ⟨m, full, hm, henc⟩ := ih fc' y hfc' hymem (j + 1) _ hrest'
+    exact ⟨m, full, by omega, henc⟩
+
+/-- The compiled tree has a node at every bit length: choose a top element proof-locally
+from fiber `L - 1`, complete downward, and take the first `L` encoded bits. -/
+theorem hasNodeAtEveryLevel_systemTreeSet {Ω : OmegaPart}
+    (F : InternalInverseSystem Ω) : HasNodeAtEveryLevel (systemTreeSet F) := by
+  intro L
+  match L with
+  | 0 =>
+    refine ⟨seqCode [], ⟨?_, 0, [], .nil _ _, by rw [decodeSeq_seqCode]⟩, ?_⟩
+    · intro x hx
+      rw [decodeSeq_seqCode] at hx
+      simp at hx
+    · rw [decodeSeq_seqCode]
+      rfl
+  | L + 1 =>
+    obtain ⟨fc, hfc⟩ := F.fibers.total L
+    have hne := F.fiber_nonempty L fc hfc
+    have hlen : 0 < (decodeSeq fc).length := List.length_pos_iff.mpr hne
+    have hx : (decodeSeq fc).getD 0 0 ∈ decodeSeq fc := by
+      rw [List.getD_eq_getElem?_getD, List.getElem?_eq_getElem hlen, Option.getD_some]
+      exact List.getElem_mem hlen
+    obtain ⟨m, full, hm, henc⟩ :=
+      exists_coherentEncoding_of_top L fc _ hfc hx 0 [] (.nil _ _)
+    have hLle : L + 1 ≤ full.length := by
+      have := henc.le_length
+      omega
+    refine ⟨seqCode (full.take (L + 1)), ⟨?_, m, full, henc, ?_⟩, ?_⟩
+    · intro x hx'
+      rw [decodeSeq_seqCode] at hx'
+      exact henc.mem_le_one x (List.mem_of_mem_take hx')
+    · rw [decodeSeq_seqCode]
+      exact List.take_prefix _ _
+    · rw [decodeSeq_seqCode, List.length_take]
+      omega
+
 end ReverseMathlib.Omega
