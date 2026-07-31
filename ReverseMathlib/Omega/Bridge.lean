@@ -495,4 +495,69 @@ theorem section_value_take {Ω : OmegaPart} {h : IsTuringIdeal Ω} {T : Ω.Inter
       simp only [Nat.unpair_pair] at hbond
       rw [ih hk' hcn hc', hbond, decodeSeq_seqCode, List.take_take, min_eq_left hk']
 
+open Classical in
+/-- **Layer 2, `sectionToPath`**: the decoded path is Turing-reducible to the section
+graph — this theorem mentions **only** `s.graph`; no tree appears. The implementation
+searches (`rfind`) for a level-`i + 1` section value — totality guarantees termination,
+single-valuedness makes the found value canonical — then inspects bit `i`; the proof shows
+it extensionally equal to the raw specification. -/
+theorem sectionPathSet_le_graph {Ω : OmegaPart} (s : InternalFunction Ω) :
+    sectionPathSet s ≤ᵀ s.graph.1 := by
+  classical
+  have hpre : Nat.Partrec fun q => Part.some (Nat.pair (q.unpair.1 + 1) q.unpair.2) := by
+    have : Primrec fun q : ℕ => Nat.pair (q.unpair.1 + 1) q.unpair.2 :=
+      Primrec₂.natPair.comp (Primrec.succ.comp (Primrec.fst.comp Primrec.unpair))
+        (Primrec.snd.comp Primrec.unpair)
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hqueried := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn s.graph.1}) _ rfl) hpre
+  have hsub : Nat.Partrec fun m => Part.some (1 - m) := by
+    have : Primrec fun m : ℕ => 1 - m := Primrec.nat_sub.comp (.const 1) .id
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hf := hsub.recursiveIn.comp hqueried
+  have hrf := Nat.RecursiveIn.rfind hf
+  have hid : Nat.RecursiveIn {charFn s.graph.1} fun q => Part.some q :=
+    ((Nat.Partrec.of_primrec Nat.Primrec.id).recursiveIn).of_eq fun _ => rfl
+  have hpaired := hid.pair hrf
+  have hpost : Nat.Partrec fun m => Part.some
+      (if (decodeSeq m.unpair.2).getD m.unpair.1 0 = 1 then 1 else 0) := by
+    have hval : Primrec fun m : ℕ =>
+        if (decodeSeq m.unpair.2).getD m.unpair.1 0 = 1 then 1 else 0 :=
+      Primrec.ite (Primrec.eq.comp
+        (Primrec₂.comp (f := fun n i => (decodeSeq n).getD i 0) primrec_seqGet
+          (Primrec.snd.comp Primrec.unpair) (Primrec.fst.comp Primrec.unpair))
+        (.const 1)) (.const 1) (.const 0)
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp hval)).of_eq fun _ => rfl
+  refine (hpost.recursiveIn.comp hpaired).of_eq fun i => ?_
+  obtain ⟨y, hy⟩ := s.total (i + 1)
+  have hex : ∃ y, Nat.pair (i + 1) y ∈ s.graph.1 := ⟨y, hy⟩
+  have hy₀ : Nat.pair (i + 1) (Nat.find hex) ∈ s.graph.1 := Nat.find_spec hex
+  have hiff : i ∈ sectionPathSet s ↔ (decodeSeq (Nat.find hex)).getD i 0 = 1 := by
+    constructor
+    · rintro ⟨c, hc, hbit⟩
+      rwa [s.singleValued _ c (Nat.find hex) hc hy₀] at hbit
+    · exact fun hbit => ⟨Nat.find hex, hy₀, hbit⟩
+  simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
+    Part.map_some, Nat.unpair_pair]
+  have hrfeq : (Nat.rfind fun n => Part.some
+      (decide ((1 - if Nat.pair (i + 1) n ∈ s.graph.1 then 1 else 0) = 0))) =
+      Part.some (Nat.find hex) := by
+    rw [Part.eq_some_iff, Nat.mem_rfind]
+    constructor
+    · simp [hy₀]
+    · intro m hm
+      have hnm : Nat.pair (i + 1) m ∉ s.graph.1 := fun hmem => Nat.find_min hex hm hmem
+      simp [hnm]
+  rw [hrfeq]
+  simp only [Part.map_some, Part.bind_some, Nat.unpair_pair]
+  by_cases hbit : (decodeSeq (Nat.find hex)).getD i 0 = 1
+  · rw [if_pos hbit, if_pos (hiff.mpr hbit)]
+  · rw [if_neg hbit, if_neg fun hc => hbit (hiff.mp hc)]
+
+/-- Layer 3: the decoded path as an internal set — ideal closure on the layer-2
+reducibility. No tree hypotheses; the tree first appears in path correctness. -/
+def sectionPathInternal {Ω : OmegaPart} (h : IsTuringIdeal Ω)
+    (s : InternalFunction Ω) : Ω.InternalSet :=
+  ⟨sectionPathSet s, h.mem_of_reducible s.graph.2 (sectionPathSet_le_graph s)⟩
+
 end ReverseMathlib.Omega
