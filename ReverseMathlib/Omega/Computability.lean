@@ -54,6 +54,15 @@ instance : Std.Refl TuringReducibleSet := ⟨TuringReducibleSet.refl⟩
 instance : Trans TuringReducibleSet TuringReducibleSet TuringReducibleSet :=
   ⟨TuringReducibleSet.trans⟩
 
+/-- **Oracle enlargement along `≤ᵀ`**: a computation relative to `A` is a computation
+relative to any oracle that computes `A`. The fundamental ω-transfer composition rule — a
+construction computable from an internal graph stays computable from any larger registered
+oracle. -/
+theorem recursiveIn_of_turingReducible {A B : Set ℕ} {f : ℕ →. ℕ}
+    (hf : Nat.RecursiveIn {charFn A} f) (hAB : A ≤ᵀ B) :
+    Nat.RecursiveIn {charFn B} f :=
+  hf.subst fun _ hg => Set.mem_singleton_iff.mp hg ▸ hAB
+
 /-- The characteristic function determines the set. -/
 theorem charFn_injective : Function.Injective charFn := by
   intro A B h

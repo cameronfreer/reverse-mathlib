@@ -44,14 +44,25 @@ theorem InternalFunction.existsUnique_mapsTo {Ω : OmegaPart} (F : InternalFunct
   obtain ⟨y, hy⟩ := F.total x
   exact ⟨y, hy, fun y' hy' => F.singleValued x y' y hy' hy⟩
 
-/-- Ambient evaluation, derived **noncomputably** for proof convenience only. -/
+open Classical in
+/-- Ambient evaluation, derived **noncomputably** for proof convenience only — the
+**least** output the graph assigns, which is exactly the value the oracle search below
+finds. -/
 noncomputable def InternalFunction.eval {Ω : OmegaPart} (F : InternalFunction Ω)
     (x : ℕ) : ℕ :=
-  (F.total x).choose
+  Nat.find (F.total x)
 
 theorem InternalFunction.pair_eval_mem {Ω : OmegaPart} (F : InternalFunction Ω) (x : ℕ) :
-    Nat.pair x (F.eval x) ∈ F.graph.1 :=
-  (F.total x).choose_spec
+    Nat.pair x (F.eval x) ∈ F.graph.1 := by
+  classical
+  exact Nat.find_spec (F.total x)
+
+/-- Minimality of the derived evaluation (single-valuedness makes it vacuous
+mathematically, but the search proof needs it directly). -/
+theorem InternalFunction.eval_le {Ω : OmegaPart} (F : InternalFunction Ω) {x y : ℕ}
+    (hy : Nat.pair x y ∈ F.graph.1) : F.eval x ≤ y := by
+  classical
+  exact Nat.find_le hy
 
 /-- The graph decides evaluation. -/
 theorem InternalFunction.graph_mem_iff {Ω : OmegaPart} (F : InternalFunction Ω)
@@ -67,6 +78,27 @@ theorem InternalFunction.mapsTo_iff_eval_eq {Ω : OmegaPart} (F : InternalFuncti
 theorem InternalFunction.isGraphOf_eval {Ω : OmegaPart} (F : InternalFunction Ω) :
     IsGraphOf F.graph.1 F.eval :=
   fun _ _ => F.graph_mem_iff
+
+/-- **Unique graph lookup**: the evaluation of a total, single-valued internal function is
+computable from its graph alone — search for the unique output using only the graph oracle.
+Totality guarantees termination; single-valuedness makes the found value canonical. This is
+the shared computational core of every internal-function lookup. -/
+theorem InternalFunction.eval_recursiveIn_graph {Ω : OmegaPart} (F : InternalFunction Ω) :
+    Nat.RecursiveIn {charFn F.graph.1} (fun x => Part.some (F.eval x)) := by
+  classical
+  have hsub : Nat.Partrec fun m => Part.some (1 - m) := by
+    have : Primrec fun m : ℕ => 1 - m := Primrec.nat_sub.comp (.const 1) .id
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hf := hsub.recursiveIn.comp
+    (Nat.RecursiveIn.oracle (O := {charFn F.graph.1}) _ rfl)
+  refine (Nat.RecursiveIn.rfind hf).of_eq fun x => ?_
+  simp only [charFn, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some, Part.map_some]
+  rw [Part.eq_some_iff, Nat.mem_rfind]
+  constructor
+  · simp [F.pair_eval_mem x]
+  · intro m hm
+    have hnm : Nat.pair x m ∉ F.graph.1 := fun hc => absurd (F.eval_le hc) (by omega)
+    simp [hnm]
 
 /-- Graph-coded functions with equal graphs evaluate equally. -/
 theorem InternalFunction.eval_congr {Ω : OmegaPart} {F G : InternalFunction Ω}

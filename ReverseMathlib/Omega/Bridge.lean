@@ -495,30 +495,19 @@ theorem section_value_take {Ω : OmegaPart} {h : IsTuringIdeal Ω} {T : Ω.Inter
       simp only [Nat.unpair_pair] at hbond
       rw [ih hk' hcn hc', hbond, decodeSeq_seqCode, List.take_take, min_eq_left hk']
 
-open Classical in
 /-- **Layer 2, `sectionToPath`**: the decoded path is Turing-reducible to the section
-graph — this theorem mentions **only** `s.graph`; no tree appears. The implementation
-searches (`rfind`) for a level-`i + 1` section value — totality guarantees termination,
-single-valuedness makes the found value canonical — then inspects bit `i`; the proof shows
-it extensionally equal to the raw specification. -/
+graph — this theorem mentions **only** `s.graph`; no tree appears. The implementation is
+unique graph lookup at level `i + 1` followed by a primitive recursive bit inspection;
+totality guarantees termination and single-valuedness makes the found value canonical. -/
 theorem sectionPathSet_le_graph {Ω : OmegaPart} (s : InternalFunction Ω) :
     sectionPathSet s ≤ᵀ s.graph.1 := by
   classical
-  have hpre : Nat.Partrec fun q => Part.some (Nat.pair (q.unpair.1 + 1) q.unpair.2) := by
-    have : Primrec fun q : ℕ => Nat.pair (q.unpair.1 + 1) q.unpair.2 :=
-      Primrec₂.natPair.comp (Primrec.succ.comp (Primrec.fst.comp Primrec.unpair))
-        (Primrec.snd.comp Primrec.unpair)
+  have hsucc : Nat.Partrec fun i => Part.some (i + 1) := by
+    have : Primrec fun i : ℕ => i + 1 := Primrec.succ
     exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
-  have hqueried := recursiveIn_comp_partrec
-    (Nat.RecursiveIn.oracle (O := {charFn s.graph.1}) _ rfl) hpre
-  have hsub : Nat.Partrec fun m => Part.some (1 - m) := by
-    have : Primrec fun m : ℕ => 1 - m := Primrec.nat_sub.comp (.const 1) .id
-    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
-  have hf := hsub.recursiveIn.comp hqueried
-  have hrf := Nat.RecursiveIn.rfind hf
+  have heval := recursiveIn_comp_partrec s.eval_recursiveIn_graph hsucc
   have hid : Nat.RecursiveIn {charFn s.graph.1} fun q => Part.some q :=
     ((Nat.Partrec.of_primrec Nat.Primrec.id).recursiveIn).of_eq fun _ => rfl
-  have hpaired := hid.pair hrf
   have hpost : Nat.Partrec fun m => Part.some
       (if (decodeSeq m.unpair.2).getD m.unpair.1 0 = 1 then 1 else 0) := by
     have hval : Primrec fun m : ℕ =>
@@ -528,29 +517,16 @@ theorem sectionPathSet_le_graph {Ω : OmegaPart} (s : InternalFunction Ω) :
           (Primrec.snd.comp Primrec.unpair) (Primrec.fst.comp Primrec.unpair))
         (.const 1)) (.const 1) (.const 0)
     exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp hval)).of_eq fun _ => rfl
-  refine (hpost.recursiveIn.comp hpaired).of_eq fun i => ?_
-  obtain ⟨y, hy⟩ := s.total (i + 1)
-  have hex : ∃ y, Nat.pair (i + 1) y ∈ s.graph.1 := ⟨y, hy⟩
-  have hy₀ : Nat.pair (i + 1) (Nat.find hex) ∈ s.graph.1 := Nat.find_spec hex
-  have hiff : i ∈ sectionPathSet s ↔ (decodeSeq (Nat.find hex)).getD i 0 = 1 := by
+  refine (hpost.recursiveIn.comp (hid.pair heval)).of_eq fun i => ?_
+  have hiff : i ∈ sectionPathSet s ↔ (decodeSeq (s.eval (i + 1))).getD i 0 = 1 := by
     constructor
     · rintro ⟨c, hc, hbit⟩
-      rwa [s.singleValued _ c (Nat.find hex) hc hy₀] at hbit
-    · exact fun hbit => ⟨Nat.find hex, hy₀, hbit⟩
+      have : s.eval (i + 1) = c := s.mapsTo_iff_eval_eq.mp hc
+      rwa [this]
+    · exact fun hbit => ⟨s.eval (i + 1), s.pair_eval_mem _, hbit⟩
   simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
     Part.map_some, Nat.unpair_pair]
-  have hrfeq : (Nat.rfind fun n => Part.some
-      (decide ((1 - if Nat.pair (i + 1) n ∈ s.graph.1 then 1 else 0) = 0))) =
-      Part.some (Nat.find hex) := by
-    rw [Part.eq_some_iff, Nat.mem_rfind]
-    constructor
-    · simp [hy₀]
-    · intro m hm
-      have hnm : Nat.pair (i + 1) m ∉ s.graph.1 := fun hmem => Nat.find_min hex hm hmem
-      simp [hnm]
-  rw [hrfeq]
-  simp only [Part.map_some, Part.bind_some, Nat.unpair_pair]
-  by_cases hbit : (decodeSeq (Nat.find hex)).getD i 0 = 1
+  by_cases hbit : (decodeSeq (s.eval (i + 1))).getD i 0 = 1
   · rw [if_pos hbit, if_pos (hiff.mpr hbit)]
   · rw [if_neg hbit, if_neg fun hc => hbit (hiff.mp hc)]
 
@@ -805,82 +781,17 @@ everything downstream is finite enumeration over the `≤ L`-chunk tuples that
 def systemOracle {Ω : OmegaPart} (F : InternalInverseSystem Ω) : Set ℕ :=
   joinSet F.fibers.graph.1 F.bonding.graph.1
 
-open Classical in
-/-- The least fiber code at a level — the canonical proof-side value the search finds. -/
-noncomputable def fiberCodeAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) : ℕ :=
-  Nat.find (F.fibers.total k)
+/-- **Oracle-relative fiber lookup**: the fiber enumerator's values are computable from
+the join oracle — unique graph lookup, lifted along `left_le_joinSet`. -/
+theorem fibers_eval_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} (fun k => Part.some (F.fibers.eval k)) :=
+  recursiveIn_of_turingReducible F.fibers.eval_recursiveIn_graph
+    (left_le_joinSet _ _)
 
-theorem fibers_mapsTo_fiberCodeAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) :
-    F.fibers.MapsTo k (fiberCodeAt F k) := by
-  classical
-  exact Nat.find_spec (F.fibers.total k)
-
-open Classical in
-/-- The least bonding value at an input — the canonical proof-side value. -/
-noncomputable def bondingValueAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (q : ℕ) :
-    ℕ :=
-  Nat.find (F.bonding.total q)
-
-theorem bonding_mapsTo_bondingValueAt {Ω : OmegaPart} (F : InternalInverseSystem Ω)
-    (q : ℕ) : F.bonding.MapsTo q (bondingValueAt F q) := by
-  classical
-  exact Nat.find_spec (F.bonding.total q)
-
-/-- Search for the least `y` with `Nat.pair a y` in the graph reached through the given
-side of the join oracle (`side = 0`: fibers at `2 * ·`; `side = 1`: bonding at
-`2 * · + 1`). Totality of the graph guarantees termination. -/
-private theorem joinSideSearch_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω)
-    (side : ℕ)
-    (G : Set ℕ)
-    (hmem : ∀ z, (2 * z + side ∈ systemOracle F) ↔ z ∈ G)
-    (v : ℕ → ℕ) (hv : ∀ q, Nat.pair q (v q) ∈ G)
-    (hleast : ∀ q y, Nat.pair q y ∈ G → v q ≤ y) :
-    Nat.RecursiveIn {charFn (systemOracle F)} (fun q => Part.some (v q)) := by
-  classical
-  have hembed : Nat.Partrec fun q => Part.some (2 * q + side) := by
-    have : Primrec fun q : ℕ => 2 * q + side :=
-      Primrec.nat_add.comp
-        (Primrec₂.comp (f := fun (a b : ℕ) => a * b) Primrec.nat_mul (.const 2) .id)
-        (.const side)
-    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
-  have hqueried := recursiveIn_comp_partrec
-    (Nat.RecursiveIn.oracle (O := {charFn (systemOracle F)}) _ rfl) hembed
-  have hsub : Nat.Partrec fun m => Part.some (1 - m) := by
-    have : Primrec fun m : ℕ => 1 - m := Primrec.nat_sub.comp (.const 1) .id
-    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
-  refine (Nat.RecursiveIn.rfind (hsub.recursiveIn.comp hqueried)).of_eq fun q => ?_
-  simp only [charFn, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some, Part.map_some]
-  rw [Part.eq_some_iff, Nat.mem_rfind]
-  constructor
-  · simp [hmem, hv q]
-  · intro m hm
-    have hnm : Nat.pair q m ∉ G := fun hc => absurd (hleast q m hc) (by omega)
-    simp [hmem, hnm]
-
-/-- **Oracle-relative fiber lookup**: the fiber code at a level is computable from the
-join oracle. -/
-theorem fiberCodeAt_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
-    Nat.RecursiveIn {charFn (systemOracle F)} (fun k => Part.some (fiberCodeAt F k)) := by
-  classical
-  refine joinSideSearch_recursiveIn F 0 F.fibers.graph.1
-    (fun z => by
-      change (2 * z + 0 ∈ joinSet F.fibers.graph.1 F.bonding.graph.1) ↔ _
-      rw [Nat.add_zero]
-      exact two_mul_mem_joinSet)
-    (fiberCodeAt F) (fibers_mapsTo_fiberCodeAt F) ?_
-  intro q y hy
-  exact Nat.find_le hy
-
-/-- **Oracle-relative bonding lookup**: the bonding value is computable from the join
-oracle. -/
-theorem bondingValueAt_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
-    Nat.RecursiveIn {charFn (systemOracle F)}
-      (fun q => Part.some (bondingValueAt F q)) := by
-  classical
-  refine joinSideSearch_recursiveIn F 1 F.bonding.graph.1
-    (fun _ => two_mul_add_one_mem_joinSet) (bondingValueAt F)
-    (bonding_mapsTo_bondingValueAt F) ?_
-  intro q y hy
-  exact Nat.find_le hy
+/-- **Oracle-relative bonding lookup**: same lookup, lifted along `right_le_joinSet`. -/
+theorem bonding_eval_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} (fun q => Part.some (F.bonding.eval q)) :=
+  recursiveIn_of_turingReducible F.bonding.eval_recursiveIn_graph
+    (right_le_joinSet _ _)
 
 end ReverseMathlib.Omega
