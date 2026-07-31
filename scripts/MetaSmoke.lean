@@ -283,6 +283,22 @@ silently acquire an explicit selection route. -/
     -- indefiniteDescription note above). The `eval` gate is the meaningful discipline: no
     -- choice-derived evaluation enters a capability statement.
 
+/-! ### ω-bridge route gate (#22 slice 3)
+
+`EFILCω → WKLω` must factor through the `treeToSystem`/`sectionToPath` route and reach
+neither compiler of the opposite direction — the route certificate for the first completed
+direction, checked as a proof-only closure fact. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_efilcAt
+  ReverseMathlib.Omega.treeToSystem
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_efilcAt
+  ReverseMathlib.Omega.sectionPathInternal
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.weakKonigAt_of_efilcAt
+  [ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.CoherentEncoding]
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
