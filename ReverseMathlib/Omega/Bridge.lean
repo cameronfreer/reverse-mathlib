@@ -378,4 +378,71 @@ theorem exists_bitListOfIndex :
           simp [Function.comp, Nat.testBit_succ, h2]
       rw [show (b :: t).length = t.length + 1 from rfl, hcons, hbi]
 
+/-- The level enumeration is duplicate-free: range nodup → injective enumeration →
+injective coding → nodup map → nodup filter. -/
+theorem treeLevelList_nodup (T : Set ℕ) (n : ℕ) : (treeLevelList T n).Nodup := by
+  classical
+  refine List.Nodup.filter _ (List.Nodup.map_on ?_ List.nodup_range)
+  intro i hi i' hi' hEq
+  exact bitListOfIndex_injOn (List.mem_range.mp hi) (List.mem_range.mp hi')
+    (seqCode_injective hEq)
+
+/-- The bonding normal form: truncating a level-`n + 1` enumeration entry lands exactly on
+the level-`n` enumeration at the reduced index. -/
+theorem bitListOfIndex_take (n i : ℕ) :
+    (bitListOfIndex (n + 1) i).take n = bitListOfIndex n (i % 2 ^ n) := by
+  rw [bitListOfIndex_eq_div_mod, bitListOfIndex_eq_div_mod, ← List.map_take,
+    List.take_range, show min n (n + 1) = n by omega]
+  refine List.map_congr_left fun j hj => ?_
+  rw [List.mem_range] at hj
+  have hsplit : 2 ^ n = 2 ^ j * 2 ^ (n - j) := by
+    rw [← pow_add]
+    congr 1
+    omega
+  rw [hsplit, Nat.mod_mul_right_div_self,
+    Nat.mod_mod_of_dvd _ (dvd_pow_self 2 (by omega : n - j ≠ 0))]
+
+/-- **Layer 4: `treeToSystem`.** The tree hypotheses enter only here:
+`HasNodeAtEveryLevel` supplies fiber nonemptiness purely through the completeness lemma
+`exists_bitListOfIndex`, and prefix closure supplies `bonding_mem` through the bonding
+normal form — no selected node is ever stored in the constructed data. -/
+def treeToSystem {Ω : OmegaPart} (h : IsTuringIdeal Ω) (T : Ω.InternalSet)
+    (htree : IsBinaryTreeCode T.1) (hlev : HasNodeAtEveryLevel T.1) :
+    InternalInverseSystem Ω where
+  fibers := treeFiberFunction h T
+  bonding := treeBondingFunction h
+  fiber_nodup := fun n c hc => by
+    obtain ⟨m, hm⟩ := hc
+    obtain ⟨rfl, rfl⟩ := Nat.pair_eq_pair.mp hm
+    rw [decodeSeq_seqCode]
+    exact treeLevelList_nodup T.1 n
+  fiber_nonempty := fun n c hc => by
+    obtain ⟨m, hm⟩ := hc
+    obtain ⟨rfl, rfl⟩ := Nat.pair_eq_pair.mp hm
+    rw [decodeSeq_seqCode]
+    obtain ⟨c₀, hc₀T, hlen⟩ := hlev n
+    obtain ⟨i, hi, hbl⟩ := exists_bitListOfIndex (decodeSeq c₀) (htree.1 c₀ hc₀T)
+    rw [hlen] at hi hbl
+    have hmem : c₀ ∈ treeLevelList T.1 n := by
+      refine mem_treeLevelList_iff.mpr ⟨hc₀T, i, hi, ?_⟩
+      conv_lhs => rw [← seqCode_decodeSeq c₀]
+      rw [← hbl]
+    intro hnil
+    rw [hnil] at hmem
+    exact List.not_mem_nil hmem
+  bonding_mem := fun n c c' x y hc hc' hx hy => by
+    obtain ⟨m, hm⟩ := hc
+    obtain ⟨rfl, rfl⟩ := Nat.pair_eq_pair.mp hm
+    obtain ⟨m', hm'⟩ := hc'
+    obtain ⟨rfl, rfl⟩ := Nat.pair_eq_pair.mp hm'
+    have h1 := mem_treeBondingGraph_iff.mp hy
+    simp only [Nat.unpair_pair] at h1
+    rw [decodeSeq_seqCode] at hx ⊢
+    obtain ⟨hxT, i, hi, rfl⟩ := mem_treeLevelList_iff.mp hx
+    refine mem_treeLevelList_iff.mpr
+      ⟨?_, i % 2 ^ n, Nat.mod_lt _ (Nat.two_pow_pos n), ?_⟩
+    · rw [h1]
+      exact htree.2 _ hxT n
+    · rw [h1, decodeSeq_seqCode, bitListOfIndex_take]
+
 end ReverseMathlib.Omega
