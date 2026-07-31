@@ -116,7 +116,7 @@ function (`Nat.RecursiveIn.comp`), pair streams with `Nat.RecursiveIn.pair`, and
 with a primitive recursive selector. -/
 
 /-- Precompose a relatively computable partial function with a computable total function. -/
-private theorem recursiveIn_comp_partrec {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ}
+theorem recursiveIn_comp_partrec {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ}
     (hf : Nat.RecursiveIn O f) {g : ℕ → ℕ} (hg : Nat.Partrec fun n => Part.some (g n)) :
     Nat.RecursiveIn O fun n => f (g n) :=
   (hf.comp hg.recursiveIn).of_eq fun n => by simp
