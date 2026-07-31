@@ -445,4 +445,54 @@ def treeToSystem {Ω : OmegaPart} (h : IsTuringIdeal Ω) (T : Ω.InternalSet)
       exact htree.2 _ hxT n
     · rw [h1, decodeSeq_seqCode, bitListOfIndex_take]
 
+/-! ### `sectionToPath`: the decoded path
+
+The raw predicate is the **specification**, mentioning only the section graph; the `rfind`
+implementation will be proved extensionally equal to it, so answer-only access is
+structural, never an after-the-fact dependency observation. The compiled tree first appears
+in path correctness (stage 3). -/
+
+/-- Layer 1 (raw, the specification): position `i` is on the decoded path iff the
+level-`i + 1` section value carries bit `1` at position `i`. Mentions **only** the section
+graph. -/
+def sectionPathSet {Ω : OmegaPart} (s : InternalFunction Ω) : Set ℕ :=
+  {i | ∃ c, s.MapsTo (i + 1) c ∧ (decodeSeq c).getD i 0 = 1}
+
+/-- **Iterated section coherence**: a section value at any lower level is the truncation of
+the value at any higher level. All intermediate-value selection happens inside this proof —
+the reusable bridge between the level-`n` node and every level-`i + 1` inspection. -/
+theorem section_value_take {Ω : OmegaPart} {h : IsTuringIdeal Ω} {T : Ω.InternalSet}
+    {htree : IsBinaryTreeCode T.1} {hlev : HasNodeAtEveryLevel T.1}
+    {s : InternalFunction Ω} (hs : (treeToSystem h T htree hlev).IsSection s) :
+    ∀ {n k c c'}, k ≤ n → s.MapsTo n c → s.MapsTo k c' →
+      c' = seqCode ((decodeSeq c).take k) := by
+  -- Same-level normal form: every section value is a length-`level` node code.
+  have hself : ∀ {m cm}, s.MapsTo m cm → cm = seqCode ((decodeSeq cm).take m) := by
+    intro m cm hcm
+    have hfib : (treeToSystem h T htree hlev).fibers.MapsTo m
+        (seqCode (treeLevelList T.1 m)) := ⟨m, rfl⟩
+    have hmem := hs.1 m _ cm hfib hcm
+    rw [decodeSeq_seqCode] at hmem
+    obtain ⟨-, i, -, rfl⟩ := mem_treeLevelList_iff.mp hmem
+    rw [decodeSeq_seqCode, List.take_of_length_le (by simp)]
+  intro n
+  induction n with
+  | zero =>
+    intro k c c' hk hc hc'
+    obtain rfl : k = 0 := by omega
+    rw [s.singleValued 0 c' c hc' hc]
+    exact hself hc
+  | succ n ih =>
+    intro k c c' hk hc hc'
+    by_cases hkn : k = n + 1
+    · subst hkn
+      rw [s.singleValued _ c' c hc' hc]
+      exact hself hc
+    · have hk' : k ≤ n := by omega
+      obtain ⟨cn, hcn⟩ := s.total n
+      have hadj := hs.2 n c cn hc hcn
+      have hbond := mem_treeBondingGraph_iff.mp hadj
+      simp only [Nat.unpair_pair] at hbond
+      rw [ih hk' hcn hc', hbond, decodeSeq_seqCode, List.take_take, min_eq_left hk']
+
 end ReverseMathlib.Omega
