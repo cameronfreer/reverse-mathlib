@@ -794,4 +794,79 @@ theorem bonding_eval_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω)
   recursiveIn_of_turingReducible F.bonding.eval_recursiveIn_graph
     (right_le_joinSet _ _)
 
+/-! ### The finite verifier
+
+Everything below the two lookups is **finite**: no further search. The executable
+definitions take **no proof fields** — only candidate index tuples, explicit bounds, and the
+values `F.fibers.eval` / `F.bonding.eval`. Fiber nonemptiness, nodup, and `bonding_mem`
+appear only in the soundness and completeness lemmas, which keeps the dependency claim
+exact: *the computation uses the two graph lookups; the inverse-system laws justify it.*
+All definitions are total, with explicit fallbacks on malformed input. -/
+
+/-- The level-`k` fiber list, from the lookup alone. -/
+noncomputable def fiberList {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) :
+    List ℕ :=
+  decodeSeq (F.fibers.eval k)
+
+/-- The chunk width at level `k` — the fiber-list length. -/
+noncomputable def chunkWidth {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) : ℕ :=
+  (fiberList F k).length
+
+/-- The element a level-`k` index selects; fallback `0` on an out-of-range index. -/
+noncomputable def elemAt {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k idx : ℕ) : ℕ :=
+  (fiberList F k).getD idx 0
+
+/-- The bit encoding of an index tuple, chunk by chunk from level `base` upward. Total on
+any list of naturals. -/
+noncomputable def encodeTuple {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ℕ → List ℕ → List ℕ
+  | _, [] => []
+  | base, idx :: rest =>
+      bitListOfIndex (chunkWidth F base) idx ++ encodeTuple F (base + 1) rest
+
+/-- The finite verifier for one candidate tuple: every index is in range for its level, and
+consecutive selections are bonding-coherent. Decidable and total — no proof fields, no
+search. -/
+noncomputable def tupleOk {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ℕ → Option ℕ → List ℕ → Bool
+  | _, _, [] => true
+  | base, prev, idx :: rest =>
+      decide (idx < chunkWidth F base) &&
+      (match prev with
+        | none => true
+        | some x => decide (F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx)) = x)) &&
+      tupleOk F (base + 1) (some (elemAt F base idx)) rest
+
+/-- All index tuples of length `j` whose entries are in range — a finite list, built from
+the chunk widths alone. -/
+noncomputable def candidateTuples {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (base : ℕ) : ℕ → List (List ℕ)
+  | 0 => [[]]
+  | j + 1 =>
+      (List.range (chunkWidth F base)).flatMap fun idx =>
+        (candidateTuples F (base + 1) j).map fun t => idx :: t
+
+/-- **The finite verifier for a tree node**: the code is a bit-sequence code, and some
+candidate tuple of length at most the node's length passes `tupleOk` with the node's bits as
+a prefix of its encoding. The bounded search is over `candidateTuples`, a finite list. -/
+noncomputable def systemTreeVerifier {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (c : ℕ) : Bool :=
+  (decodeSeq c).all (fun x => decide (x ≤ 1)) &&
+  ((List.range ((decodeSeq c).length + 1)).any fun j =>
+    (candidateTuples F 0 j).any fun t =>
+      tupleOk F 0 none t && decide (decodeSeq c <+: encodeTuple F 0 t))
+
+/-- Every entry of a candidate tuple is in range for its level, and the tuple has the
+requested length — the totality/well-formedness lemma for the enumeration. -/
+theorem mem_candidateTuples {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ∀ {base j : ℕ} {t : List ℕ}, t ∈ candidateTuples F base j → t.length = j := by
+  intro base j
+  induction j generalizing base with
+  | zero => intro t ht; simp only [candidateTuples, List.mem_singleton] at ht; simp [ht]
+  | succ j ih =>
+    intro t ht
+    simp only [candidateTuples, List.mem_flatMap, List.mem_map, List.mem_range] at ht
+    obtain ⟨idx, -, t', ht', rfl⟩ := ht
+    simp [ih ht']
+
 end ReverseMathlib.Omega
