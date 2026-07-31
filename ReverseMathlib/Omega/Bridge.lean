@@ -824,6 +824,21 @@ noncomputable def encodeTuple {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
   | base, idx :: rest =>
       bitListOfIndex (chunkWidth F base) idx ++ encodeTuple F (base + 1) rest
 
+/-- The decidable bonding check against the previously chosen element. -/
+noncomputable def bondOkB {Ω : OmegaPart} (F : InternalInverseSystem Ω) (base : ℕ)
+    (prev : Option ℕ) (y : ℕ) : Bool :=
+  match prev with
+  | none => true
+  | some x => decide (F.bonding.eval (Nat.pair (base - 1) y) = x)
+
+theorem bondOkB_iff {Ω : OmegaPart} (F : InternalInverseSystem Ω) {base : ℕ}
+    {prev : Option ℕ} {y : ℕ} : bondOkB F base prev y = true ↔ BondOk F base prev y := by
+  cases prev with
+  | none => simp [bondOkB, BondOk]
+  | some x =>
+    simp only [bondOkB, BondOk, decide_eq_true_eq]
+    exact (F.bonding.mapsTo_iff_eval_eq).symm
+
 /-- The finite verifier for one candidate tuple: every index is in range for its level, and
 consecutive selections are bonding-coherent. Decidable and total — no proof fields, no
 search. -/
@@ -832,9 +847,7 @@ noncomputable def tupleOk {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
   | _, _, [] => true
   | base, prev, idx :: rest =>
       decide (idx < chunkWidth F base) &&
-      (match prev with
-        | none => true
-        | some x => decide (F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx)) = x)) &&
+      bondOkB F base prev (elemAt F base idx) &&
       tupleOk F (base + 1) (some (elemAt F base idx)) rest
 
 /-- All index tuples of length `j` whose entries are in range — a finite list, built from
@@ -868,5 +881,89 @@ theorem mem_candidateTuples {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
     simp only [candidateTuples, List.mem_flatMap, List.mem_map, List.mem_range] at ht
     obtain ⟨idx, -, t', ht', rfl⟩ := ht
     simp [ih ht']
+
+/-! #### Verifier ↔ `CoherentEncoding` correspondence -/
+
+/-- **Soundness core**: a passing tuple encodes a coherent encoding. The inverse-system
+laws enter here (through `pair_eval_mem` and the bonding correspondence), never in the
+executable definitions. -/
+theorem tupleOk_toCoherentEncoding {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ∀ (base : ℕ) (prev : Option ℕ) (t : List ℕ), tupleOk F base prev t = true →
+      CoherentEncoding F base prev t.length (encodeTuple F base t) := by
+  intro base prev t
+  induction t generalizing base prev with
+  | nil => intro _; exact .nil _ _
+  | cons idx rest ih =>
+    intro h
+    simp only [tupleOk, Bool.and_eq_true, decide_eq_true_eq] at h
+    obtain ⟨⟨hlt, hbond⟩, hrest⟩ := h
+    exact CoherentEncoding.cons (F.fibers.pair_eval_mem base) hlt
+      (bondOkB_iff F |>.mp hbond) (ih _ _ hrest)
+
+/-- **Completeness core**: every coherent encoding comes from a passing tuple. -/
+theorem CoherentEncoding.exists_tuple {Ω : OmegaPart} {F : InternalInverseSystem Ω}
+    {base : ℕ} {prev : Option ℕ} {j : ℕ} {full : List ℕ}
+    (h : CoherentEncoding F base prev j full) :
+    ∃ t, t.length = j ∧ encodeTuple F base t = full ∧ tupleOk F base prev t = true := by
+  induction h with
+  | nil k prev => exact ⟨[], rfl, rfl, rfl⟩
+  | @cons k prev fc idx j rest hfc hidx hbond _ ih =>
+    obtain ⟨t, hlen, henc, hok⟩ := ih
+    have hfceq : F.fibers.eval k = fc := F.fibers.mapsTo_iff_eval_eq.mp hfc
+    refine ⟨idx :: t, by simp [hlen], ?_, ?_⟩
+    · change bitListOfIndex (chunkWidth F k) idx ++ encodeTuple F (k + 1) t = _
+      rw [henc]
+      congr 2
+      change (decodeSeq (F.fibers.eval k)).length = _
+      rw [hfceq]
+    · have helem : elemAt F k idx = (decodeSeq fc).getD idx 0 := by
+        change (decodeSeq (F.fibers.eval k)).getD idx 0 = _
+        rw [hfceq]
+      simp only [tupleOk, Bool.and_eq_true, decide_eq_true_eq, helem]
+      refine ⟨⟨?_, (bondOkB_iff F).mpr hbond⟩, hok⟩
+      change idx < (decodeSeq (F.fibers.eval k)).length
+      rw [hfceq]; exact hidx
+
+/-- A passing tuple is one of the enumerated candidates. -/
+theorem tupleOk_mem_candidateTuples {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    ∀ (base : ℕ) (prev : Option ℕ) (t : List ℕ), tupleOk F base prev t = true →
+      t ∈ candidateTuples F base t.length := by
+  intro base prev t
+  induction t generalizing base prev with
+  | nil => intro _; simp [candidateTuples]
+  | cons idx rest ih =>
+    intro h
+    simp only [tupleOk, Bool.and_eq_true, decide_eq_true_eq] at h
+    obtain ⟨⟨hlt, -⟩, hrest⟩ := h
+    simp only [List.length_cons, candidateTuples, List.mem_flatMap, List.mem_map,
+      List.mem_range]
+    exact ⟨idx, hlt, rest, ih _ _ hrest, rfl⟩
+
+/-! #### Verifier soundness and completeness (separate, then combined) -/
+
+/-- **Verifier soundness**: a passing code is a tree node. -/
+theorem systemTreeVerifier_sound {Ω : OmegaPart} (F : InternalInverseSystem Ω) {c : ℕ}
+    (h : systemTreeVerifier F c = true) : c ∈ systemTreeSet F := by
+  simp only [systemTreeVerifier, Bool.and_eq_true, List.any_eq_true, List.all_eq_true,
+    List.mem_range, decide_eq_true_eq] at h
+  obtain ⟨hbits, j, -, t, -, hok, hpre⟩ := h
+  exact ⟨fun x hx => hbits x hx, t.length,
+    encodeTuple F 0 t, tupleOk_toCoherentEncoding F 0 none t hok, hpre⟩
+
+/-- **Verifier completeness**: every tree node passes. -/
+theorem systemTreeVerifier_complete {Ω : OmegaPart} (F : InternalInverseSystem Ω) {c : ℕ}
+    (h : c ∈ systemTreeSet F) : systemTreeVerifier F c = true := by
+  obtain ⟨j, full, hj, henc, hpre⟩ := systemTreeSet_bounded_witness h
+  obtain ⟨t, hlen, hteq, hok⟩ := henc.exists_tuple
+  simp only [systemTreeVerifier, Bool.and_eq_true, List.any_eq_true, List.all_eq_true,
+    List.mem_range, decide_eq_true_eq]
+  refine ⟨fun x hx => h.1 x hx, t.length, by omega, t, ?_, hok, by rw [hteq]; exact hpre⟩
+  exact tupleOk_mem_candidateTuples F 0 none t hok
+
+/-- **The bounded-search membership characterization**: the finite verifier decides tree
+membership. -/
+theorem systemTreeVerifier_correct {Ω : OmegaPart} (F : InternalInverseSystem Ω) (c : ℕ) :
+    systemTreeVerifier F c = true ↔ c ∈ systemTreeSet F :=
+  ⟨systemTreeVerifier_sound F, systemTreeVerifier_complete F⟩
 
 end ReverseMathlib.Omega
