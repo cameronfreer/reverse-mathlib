@@ -130,6 +130,80 @@ theorem recursiveIn_comp_partrec {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ}
     Nat.RecursiveIn O fun n => f (g n) :=
   (hf.comp hg.recursiveIn).of_eq fun n => by simp
 
+/-! #### Total oracle-relative computations
+
+Mathlib's `Nat.RecursiveIn` exposes only the raw constructors, so the combinators for
+**total** functions — presented throughout as `fun n => Part.some (f n)` — are stated once
+here rather than reproved at each use. Together with `Nat.pair` bookkeeping they are enough
+to build finite oracle transcripts: query, pair, post-process, recurse. -/
+
+/-- Primitive-recursive functions are relatively computable, for any oracle. -/
+theorem recursiveIn_of_primrec {O : Set (ℕ →. ℕ)} {f : ℕ → ℕ} (hf : Primrec f) :
+    Nat.RecursiveIn O fun n => Part.some (f n) :=
+  ((Nat.Partrec.of_primrec (Primrec.nat_iff.mp hf)).recursiveIn).of_eq fun _ => rfl
+
+/-- Precompose a relatively computable partial function with a primitive-recursive one. -/
+theorem recursiveIn_comp_primrec {O : Set (ℕ →. ℕ)} {f : ℕ →. ℕ}
+    (hf : Nat.RecursiveIn O f) {g : ℕ → ℕ} (hg : Primrec g) :
+    Nat.RecursiveIn O fun n => f (g n) :=
+  recursiveIn_comp_partrec hf
+    ((Nat.Partrec.of_primrec (Primrec.nat_iff.mp hg)).of_eq fun _ => rfl)
+
+/-- Compose two relatively computable total functions — the outer one may query the oracle
+at an argument the inner one obtained from the oracle. -/
+theorem recursiveIn_comp_total {O : Set (ℕ →. ℕ)} {f g : ℕ → ℕ}
+    (hf : Nat.RecursiveIn O fun n => Part.some (f n))
+    (hg : Nat.RecursiveIn O fun n => Part.some (g n)) :
+    Nat.RecursiveIn O fun n => Part.some (f (g n)) :=
+  (hf.comp hg).of_eq fun _ => by simp
+
+/-- Pair two relatively computable total functions. -/
+theorem recursiveIn_pair_total {O : Set (ℕ →. ℕ)} {f g : ℕ → ℕ}
+    (hf : Nat.RecursiveIn O fun n => Part.some (f n))
+    (hg : Nat.RecursiveIn O fun n => Part.some (g n)) :
+    Nat.RecursiveIn O fun n => Part.some (Nat.pair (f n) (g n)) :=
+  (hf.pair hg).of_eq fun _ => by
+    simp [Seq.seq, Part.map_eq_map, Part.bind_some, Part.map_some]
+
+/-- **Oracle-relative primitive recursion**, with a parameter. The step function receives
+the parameter, the level, and the previous value, packed as `Nat.pair a (Nat.pair y i)` —
+the shape `Nat.RecursiveIn.prec` supplies. -/
+theorem recursiveIn_nat_rec_param {O : Set (ℕ →. ℕ)} {base : ℕ → ℕ} {step : ℕ → ℕ → ℕ → ℕ}
+    (hbase : Nat.RecursiveIn O fun a => Part.some (base a))
+    (hstep : Nat.RecursiveIn O fun m =>
+      Part.some (step m.unpair.1 m.unpair.2.unpair.1 m.unpair.2.unpair.2)) :
+    Nat.RecursiveIn O fun p =>
+      Part.some (Nat.rec (motive := fun _ => ℕ) (base p.unpair.1)
+        (fun y ih => step p.unpair.1 y ih) p.unpair.2) := by
+  refine (hbase.prec hstep).of_eq fun p => ?_
+  obtain ⟨a, n, rfl⟩ : ∃ a n, p = Nat.pair a n :=
+    ⟨p.unpair.1, p.unpair.2, (Nat.pair_unpair p).symm⟩
+  simp only [Nat.unpair_pair]
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [← Nat.succ_eq_add_one]
+    dsimp only
+    rw [ih]
+    simp
+
+/-- **Oracle-relative primitive recursion**, unary. -/
+theorem recursiveIn_nat_rec {O : Set (ℕ →. ℕ)} {base : ℕ} {step : ℕ → ℕ → ℕ}
+    (hstep : Nat.RecursiveIn O fun m => Part.some (step m.unpair.1 m.unpair.2)) :
+    Nat.RecursiveIn O fun L =>
+      Part.some (Nat.rec (motive := fun _ => ℕ) base step L) := by
+  have hbase : Nat.RecursiveIn O fun _ : ℕ => Part.some base :=
+    recursiveIn_of_primrec (Primrec.const base)
+  have hstep' : Nat.RecursiveIn O fun m =>
+      Part.some (step m.unpair.2.unpair.1 m.unpair.2.unpair.2) :=
+    recursiveIn_comp_primrec hstep (Primrec.snd.comp Primrec.unpair)
+  have h := recursiveIn_nat_rec_param (base := fun _ => base)
+    (step := fun _ y ih => step y ih) hbase hstep'
+  refine (recursiveIn_comp_primrec h
+    (Primrec₂.comp (f := Nat.pair) (g := fun _ : ℕ => 0) (h := fun L : ℕ => L)
+      Primrec₂.natPair (Primrec.const 0) Primrec.id)).of_eq fun L => ?_
+  simp only [Nat.unpair_pair]
+
 private theorem partrec_double : Nat.Partrec fun n => Part.some (2 * n) := by
   have : Primrec fun n : ℕ => 2 * n := (Primrec.nat_mul.comp (.const 2) .id)
   exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun n => rfl

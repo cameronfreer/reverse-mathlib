@@ -31,6 +31,10 @@ separate layer-2 theorem about characteristic functions, never a claim that the 
 definition is executable.
 -/
 
+-- The bridge file is over the default length limit; the split into bit coding,
+-- `treeToSystem`, `systemToTree`, and the equivalence is the next commit.
+set_option linter.style.longFile 1700
+
 namespace ReverseMathlib.Omega
 
 /-- The length-`n` bit list of index `i` (bit `j` of `i`, little-endian): the structural
@@ -1446,5 +1450,105 @@ theorem systemTreeVerifierFromTables_agrees {Ω : OmegaPart} (F : InternalInvers
       by rw [encodeTupleT_eq F hle]; exact List.prefix_iff_eq_take.mp hpre⟩
     rw [tableWidth_fiberTable F (by omega : i < L)]
     simpa using hmem.2 i hi
+
+/-! #### The transcripts are finite oracle computations
+
+Both tables are `valueTable`s, so both come from one oracle-relative primitive recursion.
+The bond transcript needs a nested one: row `base` first reads the level-`base` fiber, then
+queries the bonding map at each of its entries. -/
+
+/-- The entry the bond transcript records at `(base, idx)`. -/
+noncomputable def bondValue {Ω : OmegaPart} (F : InternalInverseSystem Ω)
+    (base idx : ℕ) : ℕ :=
+  F.bonding.eval (Nat.pair (base - 1) (elemAt F base idx))
+
+/-- Row `base` of the bond transcript. -/
+noncomputable def bondRow {Ω : OmegaPart} (F : InternalInverseSystem Ω) (base : ℕ) : ℕ :=
+  valueTable (bondValue F base) (chunkWidth F base)
+
+theorem fiberTable_eq_valueTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) :
+    fiberTable F L = valueTable (fun base => F.fibers.eval base) L := rfl
+
+theorem bondTable_eq_valueTable {Ω : OmegaPart} (F : InternalInverseSystem Ω) (L : ℕ) :
+    bondTable F L = valueTable (bondRow F) L := rfl
+
+theorem fiberTable_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} fun L => Part.some (fiberTable F L) :=
+  valueTable_recursiveIn (fibers_eval_recursiveIn F)
+
+theorem bondValue_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)}
+      fun m => Part.some (bondValue F m.unpair.1 m.unpair.2) := by
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hquery : Primrec fun z : ℕ =>
+      Nat.pair (z.unpair.2.unpair.1 - 1) ((decodeSeq z.unpair.1).getD z.unpair.2.unpair.2 0) :=
+    Primrec₂.comp (f := Nat.pair)
+      (g := fun z : ℕ => z.unpair.2.unpair.1 - 1)
+      (h := fun z : ℕ => (decodeSeq z.unpair.1).getD z.unpair.2.unpair.2 0)
+      Primrec₂.natPair
+      (Primrec.nat_sub.comp (hfst.comp hsnd) (Primrec.const 1))
+      (Primrec₂.comp (f := fun (n i : ℕ) => (decodeSeq n).getD i 0)
+        (g := fun z : ℕ => z.unpair.1) (h := fun z : ℕ => z.unpair.2.unpair.2)
+        primrec_seqGet hfst (hsnd.comp hsnd))
+  have hfib : Nat.RecursiveIn {charFn (systemOracle F)}
+      fun m => Part.some (F.fibers.eval m.unpair.1) :=
+    recursiveIn_comp_primrec (fibers_eval_recursiveIn F) hfst
+  have hpair := recursiveIn_pair_total hfib (recursiveIn_of_primrec Primrec.id)
+  have harg : Nat.RecursiveIn {charFn (systemOracle F)} fun m =>
+      Part.some (Nat.pair (m.unpair.1 - 1) (elemAt F m.unpair.1 m.unpair.2)) :=
+    (recursiveIn_comp_total (recursiveIn_of_primrec hquery) hpair).of_eq fun m => by
+      simp only [Nat.unpair_pair, id_eq, elemAt, fiberList]
+  exact recursiveIn_comp_total (bonding_eval_recursiveIn F) harg
+
+theorem bondRow_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} fun base => Part.some (bondRow F base) := by
+  have hparam := valueTable_recursiveIn_param (bondValue_recursiveIn F)
+  have hw : Nat.RecursiveIn {charFn (systemOracle F)}
+      fun base => Part.some (Nat.pair base (chunkWidth F base)) :=
+    (recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id)
+      (recursiveIn_comp_total (recursiveIn_of_primrec primrec_seqLength)
+        (fibers_eval_recursiveIn F))).of_eq fun base => by
+      simp only [id_eq]; rfl
+  exact (recursiveIn_comp_total hparam hw).of_eq fun base => by
+    simp only [Nat.unpair_pair]; rfl
+
+theorem bondTable_recursiveIn {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    Nat.RecursiveIn {charFn (systemOracle F)} fun L => Part.some (bondTable F L) :=
+  valueTable_recursiveIn (bondRow_recursiveIn F)
+
+/-! #### The compiled tree reduces to the system oracle -/
+
+/-- **The `systemToTree` reduction**: tree membership is decided by a finite oracle
+transcript followed by a primitive-recursive verifier, so the compiled tree is Turing
+reducible to the join of the two internal graphs.
+
+The two unbounded searches are exactly the two graph lookups inside the transcript; the
+inverse-system laws are used only to prove the verifier correct, never to compute. -/
+theorem systemTreeSet_le_systemOracle {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
+    systemTreeSet F ≤ᵀ systemOracle F := by
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hv : Primrec fun z : ℕ =>
+      systemTreeVerifierFromTables z.unpair.1 z.unpair.2.unpair.1 z.unpair.2.unpair.2 :=
+    systemTreeVerifierFromTables_primrec.comp
+      (g := fun z : ℕ => (z.unpair.1, z.unpair.2.unpair.1, z.unpair.2.unpair.2))
+      (hfst.pair ((hfst.comp hsnd).pair (hsnd.comp hsnd)))
+  have hlen : Nat.RecursiveIn {charFn (systemOracle F)}
+      fun c => Part.some (decodeSeq c).length := recursiveIn_of_primrec primrec_seqLength
+  have htriple := recursiveIn_pair_total
+    (recursiveIn_comp_total (fiberTable_recursiveIn F) hlen)
+    (recursiveIn_pair_total (recursiveIn_comp_total (bondTable_recursiveIn F) hlen)
+      (recursiveIn_of_primrec Primrec.id))
+  refine (recursiveIn_comp_total
+    (recursiveIn_of_primrec (Primrec.cond hv (Primrec.const 1) (Primrec.const 0)))
+    htriple).of_eq fun c => ?_
+  simp only [Nat.unpair_pair, id_eq, charFn]
+  rw [systemTreeVerifierFromTables_agrees F c (le_refl _)]
+  by_cases hc : c ∈ systemTreeSet F
+  · rw [if_pos hc, (systemTreeVerifier_correct F c).mpr hc]
+    rfl
+  · rw [if_neg hc, Bool.eq_false_iff.mpr fun h => hc ((systemTreeVerifier_correct F c).mp h)]
+    rfl
 
 end ReverseMathlib.Omega

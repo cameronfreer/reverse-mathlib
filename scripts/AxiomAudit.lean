@@ -55,7 +55,9 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.joinSet_le,
    ``ReverseMathlib.Omega.recursivePart_isTuringIdeal,
    -- WKLω slice 3: the first completed bridge direction
-   ``ReverseMathlib.Omega.weakKonigAt_of_efilcAt]
+   ``ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   -- WKLω slice 3: the compiled tree is computable from the system oracle
+   ``ReverseMathlib.Omega.systemTreeSet_le_systemOracle]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
