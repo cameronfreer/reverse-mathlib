@@ -579,26 +579,28 @@ def BondOk {Ω : OmegaPart} (F : InternalInverseSystem Ω) (k : ℕ) :
   | none, _ => True
   | some x, y => F.bonding.MapsTo (Nat.pair (k - 1) y) x
 
-/-- Relational chunk encoding of a coherent tuple from level `k` upward, threading the
-previously chosen element for the coherence check. The level-`k` chunk is
-`bitListOfIndex (fiber-list length) idx` for the chosen index `idx`. -/
+/-- Relational chunk encoding of a coherent **`j`-chunk** tuple from level `k` upward,
+threading the previously chosen element for the coherence check. The level-`k` chunk is
+`bitListOfIndex (fiber-list length) idx` for the chosen index `idx`; the chunk count makes
+the bounded-witness normalization stateable. -/
 inductive CoherentEncoding {Ω : OmegaPart} (F : InternalInverseSystem Ω) :
-    ℕ → Option ℕ → List ℕ → Prop
+    ℕ → Option ℕ → ℕ → List ℕ → Prop
   /-- The empty tuple encodes to no bits, at any level. -/
-  | nil (k : ℕ) (prev : Option ℕ) : CoherentEncoding F k prev []
+  | nil (k : ℕ) (prev : Option ℕ) : CoherentEncoding F k prev 0 []
   /-- Choose index `idx` in the level-`k` fiber, coherent with the previous element, and
   continue upward. -/
-  | cons {k : ℕ} {prev : Option ℕ} {fc idx : ℕ} {rest : List ℕ} :
+  | cons {k : ℕ} {prev : Option ℕ} {fc idx j : ℕ} {rest : List ℕ} :
       F.fibers.MapsTo k fc →
       idx < (decodeSeq fc).length →
       BondOk F k prev ((decodeSeq fc).getD idx 0) →
-      CoherentEncoding F (k + 1) (some ((decodeSeq fc).getD idx 0)) rest →
-      CoherentEncoding F k prev (bitListOfIndex (decodeSeq fc).length idx ++ rest)
+      CoherentEncoding F (k + 1) (some ((decodeSeq fc).getD idx 0)) j rest →
+      CoherentEncoding F k prev (j + 1) (bitListOfIndex (decodeSeq fc).length idx ++ rest)
 
 /-- Layer 1 (raw): the compiled tree — bit-sequence codes whose decoding is a prefix of
 the encoding of some finite coherent tuple. -/
 def systemTreeSet {Ω : OmegaPart} (F : InternalInverseSystem Ω) : Set ℕ :=
-  {c | IsBitSeqCode c ∧ ∃ full, CoherentEncoding F 0 none full ∧ decodeSeq c <+: full}
+  {c | IsBitSeqCode c ∧
+    ∃ j full, CoherentEncoding F 0 none j full ∧ decodeSeq c <+: full}
 
 /-- The compiled tree is a binary tree code: bit content by definition; prefix closure is
 immediate from the extensional prefix formulation — incomplete chunks are nodes. -/
@@ -606,12 +608,57 @@ theorem isBinaryTreeCode_systemTreeSet {Ω : OmegaPart} (F : InternalInverseSyst
     IsBinaryTreeCode (systemTreeSet F) := by
   constructor
   · exact fun c hc => hc.1
-  · rintro c ⟨hbits, full, henc, hpre⟩ k
-    refine ⟨?_, full, henc, ?_⟩
+  · rintro c ⟨hbits, j, full, henc, hpre⟩ k
+    refine ⟨?_, j, full, henc, ?_⟩
     · intro x hx
       rw [decodeSeq_seqCode] at hx
       exact hbits x (List.mem_of_mem_take hx)
     · rw [decodeSeq_seqCode]
       exact (List.take_prefix k _).trans hpre
+
+/-- Every chunk has positive width (fiber nonemptiness), so a `j`-chunk encoding has at
+least `j` bits. -/
+theorem CoherentEncoding.le_length {Ω : OmegaPart} {F : InternalInverseSystem Ω}
+    {k : ℕ} {prev : Option ℕ} {j : ℕ} {full : List ℕ}
+    (h : CoherentEncoding F k prev j full) : j ≤ full.length := by
+  induction h with
+  | nil => simp
+  | cons hfc hidx _ _ ih =>
+    simp only [List.length_append, bitListOfIndex_length]
+    omega
+
+/-- Truncation to the first `m` chunks preserves coherence and yields a prefix. -/
+theorem CoherentEncoding.truncate {Ω : OmegaPart} {F : InternalInverseSystem Ω}
+    {k : ℕ} {prev : Option ℕ} {j : ℕ} {full : List ℕ}
+    (h : CoherentEncoding F k prev j full) :
+    ∀ m ≤ j, ∃ full', CoherentEncoding F k prev m full' ∧ full' <+: full := by
+  induction h with
+  | nil =>
+    intro m hm
+    obtain rfl : m = 0 := by omega
+    exact ⟨[], .nil _ _, List.prefix_refl _⟩
+  | cons hfc hidx hbond _ ih =>
+    intro m hm
+    match m with
+    | 0 => exact ⟨[], .nil _ _, List.nil_prefix⟩
+    | m + 1 =>
+      obtain ⟨full', henc', hpre'⟩ := ih m (by omega)
+      obtain ⟨t, ht⟩ := hpre'
+      exact ⟨_, .cons hfc hidx hbond henc', ⟨t, by rw [List.append_assoc, ht]⟩⟩
+
+/-- **Bounded-witness normalization**: a bit string of length `L` in the tree is already a
+prefix of a coherent encoding using at most `L` chunks — the lemma that converts the
+existential specification into finite relative search (tuple length ≤ `L`, coordinates over
+explicit finite fibers, finitely many bonding checks). -/
+theorem systemTreeSet_bounded_witness {Ω : OmegaPart} {F : InternalInverseSystem Ω}
+    {c : ℕ} (hc : c ∈ systemTreeSet F) :
+    ∃ j full, j ≤ (decodeSeq c).length ∧ CoherentEncoding F 0 none j full ∧
+      decodeSeq c <+: full := by
+  obtain ⟨hbits, j, full, henc, hpre⟩ := hc
+  by_cases hj : j ≤ (decodeSeq c).length
+  · exact ⟨j, full, hj, henc, hpre⟩
+  · obtain ⟨full', henc', hpre'⟩ := henc.truncate (decodeSeq c).length (by omega)
+    exact ⟨_, full', le_refl _, henc',
+      List.prefix_of_prefix_length_le hpre hpre' henc'.le_length⟩
 
 end ReverseMathlib.Omega
