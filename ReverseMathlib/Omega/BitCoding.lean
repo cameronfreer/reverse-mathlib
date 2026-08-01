@@ -90,6 +90,17 @@ theorem exists_bitListOfIndex :
           simp [Function.comp, Nat.testBit_succ, h2]
       rw [show (b :: t).length = t.length + 1 from rfl, hcons, hbi]
 
+/-- The head normal form of the enumeration: the first bit is the parity, and the tail
+enumerates the halved index. -/
+theorem bitListOfIndex_succ (n i : ℕ) :
+    bitListOfIndex (n + 1) i = i % 2 :: bitListOfIndex n (i / 2) := by
+  unfold bitListOfIndex
+  rw [List.range_succ_eq_map, List.map_cons, List.map_map]
+  congr 1
+  · rcases Nat.mod_two_eq_zero_or_one i with h | h <;> simp [Nat.testBit_zero, h]
+  · refine List.map_congr_left fun j _ => ?_
+    simp [Function.comp, Nat.testBit_succ]
+
 /-- The bonding normal form: truncating a level-`n + 1` enumeration entry lands exactly on
 the level-`n` enumeration at the reduced index. -/
 theorem bitListOfIndex_take (n i : ℕ) :
@@ -105,10 +116,50 @@ theorem bitListOfIndex_take (n i : ℕ) :
   rw [hsplit, Nat.mod_mul_right_div_self,
     Nat.mod_mod_of_dvd _ (dvd_pow_self 2 (by omega : n - j ≠ 0))]
 
+/-! ### Decoding the enumeration
+
+`natOfBits` reads a little-endian bit list back to an index. It is total on every list of
+naturals; on genuine enumeration entries it is the exact inverse modulo `2 ^ length`
+(`natOfBits_bitListOfIndex`), which is what the path decoder uses to recover a chunk's
+fiber index from raw bits. -/
+
+/-- Read a little-endian bit list back to the index it enumerates. Total on any list. -/
+def natOfBits : List ℕ → ℕ
+  | [] => 0
+  | b :: t => b + 2 * natOfBits t
+
+theorem natOfBits_nil : natOfBits [] = 0 := rfl
+
+theorem natOfBits_cons (b : ℕ) (t : List ℕ) : natOfBits (b :: t) = b + 2 * natOfBits t :=
+  rfl
+
+theorem natOfBits_eq_foldr (l : List ℕ) :
+    natOfBits l = l.foldr (fun b acc => b + 2 * acc) 0 := by
+  induction l with
+  | nil => rfl
+  | cons b t ih => rw [natOfBits_cons, List.foldr_cons, ih]
+
+/-- **The enumeration decodes**: reading back the bit list of `i` recovers `i` modulo
+`2 ^ n` — in particular exactly `i` whenever `i < 2 ^ n`. -/
+theorem natOfBits_bitListOfIndex (n i : ℕ) : natOfBits (bitListOfIndex n i) = i % 2 ^ n := by
+  induction n generalizing i with
+  | zero => simp [bitListOfIndex, natOfBits, Nat.mod_one]
+  | succ n ih =>
+    rw [bitListOfIndex_succ, natOfBits_cons, ih, pow_succ, mul_comm (2 ^ n) 2, Nat.mod_mul]
+
 /-! ### Primitive recursiveness -/
 
 theorem primrec_natPow : Primrec₂ ((· ^ ·) : ℕ → ℕ → ℕ) :=
   Primrec₂.unpaired'.1 Nat.Primrec.pow
+
+theorem primrec_natOfBits : Primrec natOfBits := by
+  have h : Primrec fun l : List ℕ => l.foldr (fun b acc => b + 2 * acc) 0 :=
+    Primrec.list_foldr (f := fun l : List ℕ => l) (g := fun _ : List ℕ => (0 : ℕ))
+      (h := fun (_ : List ℕ) (p : ℕ × ℕ) => p.1 + 2 * p.2)
+      Primrec.id (Primrec.const 0)
+      ((Primrec.nat_add.comp (Primrec.fst.comp .snd)
+        (Primrec.nat_mul.comp (Primrec.const 2) (Primrec.snd.comp .snd))).to₂)
+  exact h.of_eq fun l => (natOfBits_eq_foldr l).symm
 
 theorem primrec_bitListOfIndex : Primrec₂ bitListOfIndex := by
   have h : Primrec fun p : ℕ × ℕ => (List.range p.1).map fun j => p.2 / 2 ^ j % 2 :=
