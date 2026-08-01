@@ -516,9 +516,10 @@ info: concepts (3):
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
-namespaces (5):
+namespaces (6):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
+  hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -1471,6 +1472,91 @@ error: interchange: 'fixtures/interchange/malformed.json' is not valid JSON: off
 rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
+/--
+info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+-/
+#guard_msgs in
+#revmath_stats
+
+/-! ### Corpus audits (#7): the Hall variant audit, pinned
+
+The corpus store is separate from facts, evidence, and imports: claims are concept-level
+and `reported`, wording is preserved apart from normalization, and both presentation
+bridges render MISSING. The scoreboard re-pin below certifies that the audit adds no
+certified fact. Rejection cases pin the fail-closed edges. -/
+
+/-- error: corpus: namespace 'nosuchcorpus' is not registered (rm_namespace first) -/
+#guard_msgs in
+rm_corpus_source nosuchcorpus "pin" "desc"
+
+/-- error: corpus: source 'rmzoo' is already pinned -/
+#guard_msgs in
+rm_corpus_source rmzoo "otherpin" "desc"
+
+/-- error: corpus: source 'sanders' is not a pinned corpus source (rm_corpus_source first — audits cite pinned corpora only) -/
+#guard_msgs in
+rm_corpus_claim strayClaim where
+  source := sanders "p. 1"
+  family := twoSidedMarriageSystem
+  concepts := [countableHall]
+  wording := absent
+  claim := "stray"
+
+/-- error: corpus: unknown concept 'noSuchConcept' — corpus claims are concept-level and never promote to exact variants -/
+#guard_msgs in
+rm_corpus_claim badConceptClaim where
+  source := rmzoo "results.txt"
+  family := twoSidedMarriageSystem
+  concepts := [noSuchConcept]
+  wording := absent
+  claim := "bad"
+
+/-- error: corpus: wording kind 'absent' carries no text -/
+#guard_msgs in
+rm_corpus_claim badWordingClaim where
+  source := rmzoo "results.txt"
+  family := twoSidedMarriageSystem
+  concepts := [countableHall]
+  wording := absent "text"
+  claim := "bad"
+
+/-- error: corpus: unknown uniform problem 'noSuchProblem' -/
+#guard_msgs in
+rm_presentation_bridge badBridge where
+  family := twoSidedMarriageSystem
+  to := uniformProblem noSuchProblem
+  requires := "nothing"
+
+/--
+info: corpus sources (3):
+  hirst @ 1987 thesis; 1990 paper in Contemp. Math. 106 — Marriage-theorem calibrations; bibliographic citations only — the texts were not re-consulted verbatim for this audit
+  rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
+  simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
+presentation families (4):
+  oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
+  perfectMatchingFormulation — Perfect-matching formulations: matchings exhausting one or both sides of a bipartite system, Simpson X.3-style
+  twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
+  unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
+corpus claims (3) — all reported; concept-level, never facts, never evidence:
+  hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
+    wording: (not captured; locator only)
+    normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
+  rmzooHallAbsent [rmzoo:"results.txt (whole file, pinned revision)" | unrepresentedFormulation] concepts: countableHall, wkl
+    wording (verbatim): #    WKL <-> COLORk "Hirst (1990) - Marriage theorems and reverse mathematics"
+    normalized: The pinned RMZoo database contains no Hall, marriage, or transversal principle symbol. The quoted line — the only trace of the marriage literature — is commented out (never ingested) and attributes a graph-coloring equivalence, not a marriage theorem, to Hirst's paper. Outcome for this corpus: no match; nothing to transfer.
+  simpsonMatchingSections [simpson:"X.3.15–X.3.16" | perfectMatchingFormulation] concepts: countableHall
+    wording: (not captured; locator only)
+    normalized: Matching-theorem material at the cited sections, already registered as related variants of the countable-Hall concept: two-sided / perfect-matching style, not the one-sided enumerated formulation. Not re-consulted verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
+presentation bridges (2) — every one MISSING until a named theorem lands:
+  perfectMatchingToOneSidedOmega: perfectMatchingFormulation → [statement] countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — MISSING
+    requires: An exact correspondence between perfect-matching formulations (Simpson X.3.15/X.3.16 style) and the one-sided enumerated-candidates variant at the Turing-ideal ω layer. Until it lands, no matching classification — in particular no reversal — transfers to this exact variant.
+  twoSidedToOneSidedEnumerated: twoSidedMarriageSystem → [uniformProblem] hall.oneSidedRelationEnumerator — MISSING
+    requires: A checked correspondence between two-sided society presentations (including their boundedness/enumeration data) and the one-sided relation-plus-enumerator problem, at the relevant scope. Until it lands, no society classification — in particular no reversal — transfers to this exact problem.
+-/
+#guard_msgs in
+#rm_corpus
+
+-- The audit adds no certified fact: the scoreboard is unchanged.
 /--
 info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
