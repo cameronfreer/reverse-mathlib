@@ -272,7 +272,8 @@ silently acquire an explicit selection route. -/
 
 #eval show CoreM Unit from do
   let env ← getEnv
-  for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt] do
+  for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt,
+      ``ReverseMathlib.Omega.CountableHallAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
     check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
@@ -338,6 +339,38 @@ correspondence of `SystemToTree` rather than a parallel argument. -/
 
 #rm_assert_proof_depends ReverseMathlib.Omega.pathSectionFunction_isSection
   ReverseMathlib.Omega.CoherentEncoding.exists_tuple
+
+/-! ### Hall ω route gates (#22 slice 4)
+
+`EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`
+route and reuse mathlib's **finite** Hall theorem — proof reuse, not reinvention — while
+reaching neither the infinite Hall theorem, the topological compactness boundary, the
+matching-selection scaffolding, nor the WKL-bridge compilers. The fiber compiler's fine
+dependency (enumerator only; the candidate relation and the Hall family structure are
+correctness-only) is enforced in its type and additionally pinned as a proof-closure
+fact. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.countableHallAt_of_efilcAt
+  ReverseMathlib.Omega.hallToSystem
+
+#rm_assert_proof_depends ReverseMathlib.Omega.countableHallAt_of_efilcAt
+  ReverseMathlib.Omega.sectionTransversalFunction
+
+#rm_assert_proof_depends ReverseMathlib.Omega.countableHallAt_of_efilcAt
+  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.countableHallAt_of_efilcAt
+  [Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system,
+   hallMatchingsOn.nonempty,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.pathSectionFunction]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.hallFiberGraph_le_enum
+  [ReverseMathlib.Omega.InternalHallFamily,
+   ReverseMathlib.Omega.systemTreeSet,
+   Finset.all_card_le_biUnion_card_iff_existsInjective']
 
 /-! ### Certificate-composition gate (#22 slice 3, stage 5)
 

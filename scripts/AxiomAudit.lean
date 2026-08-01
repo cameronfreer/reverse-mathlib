@@ -59,7 +59,11 @@ def headlineDecls : List Name :=
    -- WKLω slice 3: the compiled tree is computable from the system oracle
    ``ReverseMathlib.Omega.systemTreeSet_le_systemOracle,
    -- WKLω slice 3: the decoder reduces to fiber graph ⊕ path — the fine dependency
-   ``ReverseMathlib.Omega.pathSectionGraph_le_join]
+   ``ReverseMathlib.Omega.pathSectionGraph_le_join,
+   -- Hall ω slice 4: the compiled matching fibers reduce to the enumerator alone
+   ``ReverseMathlib.Omega.hallFiberGraph_le_enum,
+   -- Hall ω slice 4: the completed direction
+   ``ReverseMathlib.Omega.countableHallAt_of_efilcAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
