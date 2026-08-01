@@ -28,6 +28,10 @@ rm_namespace concordance "reverse_mathematics_concordance.xlsx row identifiers �
   provenance, never canonical identity"
 rm_namespace sanders "[San] Sam Sanders, Reverse Mathematics: there and back again, \
   monograph under review with Springer, pp 450, 2026 — references"
+rm_namespace computableAnalysis "cameronfreer/computable-analysis catalog identifiers \
+  (issue #28): reducibility notions and problem/presentation composite keys, exchanged \
+  through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external \
+  evidence only — no Lean dependency in either direction"
 
 rm_concept wkl where
   description := "Weak Kőnig's lemma as a conceptual family: binary-tree formulations across \

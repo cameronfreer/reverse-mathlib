@@ -1,0 +1,13 @@
+{ "schema": "rmlib-ca-interchange/1",
+  "source": { "repository": "example/computable-analysis", "revision": "abc123" },
+  "namespace": "fixca",
+  "reductions": [
+    { "id": "unpinned.checked",
+      "notion": "weihrauch",
+      "lhs": { "problem": "efilcSections", "presentation": "enumeratedFibers" },
+      "rhs": { "problem": "wklPaths", "presentation": "binaryTreeBits" },
+      "degree": "exact",
+      "status": "importedChecked",
+      "theorem": "CA.Fixture.efilc_le_wkl",
+      "mechanism": "lean-kernel" }
+  ] }

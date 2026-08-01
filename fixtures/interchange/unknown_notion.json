@@ -1,0 +1,12 @@
+{ "schema": "rmlib-ca-interchange/1",
+  "source": { "repository": "example/computable-analysis",
+              "revision": "0123456789abcdef0123456789abcdef01234567" },
+  "namespace": "fixca",
+  "reductions": [
+    { "id": "turing.red",
+      "notion": "turingRed",
+      "lhs": { "problem": "efilcSections", "presentation": "enumeratedFibers" },
+      "rhs": { "problem": "wklPaths", "presentation": "binaryTreeBits" },
+      "degree": "exact",
+      "status": "reported" }
+  ] }

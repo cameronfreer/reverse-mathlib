@@ -513,7 +513,8 @@ info: concepts (3):
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
-namespaces (4):
+namespaces (5):
+  computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
@@ -1364,6 +1365,94 @@ info: facts (10):
 -- The headline counts UNIQUE certified facts: the two fixture ω facts plus the one
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
+/--
+info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+-/
+#guard_msgs in
+#revmath_stats
+
+/-! ### External-catalog interchange (#28): contract-first ingestion
+
+The fixture crosswalks resolve external `problem/presentation` composite keys and the
+external notion key through registered exact aliases — identity is never inferred by
+matching strings. The valid fixture pins the happy path plus the trust downgrade
+(`importedChecked` without complete validated trust data is ingested as `reported`);
+the rejection fixtures pin fail-closed behavior for unknown schema versions, unresolvable
+notions and problems, wrong-kind (cross-family) aliases, unknown statuses, duplicate ids,
+and malformed JSON. The scoreboard re-pin at the end certifies that imports enter no
+certified count. -/
+
+rm_namespace fixca "fixture computable-analysis catalog for interchange tests"
+rm_external_ref fixca "weihrauch" exactAlias reducibilityNotion fixWeihrauch
+rm_external_ref fixca "efilcSections/enumeratedFibers" exactAlias uniformProblem
+  smokeProblemA
+rm_external_ref fixca "wklPaths/binaryTreeBits" exactAlias uniformProblem smokeProblemB
+rm_external_ref fixca "notAProblem/x" exactAlias concept smokeConcept
+
+rm_import_reductions "fixtures/interchange/valid.json"
+rm_import_reductions "fixtures/interchange/short_revision.json"
+
+/--
+info: imported reductions (3) — external evidence: never axioms, no certified counts, no cross-family edges:
+  fixca:"efilcW_le_wklW" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — importedChecked
+    external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
+    source: example/computable-analysis @ 0123456789abcdef0123456789abcdef01234567
+    theorem: CA.Fixture.efilc_le_wkl; mechanism: lean-kernel
+    note: fixture record
+  fixca:"unpinned.checked" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — reported
+    external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
+    source: example/computable-analysis @ abc123
+    theorem: CA.Fixture.efilc_le_wkl; mechanism: lean-kernel
+    downgraded: claimed importedChecked without validated trust data (pinned 40-hex revision)
+  fixca:"wklW_le_efilcW.claimed" [fixWeihrauch, representative] smokeProblemB <= smokeProblemA — reported
+    external: wklPaths/binaryTreeBits <= efilcSections/enumeratedFibers [notion weihrauch]
+    source: example/computable-analysis @ 0123456789abcdef0123456789abcdef01234567
+    downgraded: claimed importedChecked without validated trust data (theorem, mechanism)
+-/
+#guard_msgs in
+#rm_imports
+
+/--
+error: interchange: unknown schema version 'rmlib-ca-interchange/2' (this reader accepts 'rmlib-ca-interchange/1'); schema changes are versioned, never silently reinterpreted
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/unknown_schema.json"
+
+/--
+error: interchange: record 'turing.red': no registered crosswalk for reducibility notion fixca:"turingRed" (register rm_external_ref … exactAlias reducibilityNotion … first)
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/unknown_notion.json"
+
+/--
+error: interchange: record 'hall.red' lhs: no registered crosswalk for endpoint fixca:"hallTransversals/oneSidedEnumerated" (register rm_external_ref … exactAlias uniformProblem … first; identity is never inferred by matching strings)
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/unknown_problem.json"
+
+/--
+error: interchange: record 'cross.family' lhs: alias fixca:"notAProblem/x" resolves to concept 'smokeConcept' — imported reductions relate represented uniform problems only, never objects of another fact family
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/cross_family.json"
+
+/--
+error: interchange: record 'verified.red': unknown status 'verified' (expected importedChecked | reported)
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/unknown_status.json"
+
+/-- error: interchange: duplicate imported record id 'dup.red' -/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/duplicate_id.json"
+
+/--
+error: interchange: 'fixtures/interchange/malformed.json' is not valid JSON: offset 2: expected "
+-/
+#guard_msgs in
+rm_import_reductions "fixtures/interchange/malformed.json"
+
+-- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
 info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/

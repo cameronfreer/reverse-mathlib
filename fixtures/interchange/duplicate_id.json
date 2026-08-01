@@ -1,0 +1,18 @@
+{ "schema": "rmlib-ca-interchange/1",
+  "source": { "repository": "example/computable-analysis",
+              "revision": "0123456789abcdef0123456789abcdef01234567" },
+  "namespace": "fixca",
+  "reductions": [
+    { "id": "dup.red",
+      "notion": "weihrauch",
+      "lhs": { "problem": "efilcSections", "presentation": "enumeratedFibers" },
+      "rhs": { "problem": "wklPaths", "presentation": "binaryTreeBits" },
+      "degree": "exact",
+      "status": "reported" },
+    { "id": "dup.red",
+      "notion": "weihrauch",
+      "lhs": { "problem": "wklPaths", "presentation": "binaryTreeBits" },
+      "rhs": { "problem": "efilcSections", "presentation": "enumeratedFibers" },
+      "degree": "exact",
+      "status": "reported" }
+  ] }

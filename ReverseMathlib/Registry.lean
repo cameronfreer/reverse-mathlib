@@ -8,6 +8,7 @@ import ReverseMathlib.Meta.Report
 import ReverseMathlib.Meta.Commands
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Concepts
+import ReverseMathlib.Meta.Interchange
 import ReverseMathlib.Meta.CatalogExport
 import ReverseMathlib.Ports.Catalog
 import ReverseMathlib.Ports.Omega.Catalog

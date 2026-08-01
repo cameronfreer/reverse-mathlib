@@ -1,0 +1,5 @@
+{ "schema": "rmlib-ca-interchange/2",
+  "source": { "repository": "example/computable-analysis",
+              "revision": "0123456789abcdef0123456789abcdef01234567" },
+  "namespace": "fixca",
+  "reductions": [] }

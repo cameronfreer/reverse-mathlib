@@ -55,6 +55,14 @@ structure StatementVariantId where
   name : Name
   deriving Inhabited, Repr, BEq, Hashable
 
+/-- A registered reducibility-notion identifier (`weihrauch`, `strongWeihrauch`,
+`computable`, …). Defined with the other catalog identifiers so external references can
+target notions (issue #28). -/
+structure ReducibilityNotionId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
 /-- A represented uniform-problem identifier (populated by issue #4). -/
 structure UniformProblemId where
   /-- The identifying name. -/
@@ -73,6 +81,10 @@ inductive CatalogObjectRef where
   | statement (id : StatementVariantId)
   /-- A represented uniform problem. -/
   | uniformProblem (id : UniformProblemId)
+  /-- A registered reducibility notion — the crosswalk target for external interchange
+  (issue #28); external reduction records name their notion through a registered alias,
+  never by matching strings. -/
+  | reducibilityNotion (id : ReducibilityNotionId)
   deriving Inhabited, Repr, BEq
 
 /-- Stable serialization of a catalog object reference: kind tag plus prefixed id. -/
@@ -80,12 +92,14 @@ def CatalogObjectRef.kindTag : CatalogObjectRef → String
   | .concept _ => "concept"
   | .statement _ => "statement"
   | .uniformProblem _ => "uniformProblem"
+  | .reducibilityNotion _ => "reducibilityNotion"
 
 /-- The underlying name of a reference. -/
 def CatalogObjectRef.name : CatalogObjectRef → Name
   | .concept i => i.name
   | .statement i => i.name
   | .uniformProblem i => i.name
+  | .reducibilityNotion i => i.name
 
 /-- An external namespace identifier (`rmzoo`, `simpson`, `concordance`, `sanders`, …) —
 registered through `rm_namespace`, never a hard-coded allowlist. -/
@@ -309,13 +323,6 @@ structure FormulaClassEntry where
   /-- Which sentences belong to the class. -/
   description : String
   deriving Inhabited, Repr, BEq
-
-/-- A registered reducibility notion (`weihrauch`, `strongWeihrauch`, `computable`, …) —
-extensible by registration, never a closed enum. -/
-structure ReducibilityNotionId where
-  /-- The identifying name. -/
-  name : Name
-  deriving Inhabited, Repr, BEq, Hashable
 
 /-- A registered reducibility notion. -/
 structure ReducibilityNotionEntry where
@@ -656,6 +663,11 @@ def ConceptCatalog.ofEnv (env : Environment) : ConceptCatalog := Id.run do
         let msg := s!"reference {r.ns.name}:\"{r.key}\" targets unregistered uniform \
           problem '{qid.name}'"
         cat := { cat with conflicts := cat.conflicts.push msg }
+    | .reducibilityNotion nid =>
+      if !(reducibilityNotionExt.getState env).any (·.id.name == nid.name) then
+        let msg := s!"reference {r.ns.name}:\"{r.key}\" targets unregistered reducibility \
+          notion '{nid.name}'"
+        cat := { cat with conflicts := cat.conflicts.push msg }
     cat := { cat with refs := cat.refs.push r }
     if r.relation == .exactAlias then
       match cat.aliasMap[(r.ns.name, r.key)]? with
@@ -817,8 +829,9 @@ private def parseTarget (kind tgt : Syntax) : CommandElabM CatalogObjectRef :=
   | `concept => pure (.concept ⟨tgt.getId⟩)
   | `statement => pure (.statement ⟨tgt.getId⟩)
   | `uniformProblem => pure (.uniformProblem ⟨tgt.getId⟩)
+  | `reducibilityNotion => pure (.reducibilityNotion ⟨tgt.getId⟩)
   | k => throwErrorAt kind "concept catalog: unknown target kind '{k}' (expected concept | \
-      statement | uniformProblem)"
+      statement | uniformProblem | reducibilityNotion)"
 
 /-- `rm_external_ref ns "key" relation targetKind target`: register a typed external
 reference, e.g. `rm_external_ref rmzoo "WKL" exactAlias concept wkl`. -/
@@ -840,6 +853,9 @@ elab "rm_external_ref " ns:ident key:str rel:ident kind:ident tgt:ident : comman
   | .uniformProblem qid =>
     unless cat.problems.any (·.id.name == qid.name) do
       throwErrorAt tgt "concept catalog: unknown uniform problem '{qid.name}'"
+  | .reducibilityNotion nid =>
+    unless cat.reducibilityNotions.any (·.id.name == nid.name) do
+      throwErrorAt tgt "concept catalog: unknown reducibility notion '{nid.name}'"
   if relation == .exactAlias then
     if let some existing := cat.aliasMap[(nsName, key.getString)]? then
       throwErrorAt key "concept catalog: exact alias {nsName}:\"{key.getString}\" already \
