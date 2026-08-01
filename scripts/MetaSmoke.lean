@@ -299,6 +299,29 @@ direction, checked as a proof-only closure fact. -/
   [ReverseMathlib.Omega.systemTreeSet,
    ReverseMathlib.Omega.CoherentEncoding]
 
+/-! ### ω-bridge reverse-route gate (#22 slice 3)
+
+`WKLω → EFILCω` must factor through the `systemToTree`/`pathToSection` route — the
+compiled-tree reduction, the packaged decoder, and its correctness theorem — and reach
+none of the first direction's compilers: the symmetric architecture certificate. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+  ReverseMathlib.Omega.systemTreeSet_le_systemOracle
+
+#rm_assert_proof_depends ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+  ReverseMathlib.Omega.pathSectionFunction
+
+#rm_assert_proof_depends ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+  ReverseMathlib.Omega.pathSectionFunction_isSection
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+  [ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.sectionPathInternal,
+   ReverseMathlib.Omega.sectionPathSet,
+   ReverseMathlib.Omega.treeLevelList,
+   ReverseMathlib.Omega.treeFiberGraph,
+   ReverseMathlib.Omega.treeBondingGraph]
+
 /-! ### Decoder fine-dependency gate (#22 slice 3)
 
 The decoder's reduction `pathSectionGraph_le_join` has its fine dependency enforced in its

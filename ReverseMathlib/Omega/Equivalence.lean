@@ -3,15 +3,16 @@ Copyright (c) 2026 Cameron Freer. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
-import ReverseMathlib.Omega.SystemToTree
+import ReverseMathlib.Omega.PathToSection
 import ReverseMathlib.Omega.TreeToSystem
 
 /-!
 # The WKLω ⇄ EFILCω equivalence (issue #22, slice 3)
 
-The integration theorems. Each is deliberately an **ordinary unregistered theorem**: the
-equivalence is registered only when both directions and the exact semantic equivalence
-certificate land atomically (stage 5).
+The integration theorems — both directions. Each is deliberately an **ordinary
+unregistered theorem**: the equivalence is registered only when the input-access records,
+the production equivalence fact, the exact semantic equivalence certificate, and the
+goldens land atomically (stage 5).
 -/
 
 namespace ReverseMathlib.Omega
@@ -60,5 +61,26 @@ theorem weakKonigAt_of_efilcAt {Ω : OmegaPart} (h : IsTuringIdeal Ω)
   · rintro ⟨c', hc', hone⟩
     rw [s.singleValued _ c' ci hc' hci, hbit] at hone
     exact hone
+
+/-! ### Second direction: `WKLω → EFILCω`
+
+The integration of the completed `systemToTree` / `pathToSection` route, purely
+compositional: the system oracle is internal (join closure), so the compiled tree is
+internal (`systemTreeSet_le_systemOracle` + downward closure); WKLω supplies an internal
+path; the decoder packages it as an internal section (`pathSectionFunction`), correct by
+`pathSectionFunction_isSection`. -/
+
+/-- **`WKLω → EFILCω`** over a Turing ideal: compile the system to an internal binary tree
+(`systemTreeSet`, internal by `systemTreeSet_le_systemOracle`), take a path, and decode it
+to an internal section (`pathSectionFunction`). -/
+theorem efilcAt_of_weakKonigAt {Ω : OmegaPart} (h : IsTuringIdeal Ω)
+    (hwkl : WeakKonigAt Ω) : EFILCAt Ω := by
+  intro F
+  have hT : systemTreeSet F ∈ Ω :=
+    h.mem_of_reducible (h.join F.fibers.graph.2 F.bonding.graph.2)
+      (systemTreeSet_le_systemOracle F)
+  obtain ⟨P, hP⟩ := hwkl ⟨systemTreeSet F, hT⟩ (isBinaryTreeCode_systemTreeSet F)
+    (hasNodeAtEveryLevel_systemTreeSet F)
+  exact ⟨pathSectionFunction h F.fibers P, pathSectionFunction_isSection h F hP⟩
 
 end ReverseMathlib.Omega
