@@ -57,7 +57,9 @@ def headlineDecls : List Name :=
    -- WKLω slice 3: the first completed bridge direction
    ``ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
    -- WKLω slice 3: the compiled tree is computable from the system oracle
-   ``ReverseMathlib.Omega.systemTreeSet_le_systemOracle]
+   ``ReverseMathlib.Omega.systemTreeSet_le_systemOracle,
+   -- WKLω slice 3: the decoder reduces to fiber graph ⊕ path — the fine dependency
+   ``ReverseMathlib.Omega.pathSectionGraph_le_join]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

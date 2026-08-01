@@ -299,6 +299,23 @@ direction, checked as a proof-only closure fact. -/
   [ReverseMathlib.Omega.systemTreeSet,
    ReverseMathlib.Omega.CoherentEncoding]
 
+/-! ### Decoder fine-dependency gate (#22 slice 3)
+
+The decoder's reduction `pathSectionGraph_le_join` has its fine dependency enforced in its
+*type* (fiber enumerator ⊕ path); the gate additionally pins that its **proof** never
+reaches the inverse-system structure, the compiled tree, or the coherence relation — the
+bonding laws are correctness-only, entering exclusively through
+`pathSectionFunction_isSection`, whose proof must ride the verifier ↔ coherent-encoding
+correspondence of `SystemToTree` rather than a parallel argument. -/
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.pathSectionGraph_le_join
+  [ReverseMathlib.Omega.InternalInverseSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.CoherentEncoding]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.pathSectionFunction_isSection
+  ReverseMathlib.Omega.CoherentEncoding.exists_tuple
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
