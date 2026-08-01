@@ -502,6 +502,7 @@ info: concepts (3):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
+    problem reverse-mathlib:hall.oneSidedRelationEnumerator [single]
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
@@ -1395,7 +1396,7 @@ rm_import_reductions "fixtures/interchange/valid.json"
 rm_import_reductions "fixtures/interchange/short_revision.json"
 
 /--
-info: imported reductions (5) — external evidence: never axioms, no certified counts, no cross-family edges:
+info: imported reductions (6) — external evidence: never axioms, no certified counts, no cross-family edges:
   fixca:"efilcW_le_wklW" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — importedChecked
     external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
     source: example/computable-analysis @ 0123456789abcdef0123456789abcdef01234567
@@ -1406,6 +1407,11 @@ info: imported reductions (5) — external evidence: never axioms, no certified 
     source: cameronfreer/computable-analysis @ 56c794a779c0f273b6a71f9381740824867bca58
     theorem: ComputableAnalysis.efilc_le_wkl; mechanism: lean-kernel
     note: Chunk-coded compiled tree; the decoder consults the input for the chunk widths — ordinary reduction, exactly the access <=W grants and <=sW withholds.
+  computableAnalysis:"hall_le_efilc.strongWeihrauch" [strongWeihrauch, exact] hall.oneSidedRelationEnumerator <= efilc.streamCodedFiberBonds — importedChecked
+    external: hall/oneSidedRelationEnumerator <= efilc/streamCodedFiberBonds [notion strongWeihrauch]
+    source: cameronfreer/computable-analysis @ d752af7882303f9befd004713b247726c43c8ee9
+    theorem: ComputableAnalysis.hall_le_efilc; mechanism: lean-kernel
+    note: Injective partial transversals as fibers; the preprocessor consumes the enumerator track only and the postprocessor reads the section answer alone (strongness enforced by the postprocessor's type). A strong reduction in this one direction only: no lower bound and no equivalence is suggested.
   fixca:"unpinned.checked" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — reported
     external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
     source: example/computable-analysis @ abc123

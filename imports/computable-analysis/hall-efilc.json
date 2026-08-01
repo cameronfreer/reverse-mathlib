@@ -1,0 +1,15 @@
+{ "schema": "rmlib-ca-interchange/1",
+  "source": { "repository": "cameronfreer/computable-analysis",
+              "revision": "d752af7882303f9befd004713b247726c43c8ee9" },
+  "namespace": "computableAnalysis",
+  "reductions": [
+    { "id": "hall_le_efilc.strongWeihrauch",
+      "notion": "strongWeihrauch",
+      "lhs": { "problem": "hall", "presentation": "oneSidedRelationEnumerator" },
+      "rhs": { "problem": "efilc", "presentation": "streamCodedFiberBonds" },
+      "degree": "exact",
+      "status": "importedChecked",
+      "theorem": "ComputableAnalysis.hall_le_efilc",
+      "mechanism": "lean-kernel",
+      "note": "Injective partial transversals as fibers; the preprocessor consumes the enumerator track only and the postprocessor reads the section answer alone (strongness enforced by the postprocessor's type). A strong reduction in this one direction only: no lower bound and no equivalence is suggested." }
+  ] }

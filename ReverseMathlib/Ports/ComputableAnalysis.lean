@@ -55,6 +55,16 @@ rm_uniform_problem efilc.streamCodedFiberBonds where
     the bonds"
   operation := single
 
+rm_uniform_problem hall.oneSidedRelationEnumerator where
+  concept := countableHall
+  input := "Baire stream presenting an ℕ-indexed family both ways at once: track 0 the \
+    codes of the enumerated finite candidate lists, track 1 the positive decidable \
+    candidate relation; the membership equivalence between them and the marriage \
+    condition over the enumerated lists are promises inside the problem. One-sided"
+  output := "Baire stream: an injective transversal — at every index a candidate of the \
+    relation, no value chosen twice"
+  operation := single
+
 rm_external_ref computableAnalysis "weihrauch" exactAlias reducibilityNotion weihrauch
 rm_external_ref computableAnalysis "strongWeihrauch" exactAlias reducibilityNotion
   strongWeihrauch
@@ -62,7 +72,10 @@ rm_external_ref computableAnalysis "wkl/streamCodedTree" exactAlias uniformProbl
   wkl.streamCodedTree
 rm_external_ref computableAnalysis "efilc/streamCodedFiberBonds" exactAlias uniformProblem
   efilc.streamCodedFiberBonds
+rm_external_ref computableAnalysis "hall/oneSidedRelationEnumerator" exactAlias
+  uniformProblem hall.oneSidedRelationEnumerator
 
 rm_import_reductions "imports/computable-analysis/wkl-efilc.json"
+rm_import_reductions "imports/computable-analysis/hall-efilc.json"
 
 end ReverseMathlib.Ports
