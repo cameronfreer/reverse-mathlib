@@ -973,8 +973,10 @@ def PortEntry.render (p : PortEntry) : String := Id.run do
   else
     for c in scopedClaims do
       let label := if c.scope.supportsSyntacticUpperBound then "certified syntactic RM bound"
-        else if c.scope.supportsAllModelConsequence then "certified all-model implication"
-        else "certified ω-model implication"
+        else
+          let shape := if c.direction == .exact then "equivalence" else "implication"
+          if c.scope.supportsAllModelConsequence then s!"certified all-model {shape}"
+          else s!"certified ω-model {shape}"
       lines := lines.push s!"  {label} ({c.scope.render}, {c.direction.render})"
   unless scopedClaims.any fun c => c.direction == .lower || c.direction == .exact do
     lines := lines.push s!"  exact lower bound: pending"

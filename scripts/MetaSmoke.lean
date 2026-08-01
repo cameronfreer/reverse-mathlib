@@ -339,6 +339,19 @@ correspondence of `SystemToTree` rather than a parallel argument. -/
 #rm_assert_proof_depends ReverseMathlib.Omega.pathSectionFunction_isSection
   ReverseMathlib.Omega.CoherentEncoding.exists_tuple
 
+/-! ### Certificate-composition gate (#22 slice 3, stage 5)
+
+The registered ω equivalence certificate must remain **visibly composed from the two named
+direction theorems**: its proof closure must reach both. This ensures registration
+preserves those artifacts — and their route certificates above — rather than silently
+replacing them with an inline or unrestricted proof. -/
+
+#rm_assert_proof_depends ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence
+  ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence
+  ReverseMathlib.Omega.weakKonigAt_of_efilcAt
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
@@ -359,11 +372,36 @@ renders its honest verdict. -/
 
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
+-- The certified-facts scoreboard is the milestone's headline: exactly ONE unique certified
+-- ω-model fact (the WKLω ⇔ EFILCω equivalence), zero all-model, zero syntactic — and no
+-- Hall claim at any certified scope.
 /--
-info: concepts: 3; variants: 5; ports: 2; evidence: 3 (3 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
+info: concepts: 3; variants: 5; ports: 3; evidence: 4 (4 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
+
+-- The ω milestone's verdict, pinned: an exact-direction certified ω-model equivalence over
+-- every Turing ideal, the input-access records in the note, and no unqualified RM bound —
+-- the context identification with RCA₀'s ω-models stays literature-backed with backend
+-- adequacy pending (rendered through the fact view below and the context description).
+/--
+info: weakKonigEfilcOmega
+  mathlib: exists_seq_forall_proj_of_forall_finite
+  target: reverse-mathlib:wkl.binaryTree.turingIdealOmega
+  port: ReverseMathlib.Omega.WeakKonigAt
+  source relation: conceptual analogue
+  exact · semantic implication: kernel checked
+    certificate: ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence (assumes efilc.explicitSequential.enumeratedFibers.turingIdealOmega)
+    ambient: model semantics; RM semantic scope: all ω-models
+    semantic context: rca0.turingIdealOmega
+    supports fact: wklEfilcOmega
+  candidate classical classification: WKL₀-level equivalence over RCA₀ for coded presentations (cf. Simpson, SOSOA; presentation-sensitive) [claimed, UNVERIFIED]
+  certified ω-model equivalence (all ω-models, exact)
+  note: Input access (data consumed by the transformations, not correctness hypotheses). EFILCω → WKLω: compiler treeToSystem reads the input tree; decoder sectionPathInternal reads the section answer only — candidate strong-uniform profile, pending #27. WKLω → EFILCω: compiler systemToTree reads fiber graph ⊕ bonding graph; decoder pathSectionFunction reads fiber graph ⊕ path answer, bonding data correctness-only in the decoder (enforced in the decoder's type) — candidate ordinary-uniform profile, pending #27.
+-/
+#guard_msgs in
+#revmath_port? weakKonigEfilcOmega
 
 -- Catalog export: the production ambient-factorization graph has exactly the three
 -- direction-aware edges. The easy endpoint bug — treating `assumes` as the source
@@ -709,7 +747,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 7; ports: 3; evidence: 5 (4 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 7; ports: 4; evidence: 6 (5 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -841,12 +879,14 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (4):
+info: facts (5):
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
     note: fixture conservation record
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
+    note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
 base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
 reducibility notions (1): fixWeihrauch
@@ -1048,7 +1088,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 4; variants: 9; ports: 5; evidence: 7 (5 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 0; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 9; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1253,7 +1293,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (8):
+info: facts (9):
   fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
   fixEqFact [equivalence | theory fixRca0 omegaModels] smokeModelVarP <=> smokeModelVarPAlt — CERTIFIED
@@ -1269,14 +1309,19 @@ info: facts (8):
       note: fixture certification
       realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Two distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1), with backend object-syntax adequacy pending.
 -/
 #guard_msgs in
 #revmath_facts
 
--- The headline counts UNIQUE certified facts: one ω-model fact, despite two ports carrying
--- semantic evidence for the same content.
+-- The headline counts UNIQUE certified facts: the two fixture ω facts plus the one
+-- production ω fact, despite multiple ports carrying semantic evidence for the same
+-- content — linked ports never inflate the count.
 /--
-info: concepts: 4; variants: 10; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 10; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats

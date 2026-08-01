@@ -15,10 +15,10 @@ Registers the `turingIdealOmega` semantic layer (interface schema `OmegaPart →
 
 Deliberately absent: a Hall ω variant (its exact input presentation — internal candidate
 relation plus internal enumerator with a checked membership-equivalence property — is
-settled in slice 4, never registered as an underspecified placeholder), and any fact, port,
-or evidence — the first production ω fact and its certificate arrive **together** in
-slice 3, after the fact-evidence linkage (#24), so the first production ω claim exercises
-the complete fact-evidence pipeline.
+settled in slice 4, never registered as an underspecified placeholder). The first
+production ω fact, its certificate, its certification, and the linked port land
+**together** in `ReverseMathlib.Ports.Omega.WklEfilc`, exercising the complete
+fact-evidence pipeline (#24).
 -/
 
 namespace ReverseMathlib.Ports
