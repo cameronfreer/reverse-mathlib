@@ -385,6 +385,9 @@ replacing them with an inline or unrestricted proof. -/
 #rm_assert_proof_depends ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence
   ReverseMathlib.Omega.weakKonigAt_of_efilcAt
 
+#rm_assert_proof_depends ReverseMathlib.Ports.efilc_hall_omega_implication
+  ReverseMathlib.Omega.countableHallAt_of_efilcAt
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
@@ -405,11 +408,12 @@ renders its honest verdict. -/
 
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
--- The certified-facts scoreboard is the milestone's headline: exactly ONE unique certified
--- ω-model fact (the WKLω ⇔ EFILCω equivalence), zero all-model, zero syntactic — and no
--- Hall claim at any certified scope.
+-- The certified-facts scoreboard: exactly TWO unique certified ω-model facts — the
+-- WKLω ⇔ EFILCω equivalence and the EFILCω → Hallω upper implication — zero all-model,
+-- zero syntactic. The Hall claim is an upper implication only: no Hall lower bound or
+-- equivalence exists at any certified scope.
 /--
-info: concepts: 3; variants: 5; ports: 3; evidence: 4 (4 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
+info: concepts: 3; variants: 6; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -497,6 +501,7 @@ that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 info: concepts (3):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
+    variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
@@ -780,7 +785,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 7; ports: 4; evidence: 6 (5 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 8; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -912,7 +917,9 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (5):
+info: facts (6):
+  efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — recorded, no evidence linked
+    note: The Hall ω walking slice: an upper implication only — countable Hall's exact classification at ω scope stays open (no lower bound is claimed)
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
     note: fixture conservation record
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
@@ -1121,7 +1128,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 4; variants: 9; ports: 6; evidence: 8 (6 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 1; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 10; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1326,7 +1333,11 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (9):
+info: facts (10):
+  efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.efilc_hall_omega_implication [context rca0.turingIdealOmega]
+      note: The named direction theorem countableHallAt_of_efilcAt; its route architecture and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Two distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1), with backend object-syntax adequacy pending.
   fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
   fixEqFact [equivalence | theory fixRca0 omegaModels] smokeModelVarP <=> smokeModelVarPAlt — CERTIFIED
@@ -1354,7 +1365,7 @@ info: facts (9):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 4; variants: 10; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats

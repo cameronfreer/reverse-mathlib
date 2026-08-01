@@ -13,12 +13,13 @@ Registers the `turingIdealOmega` semantic layer (interface schema `OmegaPart →
 `rca0` base theory, the `rca0.turingIdealOmega` semantic context over `IsTuringIdeal`, and
 **exactly two** presentation-explicit statement variants owning `WeakKonigAt` and `EFILCAt`.
 
-Deliberately absent: a Hall ω variant (its exact input presentation — internal candidate
-relation plus internal enumerator with a checked membership-equivalence property — is
-settled in slice 4, never registered as an underspecified placeholder). The first
-production ω fact, its certificate, its certification, and the linked port land
-**together** in `ReverseMathlib.Ports.Omega.WklEfilc`, exercising the complete
-fact-evidence pipeline (#24).
+The Hall ω variant was deliberately absent until its exact input presentation — internal
+candidate relation plus internal enumerator with a checked membership-equivalence
+property — was settled; it now lands, with its fact, certificate, certification, and
+linked port, **together** in `ReverseMathlib.Ports.Omega.HallEfilc` (slice 4). The first
+production ω fact (the WKLω ⇔ EFILCω equivalence) landed the same way in
+`ReverseMathlib.Ports.Omega.WklEfilc`, exercising the complete fact-evidence pipeline
+(#24).
 -/
 
 namespace ReverseMathlib.Ports
