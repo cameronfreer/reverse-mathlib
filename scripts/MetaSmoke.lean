@@ -507,9 +507,11 @@ info: concepts (3):
   reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
     variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
+    problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
   reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax); explicitly bounded formulations may join once their relationship is fixed. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     variant reverse-mathlib:wkl.binaryTree.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.WeakKonigAt⟩
+    problem reverse-mathlib:wkl.streamCodedTree [single]
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
@@ -930,7 +932,7 @@ info: facts (6):
     note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
 base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
-reducibility notions (1): fixWeihrauch
+reducibility notions (3): fixWeihrauch, strongWeihrauch, weihrauch
 semantic contexts (1): rca0.turingIdealOmega
 -/
 #guard_msgs in
@@ -1393,12 +1395,17 @@ rm_import_reductions "fixtures/interchange/valid.json"
 rm_import_reductions "fixtures/interchange/short_revision.json"
 
 /--
-info: imported reductions (3) — external evidence: never axioms, no certified counts, no cross-family edges:
+info: imported reductions (5) — external evidence: never axioms, no certified counts, no cross-family edges:
   fixca:"efilcW_le_wklW" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — importedChecked
     external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
     source: example/computable-analysis @ 0123456789abcdef0123456789abcdef01234567
     theorem: CA.Fixture.efilc_le_wkl; mechanism: lean-kernel
     note: fixture record
+  computableAnalysis:"efilc_le_wkl.weihrauch" [weihrauch, exact] efilc.streamCodedFiberBonds <= wkl.streamCodedTree — importedChecked
+    external: efilc/streamCodedFiberBonds <= wkl/streamCodedTree [notion weihrauch]
+    source: cameronfreer/computable-analysis @ 56c794a779c0f273b6a71f9381740824867bca58
+    theorem: ComputableAnalysis.efilc_le_wkl; mechanism: lean-kernel
+    note: Chunk-coded compiled tree; the decoder consults the input for the chunk widths — ordinary reduction, exactly the access <=W grants and <=sW withholds.
   fixca:"unpinned.checked" [fixWeihrauch, exact] smokeProblemA <= smokeProblemB — reported
     external: efilcSections/enumeratedFibers <= wklPaths/binaryTreeBits [notion weihrauch]
     source: example/computable-analysis @ abc123
@@ -1408,6 +1415,11 @@ info: imported reductions (3) — external evidence: never axioms, no certified 
     external: wklPaths/binaryTreeBits <= efilcSections/enumeratedFibers [notion weihrauch]
     source: example/computable-analysis @ 0123456789abcdef0123456789abcdef01234567
     downgraded: claimed importedChecked without validated trust data (theorem, mechanism)
+  computableAnalysis:"wkl_le_efilc.strongWeihrauch" [strongWeihrauch, exact] wkl.streamCodedTree <= efilc.streamCodedFiberBonds — importedChecked
+    external: wkl/streamCodedTree <= efilc/streamCodedFiberBonds [notion strongWeihrauch]
+    source: cameronfreer/computable-analysis @ 56c794a779c0f273b6a71f9381740824867bca58
+    theorem: ComputableAnalysis.wkl_le_efilc; mechanism: lean-kernel
+    note: Levels as fibers, truncation as bond; the postprocessor reads the path off the section answer alone (strongness enforced by the postprocessor's type).
 -/
 #guard_msgs in
 #rm_imports

@@ -11,6 +11,7 @@ import ReverseMathlib.Meta.Concepts
 import ReverseMathlib.Meta.Interchange
 import ReverseMathlib.Meta.CatalogExport
 import ReverseMathlib.Ports.Catalog
+import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.Omega.Catalog
 import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.WklEfilc
