@@ -1552,9 +1552,17 @@ presentation bridges (2) — every one MISSING until a named theorem lands:
     requires: An exact correspondence between perfect-matching formulations (Simpson X.3.15/X.3.16 style) and the one-sided enumerated-candidates variant at the Turing-ideal ω layer. Until it lands, no matching classification — in particular no reversal — transfers to this exact variant.
   twoSidedToOneSidedEnumerated: twoSidedMarriageSystem → [uniformProblem] hall.oneSidedRelationEnumerator — MISSING
     requires: A checked correspondence between two-sided society presentations (including their boundedness/enumeration data) and the one-sided relation-plus-enumerator problem, at the relevant scope. Until it lands, no society classification — in particular no reversal — transfers to this exact problem.
+audits (1):
+  hallVariantAudit
+    scope: The Hall variant audit: RMZoo (pinned database revision), Simpson SOSOA 2nd ed. §X.3.15–X.3.16 (section citations), and Hirst's marriage-theorem calibrations (1987 thesis; 1990 paper), audited against the exact one-sided relation-plus-enumerator problem hall.oneSidedRelationEnumerator and its ω variant
+    outcome: No matching reversal found in the audited corpus; the exact lower bound remains open. Not 'new': novelty would require separate priority evidence, which this audit does not supply. Both required presentation bridges are recorded and MISSING.
 -/
 #guard_msgs in
 #rm_corpus
+
+/-- error: corpus: duplicate corpus audit 'hallVariantAudit' -/
+#guard_msgs in
+rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--

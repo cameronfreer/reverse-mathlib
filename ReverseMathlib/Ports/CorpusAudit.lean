@@ -125,4 +125,13 @@ rm_presentation_bridge perfectMatchingToOneSidedOmega where
     Turing-ideal ω layer. Until it lands, no matching classification — in particular no \
     reversal — transfers to this exact variant."
 
+rm_corpus_audit hallVariantAudit
+  "The Hall variant audit: RMZoo (pinned database revision), Simpson SOSOA 2nd ed. \
+   §X.3.15–X.3.16 (section citations), and Hirst's marriage-theorem calibrations (1987 \
+   thesis; 1990 paper), audited against the exact one-sided relation-plus-enumerator \
+   problem hall.oneSidedRelationEnumerator and its ω variant"
+  "No matching reversal found in the audited corpus; the exact lower bound remains open. \
+   Not 'new': novelty would require separate priority evidence, which this audit does \
+   not supply. Both required presentation bridges are recorded and MISSING."
+
 end ReverseMathlib.Ports

@@ -105,6 +105,18 @@ structure PresentationBridgeEntry where
   requirement : String
   deriving Inhabited, Repr, BEq
 
+/-- An audit summary: the scope actually audited and the honest outcome — one of: exact
+match found; explicit bridge found or proved; no match in the audited corpus (the exact
+question remains open — never "new" without separate priority evidence). -/
+structure CorpusAuditEntry where
+  /-- The record id. -/
+  id : Name
+  /-- What was audited (sources, question, exact target). -/
+  scope : String
+  /-- The outcome, in the three-outcome discipline. -/
+  outcome : String
+  deriving Inhabited, Repr, BEq
+
 initialize corpusSourceExt :
     SimplePersistentEnvExtension CorpusSourceEntry (Array CorpusSourceEntry) ←
   registerSimplePersistentEnvExtension {
@@ -132,6 +144,23 @@ initialize presentationBridgeExt :
     addEntryFn := Array.push
     addImportedFn := mkStateFromImportedEntries Array.push #[]
   }
+
+initialize corpusAuditExt :
+    SimplePersistentEnvExtension CorpusAuditEntry (Array CorpusAuditEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := mkStateFromImportedEntries Array.push #[]
+  }
+
+/-- `rm_corpus_audit id "scope" "outcome"`: record an audit's scope and outcome. -/
+elab "rm_corpus_audit " id:ident scope:str outcome:str : command => do
+  let env ← getEnv
+  if (corpusAuditExt.getState env).any (·.id == id.getId) then
+    throwErrorAt id "corpus: duplicate corpus audit '{id.getId}'"
+  if scope.getString.isEmpty || outcome.getString.isEmpty then
+    throwErrorAt id "corpus: an audit record requires nonempty scope and outcome"
+  modifyEnv fun env => corpusAuditExt.addEntry env
+    ⟨id.getId, scope.getString, outcome.getString⟩
 
 /-- `rm_corpus_source ns "pin" "description"`: pin a registered namespace as an audited
 corpus source. -/
@@ -278,6 +307,12 @@ elab "#rm_corpus" : command => do
     lines := lines.push s!"  {b.id}: {b.fromFamily} → [{b.target.kindTag}] \
       {b.target.name} — MISSING"
     lines := lines.push s!"    requires: {b.requirement}"
+  let audits := (corpusAuditExt.getState env).qsort fun a b => a.id.toString < b.id.toString
+  lines := lines.push s!"audits ({audits.size}):"
+  for a in audits do
+    lines := lines.push s!"  {a.id}"
+    lines := lines.push s!"    scope: {a.scope}"
+    lines := lines.push s!"    outcome: {a.outcome}"
   logInfo ("\n".intercalate lines.toList)
 
 end ReverseMathlib.Meta

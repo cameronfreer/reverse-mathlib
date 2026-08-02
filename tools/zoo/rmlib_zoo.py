@@ -34,7 +34,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v0"
+SCHEMA_ID = "reverse-mathlib.catalog/v1"
 
 
 def repo_root() -> Path:
@@ -161,6 +161,42 @@ def cmd_check(args: argparse.Namespace) -> None:
                             f"ambientFactorization")
     if find_key(catalog, "timestamp"):
         problems.append("canonical catalog must not contain timestamps")
+    # corpus section: a separate family with stable ids, referential integrity, and the
+    # fail-closed display statuses (claims reported, bridges missing)
+    corpus = catalog.get("corpus", {})
+    for section, key in (("sources", "namespace"), ("presentationFamilies", "id"),
+                         ("claims", "id"), ("bridges", "id"), ("audits", "id")):
+        ids = [x[key] for x in corpus.get(section, [])]
+        if ids != sorted(ids):
+            problems.append(f"corpus.{section} not sorted by {key}")
+        if len(ids) != len(set(ids)):
+            problems.append(f"duplicate ids in corpus.{section}")
+    src_ids = {x["namespace"] for x in corpus.get("sources", [])}
+    fam_ids = {x["id"] for x in corpus.get("presentationFamilies", [])}
+    problem_ids = {x["id"].split(":", 1)[-1] for x in catalog.get("uniformProblems", [])}
+    variant_ids = {x["id"].split(":", 1)[-1] for x in catalog.get("statementVariants", [])}
+    for c in corpus.get("claims", []):
+        if c.get("source") not in src_ids:
+            problems.append(f"corpus claim {c.get('id')!r} cites unpinned source")
+        if c.get("presentationFamily") not in fam_ids:
+            problems.append(f"corpus claim {c.get('id')!r} cites unknown family")
+        if c.get("status") != "reported":
+            problems.append(f"corpus claim {c.get('id')!r} must be reported")
+        if c.get("level") != "concept":
+            problems.append(f"corpus claim {c.get('id')!r} must be concept-level")
+        if (c.get("wordingKind") == "absent") != (c.get("wording") is None):
+            problems.append(f"corpus claim {c.get('id')!r} wording/kind mismatch")
+    for b in corpus.get("bridges", []):
+        if b.get("fromFamily") not in fam_ids:
+            problems.append(f"corpus bridge {b.get('id')!r} cites unknown family")
+        if b.get("status") != "missing":
+            problems.append(f"corpus bridge {b.get('id')!r} must be missing")
+        tgt = b.get("target", {})
+        tid = tgt.get("id", "").split(":", 1)[-1]
+        if tgt.get("kind") == "uniformProblem" and tid not in problem_ids:
+            problems.append(f"corpus bridge {b.get('id')!r} targets unknown problem")
+        if tgt.get("kind") == "statement" and tid not in variant_ids:
+            problems.append(f"corpus bridge {b.get('id')!r} targets unknown variant")
     if problems:
         for p in problems:
             print(f"rmlib-zoo check: {p}", file=sys.stderr)
@@ -168,7 +204,12 @@ def cmd_check(args: argparse.Namespace) -> None:
     print(f"rmlib-zoo check: ok ({len(catalog['concepts'])} concepts, "
           f"{len(catalog['statementVariants'])} variants, "
           f"{len(catalog.get('facts', []))} facts, "
-          f"{len(catalog['ports'])} ports, {len(got)} ambient edges)")
+          f"{len(catalog['ports'])} ports, {len(got)} ambient edges; "
+          f"corpus: {len(catalog.get('corpus', {}).get('sources', []))} sources, "
+          f"{len(catalog.get('corpus', {}).get('claims', []))} claims, "
+          f"{len(catalog.get('corpus', {}).get('bridges', []))} bridges, "
+          f"{len(catalog.get('corpus', {}).get('audits', []))} audits — "
+          f"separate from certified counts)")
 
 
 # ---------------------------------------------------------------- rendering
@@ -249,6 +290,58 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             bits.append(f"ambient: {e(d['ambient'])}; scope: {e(d['scope'])}")
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
+
+    def corpus_section() -> str:
+        corpus = catalog.get("corpus")
+        if not corpus:
+            return ""
+        parts = ["<h2>Corpus audits</h2>",
+                 "<p><em>Pinned external classification claims — scoped literature "
+                 "findings, a separate family: never fact-graph edges, never certified "
+                 "counts. An absence finding means <strong>not found in this pinned "
+                 "corpus snapshot</strong>, never a mathematical negation; a "
+                 "<strong>MISSING</strong> bridge is an unproved required bridge, never "
+                 "evidence that no bridge exists.</em></p>"]
+        for a in corpus.get("audits", []):
+            parts.append(f"""<div class="card">
+<h3><code>{e(a['id'])}</code> <span class="tag">audit</span></h3>
+<dl><dt>scope</dt><dd>{e(a['scope'])}</dd>
+<dt>outcome</dt><dd><strong>{e(a['outcome'])}</strong></dd></dl></div>""")
+        parts.append("<h3>Pinned sources</h3><ul>")
+        for src in corpus.get("sources", []):
+            parts.append(f"<li><code>{e(src['namespace'])}</code> @ "
+                         f"<code>{e(src['pin'])}</code> — {e(src['description'])}</li>")
+        parts.append("</ul><h3>Presentation families</h3><ul>")
+        for f_ in corpus.get("presentationFamilies", []):
+            parts.append(f"<li><code>{e(f_['id'])}</code> — {e(f_['description'])}</li>")
+        parts.append("</ul><h3>Claims (all reported; concept-level, never attached to "
+                     "exact variants)</h3>")
+        for c in corpus.get("claims", []):
+            subjects = ", ".join(f"<code>{e(x)}</code> <span class=\"tag\">concept</span>"
+                                 for x in c.get("concepts", []))
+            if c["wordingKind"] == "absent":
+                wording = "<em>wording not captured; locator only</em>"
+            else:
+                wording = f"<em>({e(c['wordingKind'])})</em> “{e(c['wording'])}”"
+            parts.append(f"""<div class="card">
+<h3><code>{e(c['id'])}</code> <span class="tag">{e(c['status'])}</span></h3>
+<dl>
+<dt>provenance</dt><dd><code>{e(c['source'])}</code>:“{e(c['locator'])}”</dd>
+<dt>presentation family</dt><dd><code>{e(c['presentationFamily'])}</code></dd>
+<dt>subjects</dt><dd>{subjects}</dd>
+<dt>source wording</dt><dd>{wording}</dd>
+<dt>normalized claim</dt><dd>{e(c['normalizedClaim'])}</dd>
+</dl></div>""")
+        parts.append("<h3>Presentation bridges</h3>")
+        for b in corpus.get("bridges", []):
+            parts.append(f"""<div class="card">
+<h3><code>{e(b['id'])}</code> <span class="tag">MISSING — unproved required bridge</span></h3>
+<dl>
+<dt>from family</dt><dd><code>{e(b['fromFamily'])}</code></dd>
+<dt>to exact target</dt><dd><code>{e(b['target']['id'])}</code> ({e(b['target']['kind'])})</dd>
+<dt>requires</dt><dd>{e(b['requirement'])}</dd>
+</dl></div>""")
+        return "\n".join(parts)
 
     def port_cards() -> str:
         cards = []
@@ -344,6 +437,7 @@ result, or a subsystem theorem; those require the typed catalog and backend, and
 {variant_cards()}
 <h2>Ports</h2>
 {port_cards()}
+{corpus_section()}
 <footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>
 (schema <code>{e(catalog["schema"])}</code>) —
 Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
@@ -375,7 +469,15 @@ def cmd_build(args: argparse.Namespace) -> None:
         shutil.copy(svg_path, site / "ambient-factorizations.svg")
     # the canonical JSON is part of the public site: honest data over rendered views
     shutil.copy(zoo_dir(root) / "catalog.direct.json", site / "catalog.direct.json")
-    (site / "index.html").write_text(site_html(catalog, have_svg, dot_text))
+    page = site_html(catalog, have_svg, dot_text)
+    if catalog.get("corpus", {}).get("claims"):
+        # rendered-page golden markers: the corpus section must frame absence and
+        # missing bridges honestly, in the canonical order the JSON fixes
+        for marker in ("Corpus audits", "not found in this pinned corpus snapshot",
+                       "MISSING — unproved required bridge"):
+            if marker not in page:
+                sys.exit(f"rmlib-zoo build: corpus section marker missing: {marker!r}")
+    (site / "index.html").write_text(page)
     print(f"rmlib-zoo build: wrote {dot_path.name}"
           f"{', ' + svg_path.name if have_svg else ''}, views/ambient-standard/graph.json, "
           f"site/index.html under {out}")

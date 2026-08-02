@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Cameron Freer
 -/
 import ReverseMathlib.Meta.Registry
+import ReverseMathlib.Meta.Corpus
 
 /-!
 # Deterministic catalog export
@@ -213,6 +214,60 @@ def evidenceJson (e : EvidenceRecord) : Json :=
         ("ambient", Json.str e.ambient.render),
         ("scope", Json.str (renderScope e.scope?))])]
 
+/-- The corpus section: pinned external classification claims — a separate top-level
+family, never fact-graph edges, never certified counts. A claim's absence finding means
+"not found in this pinned corpus snapshot", never a mathematical negation; a `missing`
+bridge is an unproved requirement, never evidence that no bridge exists. Claims are
+concept-level: their subjects are concepts, deliberately not attached to variants. -/
+def corpusJson (env : Environment) : Json :=
+  let sources := (corpusSourceExt.getState env).qsort fun a b =>
+    a.ns.name.toString < b.ns.name.toString
+  let families := (presentationFamilyExt.getState env).qsort fun a b =>
+    a.id.toString < b.id.toString
+  let claims := (corpusClaimExt.getState env).qsort fun a b =>
+    a.id.toString < b.id.toString
+  let bridges := (presentationBridgeExt.getState env).qsort fun a b =>
+    a.id.toString < b.id.toString
+  let audits := (corpusAuditExt.getState env).qsort fun a b =>
+    a.id.toString < b.id.toString
+  Json.mkObj
+    [("comment", Json.str "pinned external classification claims — scoped literature \
+        findings, a separate family: never fact-graph edges, never certified counts. \
+        Absence findings mean 'not found in this pinned corpus snapshot', never a \
+        mathematical negation; a 'missing' bridge is an unproved requirement, never \
+        evidence that no bridge exists"),
+     ("sources", Json.arr (sources.map fun s => Json.mkObj
+       [("namespace", Json.str (toString s.ns.name)),
+        ("pin", Json.str s.pin),
+        ("description", Json.str s.description)])),
+     ("presentationFamilies", Json.arr (families.map fun f => Json.mkObj
+       [("id", Json.str (toString f.id)),
+        ("description", Json.str f.description)])),
+     ("claims", Json.arr (claims.map fun c => Json.mkObj
+       [("id", Json.str (toString c.id)),
+        ("source", Json.str (toString c.source.name)),
+        ("locator", Json.str c.locator),
+        ("wordingKind", Json.str c.wordingKind.tag),
+        ("wording", if c.wordingKind == .absent then Json.null else Json.str c.wording),
+        ("level", Json.str "concept"),
+        ("concepts", Json.arr (c.concepts.map fun i =>
+          Json.str s!"reverse-mathlib:{i.name}")),
+        ("presentationFamily", Json.str (toString c.family)),
+        ("normalizedClaim", Json.str c.claim),
+        ("status", Json.str "reported")])),
+     ("bridges", Json.arr (bridges.map fun b => Json.mkObj
+       [("id", Json.str (toString b.id)),
+        ("fromFamily", Json.str (toString b.fromFamily)),
+        ("target", Json.mkObj
+          [("kind", Json.str b.target.kindTag),
+           ("id", Json.str s!"reverse-mathlib:{b.target.name}")]),
+        ("status", Json.str "missing"),
+        ("requirement", Json.str b.requirement)])),
+     ("audits", Json.arr (audits.map fun a => Json.mkObj
+       [("id", Json.str (toString a.id)),
+        ("scope", Json.str a.scope),
+        ("outcome", Json.str a.outcome)]))]
+
 /-- Serialize the snapshot with provenance to canonical JSON. -/
 def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
     (provenance : BuildProvenance) : Json :=
@@ -357,7 +412,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v0"),
+    [("schema", Json.str "reverse-mathlib.catalog/v1"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
@@ -374,6 +429,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
      ("facts", Json.arr (facts.map factJson)),
      ("semanticContexts", Json.arr (semanticContexts.map contextEntryJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
+     ("corpus", corpusJson env),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \
           NOT reverse-mathematics implications"),
