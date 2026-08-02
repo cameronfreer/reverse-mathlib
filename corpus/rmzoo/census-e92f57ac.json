@@ -1,0 +1,6482 @@
+{
+ "schema": "rmzoo-census/1",
+ "tool": {
+  "name": "rmzoo_census.py",
+  "version": "1"
+ },
+ "source": {
+  "repository": "ericastor/rmzoo",
+  "revision": "e92f57acf072115744e818cabd0ac13f2e724754",
+  "file": "results.txt",
+  "sha256": "5544e76b7ab60374bdf65fb0afdbc759669148543c89164cc54618e91b1ba046",
+  "lineCount": 1219
+ },
+ "dispositions": {
+  "parsedRelation": 498,
+  "parsedDirective": 32,
+  "comment": 423,
+  "blank": 266,
+  "unsupportedSyntax": 0
+ },
+ "relations": [
+  {
+   "line": 50,
+   "lhs": [
+    "RT"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 51,
+   "lhs": [
+    "RT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 53,
+   "lhs": [
+    "RRT"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT42"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 55,
+   "lhs": [
+    "RT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 57,
+   "lhs": [
+    "FS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "SFS3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 58,
+   "lhs": [
+    "FS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SFS2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 60,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 61,
+   "lhs": [
+    "SRT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 62,
+   "lhs": [
+    "D2"
+   ],
+   "op": "->",
+   "rhs": [
+    "D22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 64,
+   "lhs": [
+    "RT1"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT12"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 66,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 67,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 68,
+   "lhs": [
+    "EM"
+   ],
+   "op": "->",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 70,
+   "lhs": [
+    "RT1"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT12"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 72,
+   "lhs": [
+    "KL"
+   ],
+   "op": "->",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 74,
+   "lhs": [
+    "ISig3"
+   ],
+   "op": "->",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 75,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 77,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w->",
+   "rhs": [
+    "PA"
+   ],
+   "justification": "Full induction holds in any omega-model."
+  },
+  {
+   "line": 78,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w->",
+   "rhs": [
+    "ISig3"
+   ],
+   "justification": "Full induction holds in any omega-model."
+  },
+  {
+   "line": 79,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w->",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Full induction holds in any omega-model."
+  },
+  {
+   "line": 80,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w->",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Full induction holds in any omega-model."
+  },
+  {
+   "line": 81,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Full induction holds in any omega-model."
+  },
+  {
+   "line": 87,
+   "lhs": [
+    "PA"
+   ],
+   "op": "->",
+   "rhs": [
+    "ISig3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 89,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "PA"
+   ],
+   "justification": "due to Friedman and Harrington, see Simpson's 'Subsystems of Second Order Arithmetic' (2009) [Theorem IX.1.5]"
+  },
+  {
+   "line": 90,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "due to Harrington, see Simpson's 'Subsystems of Second Order Arithmetic' (2009) [Corollary IX.2.6]"
+  },
+  {
+   "line": 96,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "<->",
+   "rhs": [
+    "KL"
+   ],
+   "justification": "Friedman (1975) [Theorem 1.1]"
+  },
+  {
+   "line": 97,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Friedman (1975) [remark following Theorem 1.3]"
+  },
+  {
+   "line": 98,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Friedman (1975) [Theorem 1.4]"
+  },
+  {
+   "line": 104,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BPi1"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 1]"
+  },
+  {
+   "line": 105,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BPi2"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 1]"
+  },
+  {
+   "line": 106,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 4]"
+  },
+  {
+   "line": 107,
+   "lhs": [
+    "ISig3"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 4]"
+  },
+  {
+   "line": 108,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "->",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 5]"
+  },
+  {
+   "line": 109,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 7]"
+  },
+  {
+   "line": 110,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 7]"
+  },
+  {
+   "line": 111,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 8]"
+  },
+  {
+   "line": 112,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig3"
+   ],
+   "justification": "Paris and Kirby (1978) [Proposition 8]"
+  },
+  {
+   "line": 126,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "Pi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Paris (1980) [Theorem 33, and independently by Friedman]"
+  },
+  {
+   "line": 127,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "Pi04c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Paris (1980) [Theorem 33, and independently by Friedman]"
+  },
+  {
+   "line": 128,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "nSig03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Paris (1980) [remark following proof of Theorem 33, p. 331]"
+  },
+  {
+   "line": 129,
+   "lhs": [
+    "BSig3"
+   ],
+   "op": "nSig04c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Paris (1980) [remark following proof of Theorem 33, p. 331]"
+  },
+  {
+   "line": 138,
+   "lhs": [
+    "RT32"
+   ],
+   "op": "<->",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "follows from Jockusch (1972) [Theorem 5.7]"
+  },
+  {
+   "line": 152,
+   "lhs": [
+    "BPi2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Hirst (1987) [Theorem 5.1]"
+  },
+  {
+   "line": 153,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT12"
+   ],
+   "justification": "Hirst (1987) [Theorem 6.3]"
+  },
+  {
+   "line": 154,
+   "lhs": [
+    "RT1"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BPi1"
+   ],
+   "justification": "Hirst (1987) [Theorem 6.4]"
+  },
+  {
+   "line": 155,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Hirst (1987) [Corollary 6.5]"
+  },
+  {
+   "line": 156,
+   "lhs": [
+    "RT1"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Hirst (1987) [remark after Corollary 6.5]"
+  },
+  {
+   "line": 157,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Hirst (1987) [Theorem 6.8]"
+  },
+  {
+   "line": 158,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Hirst (1987) [Theorem 6.10]"
+  },
+  {
+   "line": 159,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "BPi2"
+   ],
+   "justification": "Hirst (1987) [Theorem 6.11]"
+  },
+  {
+   "line": 172,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 174,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "Yu and Simpson (1990) [Section 2, paragraph 2]"
+  },
+  {
+   "line": 175,
+   "lhs": [
+    "WWKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Yu and Simpson (1990) [Section 2, theorems]"
+  },
+  {
+   "line": 187,
+   "lhs": [
+    "GEN1",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Brown and Simpson (1993) [follows from Corollary 6.5]"
+  },
+  {
+   "line": 195,
+   "lhs": [
+    "BSig2",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Hájek (1993) [Corollary 3.14]"
+  },
+  {
+   "line": 196,
+   "lhs": [
+    "BSig3",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Hájek (1993) [Corollary 3.14]"
+  },
+  {
+   "line": 198,
+   "lhs": [
+    "ISig2",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Hájek (1993) [Corollary 3.14]"
+  },
+  {
+   "line": 199,
+   "lhs": [
+    "ISig3",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig3"
+   ],
+   "justification": "Hájek (1993) [Corollary 3.14]"
+  },
+  {
+   "line": 209,
+   "lhs": [
+    "RT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Seetapun and Slaman (1995) [Theorem 3.1]"
+  },
+  {
+   "line": 210,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "nPi04c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Seetapun and Slaman (1995) [Theorem 3.6]"
+  },
+  {
+   "line": 212,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "follows from Specker (1971) [Remark 6, RT22 has $\\Delta^0_3$ solutions]"
+  },
+  {
+   "line": 220,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Mytilinaios and Slaman (1996) [Proposition 5.2]"
+  },
+  {
+   "line": 232,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Hájek and Pudlák (1998) [Theorem IV.1.29]"
+  },
+  {
+   "line": 238,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS3"
+   ],
+   "justification": "Friedman (FOM 53) [Theorem 2]"
+  },
+  {
+   "line": 239,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "FS2"
+   ],
+   "justification": "Friedman (FOM 53) [Theorem 4]"
+  },
+  {
+   "line": 240,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Friedman (FOM 53), proven in private communication"
+  },
+  {
+   "line": 246,
+   "lhs": [
+    "WWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Giusto and Simpson (2000) [Lemma 6.18]"
+  },
+  {
+   "line": 252,
+   "lhs": [
+    "PA"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 253,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 254,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 257,
+   "lhs": [
+    "ISig2",
+    "RT22"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Theorem 10.2]"
+  },
+  {
+   "line": 258,
+   "lhs": [
+    "ISig3",
+    "RT2",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig3"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Theorem 11.1]"
+  },
+  {
+   "line": 259,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [corollary to Theorem 11.1 and Corollary 11.5]"
+  },
+  {
+   "line": 260,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 10.6]"
+  },
+  {
+   "line": 261,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "D22"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 7.10]"
+  },
+  {
+   "line": 262,
+   "lhs": [
+    "BSig2",
+    "D22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 7.10]"
+  },
+  {
+   "line": 263,
+   "lhs": [
+    "COH",
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 7.11]"
+  },
+  {
+   "line": 264,
+   "lhs": [
+    "SRT2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "D2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 7.12]"
+  },
+  {
+   "line": 265,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "COH",
+    "SRT2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 7.13]"
+  },
+  {
+   "line": 266,
+   "lhs": [
+    "COH"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Theorem 9.1]"
+  },
+  {
+   "line": 267,
+   "lhs": [
+    "COH",
+    "ISig2",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 9.5 and Lemma 6.6]"
+  },
+  {
+   "line": 268,
+   "lhs": [
+    "COH",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 9.6 and Lemma 6.6]"
+  },
+  {
+   "line": 269,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "COH"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 9.14]"
+  },
+  {
+   "line": 270,
+   "lhs": [
+    "COH"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Lemma 9.15]"
+  },
+  {
+   "line": 271,
+   "lhs": [
+    "ISig2",
+    "RT22",
+    "WKL"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Theorem 10.2 and remark]"
+  },
+  {
+   "line": 272,
+   "lhs": [
+    "SRT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [Theorem 11.4]"
+  },
+  {
+   "line": 273,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [remark following Corollary 11.5]"
+  },
+  {
+   "line": 274,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "SRT2"
+   ],
+   "justification": "Cholak, Jockusch, and Slaman (2001) [remark following Corollary 11.5]"
+  },
+  {
+   "line": 276,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "corollary to Specker (1971)"
+  },
+  {
+   "line": 278,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "\"\"follows from an elaboration on Seetapun's theorem; first explicit and simplified argument due to Jockusch (see Hummel (1994) [Theorem 2.1]). A clearer argument can be made from Cholak, Jockusch, and Slaman (2001) [Theorem 3.1], from which one can see that RT2 has a low_2 omega model.\"\""
+  },
+  {
+   "line": 298,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "Ambos-Spies, Kjos-Hanssen, Lempp, and Slaman (2004) [Theorem 1.7]"
+  },
+  {
+   "line": 304,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "GdREG"
+   ],
+   "justification": "Dobrinen and Simpson (2004) [remark following Conjecture 3.1]"
+  },
+  {
+   "line": 305,
+   "lhs": [
+    "GdREG"
+   ],
+   "op": "->",
+   "rhs": [
+    "POS"
+   ],
+   "justification": "Dobrinen and Simpson (2004) [remark following Conjecture 3.1]"
+  },
+  {
+   "line": 306,
+   "lhs": [
+    "WKL",
+    "RAN1",
+    "GEN1"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "GdREG"
+   ],
+   "justification": "Dobrinen and Simpson (2004) [Remark 3.5]"
+  },
+  {
+   "line": 312,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "COH"
+   ],
+   "justification": "Mileti (2004) [Claim A.1.3], and independently Jockusch and Lempp"
+  },
+  {
+   "line": 319,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "IDelta2"
+   ],
+   "justification": "Slaman (2004) [Theorem 2.1 and proof preceding]"
+  },
+  {
+   "line": 325,
+   "lhs": [
+    "ADS",
+    "EM"
+   ],
+   "op": "<->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Bovykin and Weiermann (2005) [adaptation of Theorem 8]"
+  },
+  {
+   "line": 331,
+   "lhs": [
+    "FS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 2.3]"
+  },
+  {
+   "line": 332,
+   "lhs": [
+    "FS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "TS3"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 3.2]"
+  },
+  {
+   "line": 333,
+   "lhs": [
+    "FS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 3.2]"
+  },
+  {
+   "line": 334,
+   "lhs": [
+    "TS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 3.4]"
+  },
+  {
+   "line": 335,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 4.6]"
+  },
+  {
+   "line": 336,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 5.2]"
+  },
+  {
+   "line": 337,
+   "lhs": [
+    "RT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS3"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 5.5 and remark]"
+  },
+  {
+   "line": 338,
+   "lhs": [
+    "RT"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [Theorem 5.5 and remark]"
+  },
+  {
+   "line": 353,
+   "lhs": [
+    "GdREG"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Cholak, Greenberg, and Miller (2006) [Theorem 1.4]"
+  },
+  {
+   "line": 354,
+   "lhs": [
+    "GdREG",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Cholak, Greenberg, and Miller (2006) [Theorem 1.6]"
+  },
+  {
+   "line": 355,
+   "lhs": [
+    "GdREG",
+    "WWKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Cholak, Greenberg, and Miller (2006) [Theorem 1.6]"
+  },
+  {
+   "line": 361,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt, Jockusch, Kjos-Hanssen, Lempp, and Slaman (2006) [Theorem 2.4]"
+  },
+  {
+   "line": 362,
+   "lhs": [
+    "COH"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt, Jockusch, Kjos-Hanssen, Lempp, and Slaman (2006) [Theorem 3.7]"
+  },
+  {
+   "line": 364,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "follows from Jockusch (1972) [Theorem 3.1]"
+  },
+  {
+   "line": 374,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.5]"
+  },
+  {
+   "line": 375,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.6]"
+  },
+  {
+   "line": 376,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.6]"
+  },
+  {
+   "line": 377,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "<->",
+   "rhs": [
+    "CADS",
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 2.7]"
+  },
+  {
+   "line": 378,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 2.8]"
+  },
+  {
+   "line": 379,
+   "lhs": [
+    "CRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 2.9]"
+  },
+  {
+   "line": 380,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "->",
+   "rhs": [
+    "COH"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 2.10]"
+  },
+  {
+   "line": 381,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.13]"
+  },
+  {
+   "line": 382,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.16]"
+  },
+  {
+   "line": 383,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.16]"
+  },
+  {
+   "line": 384,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.19]"
+  },
+  {
+   "line": 385,
+   "lhs": [
+    "COH"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.21]"
+  },
+  {
+   "line": 386,
+   "lhs": [
+    "COH",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.25]"
+  },
+  {
+   "line": 387,
+   "lhs": [
+    "COH",
+    "SADS"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 2.28]"
+  },
+  {
+   "line": 388,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.1]"
+  },
+  {
+   "line": 389,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.3]"
+  },
+  {
+   "line": 390,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.3]"
+  },
+  {
+   "line": 391,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 3.6]"
+  },
+  {
+   "line": 392,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 3.6]"
+  },
+  {
+   "line": 393,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 3.6]"
+  },
+  {
+   "line": 394,
+   "lhs": [
+    "CCAC"
+   ],
+   "op": "<->",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.7]"
+  },
+  {
+   "line": 395,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "<->",
+   "rhs": [
+    "CADS",
+    "SCAC"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.8]"
+  },
+  {
+   "line": 396,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "<->",
+   "rhs": [
+    "ADS",
+    "SCAC"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.8]"
+  },
+  {
+   "line": 397,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "<->",
+   "rhs": [
+    "COH",
+    "SCAC"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 3.8]"
+  },
+  {
+   "line": 398,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 3.10]"
+  },
+  {
+   "line": 399,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 3.11]"
+  },
+  {
+   "line": 400,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.1]"
+  },
+  {
+   "line": 401,
+   "lhs": [
+    "StCADS"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BSig2",
+    "CADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.4]"
+  },
+  {
+   "line": 402,
+   "lhs": [
+    "StCOH"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BSig2",
+    "COH"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.4]"
+  },
+  {
+   "line": 403,
+   "lhs": [
+    "StCADS"
+   ],
+   "op": "<->",
+   "rhs": [
+    "StCOH"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.4]"
+  },
+  {
+   "line": 404,
+   "lhs": [
+    "StCOH"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.4]"
+  },
+  {
+   "line": 405,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "PART"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [proof of Proposition 4.4]"
+  },
+  {
+   "line": 406,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "->",
+   "rhs": [
+    "StCOH"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.5]"
+  },
+  {
+   "line": 407,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "->",
+   "rhs": [
+    "PART"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.6]"
+  },
+  {
+   "line": 408,
+   "lhs": [
+    "CADS",
+    "PART"
+   ],
+   "op": "->",
+   "rhs": [
+    "StCADS"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [proof of Proposition 4.4]"
+  },
+  {
+   "line": 409,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "PART"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Corollary 4.7]"
+  },
+  {
+   "line": 410,
+   "lhs": [
+    "StCRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BSig2",
+    "CRT22"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.8]"
+  },
+  {
+   "line": 411,
+   "lhs": [
+    "BSig2",
+    "CRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "StCOH"
+   ],
+   "justification": "Hirschfeldt and Shore (2007) [Proposition 4.8]"
+  },
+  {
+   "line": 413,
+   "lhs": [
+    "COH"
+   ],
+   "op": "->",
+   "rhs": [
+    "CRT22"
+   ],
+   "justification": "implicit in Cholak, Jockusch, and Slaman (2001) [Lemma 7.11]; highlighted in Hirschfeldt and Shore (2007) [Proposition 1.4]"
+  },
+  {
+   "line": 414,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "CAC"
+   ],
+   "justification": "remarked in Cholak, Jockusch, and Slaman (2001) [Question 13.8], explained in Hirschfeldt and Shore (2007) [comment following definition of CAC]"
+  },
+  {
+   "line": 416,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 417,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 418,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 419,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 420,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 421,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 422,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 423,
+   "lhs": [
+    "PART"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 438,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "w->",
+   "rhs": [
+    "Pi01G"
+   ],
+   "justification": "Conidis (2008) [Corollary 3.11]"
+  },
+  {
+   "line": 447,
+   "lhs": [
+    "TT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 448,
+   "lhs": [
+    "TT1"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT12"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 450,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT12"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [Lemma 1.1]"
+  },
+  {
+   "line": 451,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT1"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [Theorem 1.2]"
+  },
+  {
+   "line": 452,
+   "lhs": [
+    "TT1"
+   ],
+   "op": "->",
+   "rhs": [
+    "BPi1"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [remark following Theorem 1.2]"
+  },
+  {
+   "line": 453,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT2"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [Theorem 1.3]"
+  },
+  {
+   "line": 454,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "<->",
+   "rhs": [
+    "TT32"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [Theorem 1.5]"
+  },
+  {
+   "line": 455,
+   "lhs": [
+    "TT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT32"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [proof of Theorem 1.5]"
+  },
+  {
+   "line": 456,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [proof of Theorem 1.5]"
+  },
+  {
+   "line": 457,
+   "lhs": [
+    "TT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT2"
+   ],
+   "justification": "Chubb, Hirst, and McNicholl (2009) [remark following Theorem 1.5]"
+  },
+  {
+   "line": 463,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 4.1]"
+  },
+  {
+   "line": 464,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 5.2]"
+  },
+  {
+   "line": 465,
+   "lhs": [
+    "RT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT32"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 5.2]"
+  },
+  {
+   "line": 466,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 5.3]"
+  },
+  {
+   "line": 467,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 5.4]"
+  },
+  {
+   "line": 468,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Csima and Mileti (2009) [Corollary 5.6]"
+  },
+  {
+   "line": 469,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Csima and Mileti (2009) [Corollary 5.9]"
+  },
+  {
+   "line": 470,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Csima and Mileti (2009) [Theorem 5.11]"
+  },
+  {
+   "line": 471,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RRT32"
+   ],
+   "justification": "Csima and Mileti (2009) [Corollary 5.12]"
+  },
+  {
+   "line": 472,
+   "lhs": [
+    "COH"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Csima and Mileti (2009) [Proposition 5.14]"
+  },
+  {
+   "line": 474,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 480,
+   "lhs": [
+    "PT"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 481,
+   "lhs": [
+    "PT"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 482,
+   "lhs": [
+    "PT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 483,
+   "lhs": [
+    "PT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 484,
+   "lhs": [
+    "IPT"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 485,
+   "lhs": [
+    "IPT"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 486,
+   "lhs": [
+    "IPT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 487,
+   "lhs": [
+    "IPT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 489,
+   "lhs": [
+    "PT"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 490,
+   "lhs": [
+    "PT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 491,
+   "lhs": [
+    "PT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 493,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 494,
+   "lhs": [
+    "RT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT32"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 495,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT2"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 496,
+   "lhs": [
+    "RT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT3"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 497,
+   "lhs": [
+    "PT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 498,
+   "lhs": [
+    "PT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 499,
+   "lhs": [
+    "IPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 500,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 501,
+   "lhs": [
+    "SPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 502,
+   "lhs": [
+    "SRT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPT2"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 503,
+   "lhs": [
+    "SPT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPT2"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.1]"
+  },
+  {
+   "line": 504,
+   "lhs": [
+    "BSig2",
+    "SIPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.3]"
+  },
+  {
+   "line": 505,
+   "lhs": [
+    "SIPT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.3]"
+  },
+  {
+   "line": 506,
+   "lhs": [
+    "SIPT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "D2"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.3]"
+  },
+  {
+   "line": 507,
+   "lhs": [
+    "SIPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "D22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.5]"
+  },
+  {
+   "line": 508,
+   "lhs": [
+    "SIPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Proposition 3.6]"
+  },
+  {
+   "line": 509,
+   "lhs": [
+    "PT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.8]"
+  },
+  {
+   "line": 510,
+   "lhs": [
+    "PT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.8]"
+  },
+  {
+   "line": 511,
+   "lhs": [
+    "RT2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "PT2"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 3.8]"
+  },
+  {
+   "line": 512,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT3"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 4.1]"
+  },
+  {
+   "line": 513,
+   "lhs": [
+    "PT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT3"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 4.1]"
+  },
+  {
+   "line": 514,
+   "lhs": [
+    "IPT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Theorem 4.1]"
+  },
+  {
+   "line": 515,
+   "lhs": [
+    "PT32"
+   ],
+   "op": "<->",
+   "rhs": [
+    "RT32"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Corollary 4.2]"
+  },
+  {
+   "line": 516,
+   "lhs": [
+    "RT"
+   ],
+   "op": "->",
+   "rhs": [
+    "PT"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Remark 1.4]"
+  },
+  {
+   "line": 517,
+   "lhs": [
+    "PT"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPT"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Remark 1.4]"
+  },
+  {
+   "line": 518,
+   "lhs": [
+    "IPT"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [Remark 1.4]"
+  },
+  {
+   "line": 520,
+   "lhs": [
+    "BSig2",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Dzhafarov and Hirst (2009) [proof of Proposition 3.4]"
+  },
+  {
+   "line": 521,
+   "lhs": [
+    "D22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "inspection of Hirschfeldt, Jockusch, Kjos-Hanssen, Lempp, and Slaman (2006) [Theorem 2.4]"
+  },
+  {
+   "line": 536,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "AMT"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.4]"
+  },
+  {
+   "line": 537,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.9]"
+  },
+  {
+   "line": 538,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.10]"
+  },
+  {
+   "line": 539,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.10]"
+  },
+  {
+   "line": 540,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.12]"
+  },
+  {
+   "line": 541,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.15]"
+  },
+  {
+   "line": 542,
+   "lhs": [
+    "AMT",
+    "COH"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Corollary 3.16]"
+  },
+  {
+   "line": 543,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "->",
+   "rhs": [
+    "AMT"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Theorem 4.1]"
+  },
+  {
+   "line": 544,
+   "lhs": [
+    "BSig2",
+    "Pi01G"
+   ],
+   "op": "->",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Theorem 4.3]"
+  },
+  {
+   "line": 545,
+   "lhs": [
+    "ISig2",
+    "Pi01G"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 4.3]"
+  },
+  {
+   "line": 546,
+   "lhs": [
+    "Pi01G"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 4.3]"
+  },
+  {
+   "line": 547,
+   "lhs": [
+    "AMT",
+    "ISig2"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 4.3]"
+  },
+  {
+   "line": 548,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "rPi12c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 4.3]"
+  },
+  {
+   "line": 549,
+   "lhs": [
+    "AMT",
+    "BSig2"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 4.5]"
+  },
+  {
+   "line": 550,
+   "lhs": [
+    "Pi01G"
+   ],
+   "op": "->",
+   "rhs": [
+    "AMT"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Corollary 4.5]"
+  },
+  {
+   "line": 551,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "Pi01G"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Theorem 4.3 and Corollary 4.5]"
+  },
+  {
+   "line": 552,
+   "lhs": [
+    "Pi01G"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 3.10, and remark following Corollary 4.5]"
+  },
+  {
+   "line": 553,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 5.6]"
+  },
+  {
+   "line": 554,
+   "lhs": [
+    "HYP"
+   ],
+   "op": "<->",
+   "rhs": [
+    "OPT"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Theorem 5.7]"
+  },
+  {
+   "line": 555,
+   "lhs": [
+    "AMT"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 5.8]"
+  },
+  {
+   "line": 556,
+   "lhs": [
+    "COH"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Corollary 5.9]"
+  },
+  {
+   "line": 557,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "AST"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [Theorem 6.3]"
+  },
+  {
+   "line": 558,
+   "lhs": [
+    "OPT"
+   ],
+   "op": "->",
+   "rhs": [
+    "AST"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 559,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "->",
+   "rhs": [
+    "AST"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 560,
+   "lhs": [
+    "CADS"
+   ],
+   "op": "->",
+   "rhs": [
+    "AST"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 561,
+   "lhs": [
+    "AST"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "OPT"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 562,
+   "lhs": [
+    "AST"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 563,
+   "lhs": [
+    "AST"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "CADS"
+   ],
+   "justification": "Hirschfeldt, Shore, and Slaman (2009) [remark following Theorem 6.3]"
+  },
+  {
+   "line": 565,
+   "lhs": [
+    "AMT",
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "Pi01G"
+   ],
+   "justification": "straightforward verification of Conidis (2008) [Corollary 3.11]"
+  },
+  {
+   "line": 567,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 568,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 569,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 570,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 571,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 572,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 573,
+   "lhs": [
+    "SADS"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 574,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 589,
+   "lhs": [
+    "PART"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Lempp, and Yang (2010) [Theorem 1.2]"
+  },
+  {
+   "line": 590,
+   "lhs": [
+    "D22"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Lempp, and Yang (2010) [Theorem 1.4]"
+  },
+  {
+   "line": 591,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SPT22"
+   ],
+   "justification": "Chong, Lempp, and Yang (2010) [Theorem 1.7]"
+  },
+  {
+   "line": 592,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SIPT22"
+   ],
+   "justification": "Chong, Lempp, and Yang (2010) [Theorem 1.7]"
+  },
+  {
+   "line": 593,
+   "lhs": [
+    "IPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPT22"
+   ],
+   "justification": "Chong, Lempp, and Yang (2010) [Theorem 1.7]"
+  },
+  {
+   "line": 604,
+   "lhs": [
+    "PTT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "PTT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 605,
+   "lhs": [
+    "PTT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "PTT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 606,
+   "lhs": [
+    "IPTT3"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPTT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 607,
+   "lhs": [
+    "IPTT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPTT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 609,
+   "lhs": [
+    "STT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "STT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 610,
+   "lhs": [
+    "SPTT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPTT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 611,
+   "lhs": [
+    "SIPTT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPTT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 613,
+   "lhs": [
+    "TT2"
+   ],
+   "op": "->",
+   "rhs": [
+    "STT2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 614,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "STT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 616,
+   "lhs": [
+    "PTT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPTT32"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 1.6]"
+  },
+  {
+   "line": 617,
+   "lhs": [
+    "PTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "IPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 1.6]"
+  },
+  {
+   "line": 618,
+   "lhs": [
+    "TT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "PTT32"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 2.1]"
+  },
+  {
+   "line": 619,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "PTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 2.1]"
+  },
+  {
+   "line": 620,
+   "lhs": [
+    "PTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.10]"
+  },
+  {
+   "line": 621,
+   "lhs": [
+    "IPTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.10]"
+  },
+  {
+   "line": 622,
+   "lhs": [
+    "STT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.10]"
+  },
+  {
+   "line": 623,
+   "lhs": [
+    "SPTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.10]"
+  },
+  {
+   "line": 624,
+   "lhs": [
+    "SPTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SPT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.11]"
+  },
+  {
+   "line": 625,
+   "lhs": [
+    "SIPTT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SIPT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.11]"
+  },
+  {
+   "line": 626,
+   "lhs": [
+    "STT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Theorem 3.14]"
+  },
+  {
+   "line": 627,
+   "lhs": [
+    "SPTT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SIPTT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Theorem 3.14]"
+  },
+  {
+   "line": 628,
+   "lhs": [
+    "STT2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SPTT2"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Theorem 3.14]"
+  },
+  {
+   "line": 629,
+   "lhs": [
+    "SPTT2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "SIPTT2"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Theorem 3.14]"
+  },
+  {
+   "line": 630,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "CTT22",
+    "STT22"
+   ],
+   "justification": "Dzhafarov, Hirst, and Lakins (2010) [Proposition 3.18]"
+  },
+  {
+   "line": 639,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRAM"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 640,
+   "lhs": [
+    "SRAM"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 641,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "ASRT22"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 642,
+   "lhs": [
+    "SRAM"
+   ],
+   "op": "->",
+   "rhs": [
+    "ASRAM"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 643,
+   "lhs": [
+    "ASRAM"
+   ],
+   "op": "->",
+   "rhs": [
+    "ASRT22"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 644,
+   "lhs": [
+    "SRAM"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.5]"
+  },
+  {
+   "line": 645,
+   "lhs": [
+    "ASRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.6]"
+  },
+  {
+   "line": 646,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ASRT22"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.6]"
+  },
+  {
+   "line": 647,
+   "lhs": [
+    "ASRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Dzhafarov (2011) [Proposition 5.7]"
+  },
+  {
+   "line": 648,
+   "lhs": [
+    "ASRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Dzhafarov (2011) [Corollary 5.8]"
+  },
+  {
+   "line": 649,
+   "lhs": [
+    "ASRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ASRAM"
+   ],
+   "justification": "Dzhafarov (2011) [Corollary 5.8]"
+  },
+  {
+   "line": 650,
+   "lhs": [
+    "ASRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "COH"
+   ],
+   "justification": "Dzhafarov (2011) [Corollary 5.8]"
+  },
+  {
+   "line": 652,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRAM"
+   ],
+   "justification": "follows from Mileti (2004) [Corollary 5.4.6]"
+  },
+  {
+   "line": 661,
+   "lhs": [
+    "RAN2"
+   ],
+   "op": "->",
+   "rhs": [
+    "PHPM"
+   ],
+   "justification": "Slaman CiE11 [Theorem (69/75)]"
+  },
+  {
+   "line": 662,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "PHPM"
+   ],
+   "justification": "Slaman CiE11 [Theorem (69/75)]"
+  },
+  {
+   "line": 663,
+   "lhs": [
+    "PHPM"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Slaman CiE11 [Theorem (73/75)]"
+  },
+  {
+   "line": 664,
+   "lhs": [
+    "RAN2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Slaman CiE11 [Theorem (69/75) and Theorem (73/75)]"
+  },
+  {
+   "line": 666,
+   "lhs": [
+    "PHPM"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 680,
+   "lhs": [
+    "WWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 682,
+   "lhs": [
+    "POS",
+    "WWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "POS2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [remark on p. 2, end of Section 1]"
+  },
+  {
+   "line": 683,
+   "lhs": [
+    "POS1"
+   ],
+   "op": "<->",
+   "rhs": [
+    "RAN1"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Theorem 3.1]"
+  },
+  {
+   "line": 684,
+   "lhs": [
+    "WWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Proposition 3.2]"
+  },
+  {
+   "line": 685,
+   "lhs": [
+    "POS"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [remark following Proposition 3.2]"
+  },
+  {
+   "line": 686,
+   "lhs": [
+    "POS2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "WWKL2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Proposition 3.5]"
+  },
+  {
+   "line": 687,
+   "lhs": [
+    "WWKL2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "BSig2",
+    "RAN2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Proposition 3.6]"
+  },
+  {
+   "line": 688,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "WWKL2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Theorem 3.8]"
+  },
+  {
+   "line": 689,
+   "lhs": [
+    "WWKL2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Theorem 3.8]"
+  },
+  {
+   "line": 690,
+   "lhs": [
+    "WWKL2"
+   ],
+   "op": "<->",
+   "rhs": [
+    "DCTp"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Theorem 4.3]"
+  },
+  {
+   "line": 691,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "POS2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 692,
+   "lhs": [
+    "POS2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 693,
+   "lhs": [
+    "POS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 694,
+   "lhs": [
+    "WWKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "POS2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 695,
+   "lhs": [
+    "POS2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 696,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "POS2"
+   ],
+   "justification": "Avigad, Dean, and Rute (2012) [Corollary 4.6]"
+  },
+  {
+   "line": 698,
+   "lhs": [
+    "POS1"
+   ],
+   "op": "<->",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "follows from Yu and Simpson (1990) [Theorem 1]"
+  },
+  {
+   "line": 707,
+   "lhs": [
+    "BSig2",
+    "COH"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2012) [Corollary 3.1]"
+  },
+  {
+   "line": 708,
+   "lhs": [
+    "BSig2",
+    "SADS"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2012) [Corollary 4.1]"
+  },
+  {
+   "line": 709,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2012) [Corollary 4.4]"
+  },
+  {
+   "line": 710,
+   "lhs": [
+    "SCAC"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2012) [Corollary 5.1]"
+  },
+  {
+   "line": 711,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2012) [Corollary 5.2]"
+  },
+  {
+   "line": 713,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 725,
+   "lhs": [
+    "RWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 726,
+   "lhs": [
+    "P22"
+   ],
+   "op": "->",
+   "rhs": [
+    "D22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 728,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Flood (2012) [Theorem 3]"
+  },
+  {
+   "line": 729,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Flood (2012) [Theorem 5]"
+  },
+  {
+   "line": 730,
+   "lhs": [
+    "RWKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Flood (2012) [Corollary 6]"
+  },
+  {
+   "line": 731,
+   "lhs": [
+    "RCA"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Flood (2012) [remark following Lemma 7]"
+  },
+  {
+   "line": 732,
+   "lhs": [
+    "RWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Flood (2012) [Theorem 8]"
+  },
+  {
+   "line": 733,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL2"
+   ],
+   "justification": "Flood (2012) [Theorem 13]"
+  },
+  {
+   "line": 734,
+   "lhs": [
+    "RWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "P22"
+   ],
+   "justification": "Flood (2012) [Theorem 18, citing Yokoyama (personal communication)]"
+  },
+  {
+   "line": 735,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKLw"
+   ],
+   "justification": "Flood (2012) [Theorem 24]"
+  },
+  {
+   "line": 736,
+   "lhs": [
+    "RWKLw"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL2"
+   ],
+   "justification": "Flood (2012) [Theorem 24]"
+  },
+  {
+   "line": 737,
+   "lhs": [
+    "RWKLw"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Flood (2012) [Corollary 26]"
+  },
+  {
+   "line": 738,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RWKLw"
+   ],
+   "justification": "Flood (2012) [Proposition 29]"
+  },
+  {
+   "line": 739,
+   "lhs": [
+    "RWKLw"
+   ],
+   "op": "->",
+   "rhs": [
+    "Dw2"
+   ],
+   "justification": "Flood (2012) [Proposition 32]"
+  },
+  {
+   "line": 740,
+   "lhs": [
+    "Dw2"
+   ],
+   "op": "w->",
+   "rhs": [
+    "RWKLw"
+   ],
+   "justification": "Flood (2012) [Remark 33]"
+  },
+  {
+   "line": 749,
+   "lhs": [
+    "POS"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "GdREG"
+   ],
+   "justification": "Kjos-Hanssen, Miller, and Solomon (2012) [Corollary 5.5]"
+  },
+  {
+   "line": 750,
+   "lhs": [
+    "POS",
+    "WWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "GdREG"
+   ],
+   "justification": "Kjos-Hanssen, Miller, and Solomon (2012) [Section 7]"
+  },
+  {
+   "line": 756,
+   "lhs": [
+    "CAC",
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Kreuzer (2012) [Corollary 4.3]"
+  },
+  {
+   "line": 757,
+   "lhs": [
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Kreuzer (2012) [Proposition A.1]"
+  },
+  {
+   "line": 759,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 777,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Liu (2012) [Corollary 1.6]"
+  },
+  {
+   "line": 783,
+   "lhs": [
+    "CSig"
+   ],
+   "op": "->",
+   "rhs": [
+    "CSig2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 785,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 787,
+   "lhs": [
+    "RAN2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Conidis and Slaman (2013) [Theorem 2.1]"
+  },
+  {
+   "line": 788,
+   "lhs": [
+    "CSig"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Conidis and Slaman (2013) [Theorem 3.2]"
+  },
+  {
+   "line": 789,
+   "lhs": [
+    "ISig2",
+    "CSig"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "BSig3"
+   ],
+   "justification": "Conidis and Slaman (2013) [Theorem 3.2]"
+  },
+  {
+   "line": 790,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "CSig2"
+   ],
+   "justification": "Conidis and Slaman (2013) [Theorem 3.3]"
+  },
+  {
+   "line": 791,
+   "lhs": [
+    "RAN2",
+    "BSig2"
+   ],
+   "op": "Pi11c",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Conidis and Slaman (2013) [Corollary 4.2]"
+  },
+  {
+   "line": 797,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "FIP"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Proposition 2.1]"
+  },
+  {
+   "line": 798,
+   "lhs": [
+    "FIP"
+   ],
+   "op": "->",
+   "rhs": [
+    "nD2IP"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Proposition 2.2]"
+  },
+  {
+   "line": 799,
+   "lhs": [
+    "D2IP"
+   ],
+   "op": "<->",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Proposition 2.4]"
+  },
+  {
+   "line": 800,
+   "lhs": [
+    "FIP"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Corollary 2.6]"
+  },
+  {
+   "line": 801,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "nD2IP"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Corollary 3.2]"
+  },
+  {
+   "line": 802,
+   "lhs": [
+    "nD2IP"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Corollary 4.1]"
+  },
+  {
+   "line": 803,
+   "lhs": [
+    "Pi01G"
+   ],
+   "op": "->",
+   "rhs": [
+    "FIP"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Proposition 4.2]"
+  },
+  {
+   "line": 804,
+   "lhs": [
+    "FIP"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "AMT"
+   ],
+   "justification": "Dzhafarov and Mummert (2013) [Corollary 4.5]"
+  },
+  {
+   "line": 810,
+   "lhs": [
+    "ADS"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [Theorem 1.7]"
+  },
+  {
+   "line": 811,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "EM"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [remark before Theorem 1.9]"
+  },
+  {
+   "line": 812,
+   "lhs": [
+    "BSig2",
+    "EM"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [Theorem 1.10 and following remark]"
+  },
+  {
+   "line": 813,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "EM"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [Corollary 1.12]"
+  },
+  {
+   "line": 814,
+   "lhs": [
+    "SADS",
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [Corollary 1.14]"
+  },
+  {
+   "line": 815,
+   "lhs": [
+    "EM"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Lerman, Solomon, and Towsner (2013) [Theorem 1.15]"
+  },
+  {
+   "line": 828,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Wang (2013) [Theorem 3.1]"
+  },
+  {
+   "line": 829,
+   "lhs": [
+    "RRT32",
+    "RT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Wang (2013) [Corollary 3.4]"
+  },
+  {
+   "line": 835,
+   "lhs": [
+    "D22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2014) [Theorem 2.2]"
+  },
+  {
+   "line": 836,
+   "lhs": [
+    "D22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Chong, Slaman, and Yang (2014) [Corollary 2.5]"
+  },
+  {
+   "line": 837,
+   "lhs": [
+    "BSig2",
+    "D22",
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Chong, Slaman, and Yang (2014) [Theorem 2.7]"
+  },
+  {
+   "line": 838,
+   "lhs": [
+    "BSig2",
+    "D22",
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (2014) [Theorem 2.7 and closing remark of Section 5]"
+  },
+  {
+   "line": 847,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Kang (2014) [Theorem 9]"
+  },
+  {
+   "line": 848,
+   "lhs": [
+    "EM"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Kang (2014) [Theorem 10, due to Wang]"
+  },
+  {
+   "line": 849,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "EM"
+   ],
+   "justification": "Kang (2014) [Theorem 11]"
+  },
+  {
+   "line": 855,
+   "lhs": [
+    "RRT42"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 857,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RRT32"
+   ],
+   "justification": "follows from Csima and Mileti (2009) and Cholak, Jockusch, and Slaman (2001)"
+  },
+  {
+   "line": 858,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT42"
+   ],
+   "justification": "follows from Jockusch (1972)"
+  },
+  {
+   "line": 860,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WKL"
+   ],
+   "justification": "Wang (2014, APAL) [Theorem 5.2]"
+  },
+  {
+   "line": 861,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RRT42"
+   ],
+   "justification": "Wang (2014, APAL) [Theorem 5.4]"
+  },
+  {
+   "line": 870,
+   "lhs": [
+    "FS"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 871,
+   "lhs": [
+    "FS"
+   ],
+   "op": "->",
+   "rhs": [
+    "FS3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 873,
+   "lhs": [
+    "FS"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Wang (2014, AIM) [Theorem 4.1]"
+  },
+  {
+   "line": 875,
+   "lhs": [
+    "FS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Wang (2014, AIM) [Theorem 4.2]"
+  },
+  {
+   "line": 876,
+   "lhs": [
+    "FS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT32"
+   ],
+   "justification": "Wang (2014, AIM) [Theorem 4.2]"
+  },
+  {
+   "line": 877,
+   "lhs": [
+    "FS"
+   ],
+   "op": "->",
+   "rhs": [
+    "RRT"
+   ],
+   "justification": "Wang (2014, AIM) [Theorem 4.2]"
+  },
+  {
+   "line": 886,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "Liu (2015) [Corollary 5.1]"
+  },
+  {
+   "line": 892,
+   "lhs": [
+    "TS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "STS3"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 893,
+   "lhs": [
+    "TS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "STS2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 895,
+   "lhs": [
+    "STS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Rice (2015) [Main Theorem]"
+  },
+  {
+   "line": 909,
+   "lhs": [
+    "WKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 910,
+   "lhs": [
+    "WWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 912,
+   "lhs": [
+    "RWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 913,
+   "lhs": [
+    "RWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 915,
+   "lhs": [
+    "RWWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 917,
+   "lhs": [
+    "RCOLOR3"
+   ],
+   "op": "->",
+   "rhs": [
+    "RCOLOR2"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 919,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "EM"
+   ],
+   "justification": "easy to see, remarked in Bienvenu, Patey, and Shafer (2017)"
+  },
+  {
+   "line": 920,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "easy to see, remarked in Bienvenu, Patey, and Shafer (2017)"
+  },
+  {
+   "line": 922,
+   "lhs": [
+    "RCOLOR2"
+   ],
+   "op": "form",
+   "rhs": [
+    "rPi12"
+   ],
+   "justification": null
+  },
+  {
+   "line": 924,
+   "lhs": [
+    "RAN2"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 2.8]"
+  },
+  {
+   "line": 925,
+   "lhs": [
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 2.11]"
+  },
+  {
+   "line": 926,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "<->",
+   "rhs": [
+    "RWWKL"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 3.4]"
+  },
+  {
+   "line": 927,
+   "lhs": [
+    "BSig2",
+    "RWWKL2"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Lemma 3.6]"
+  },
+  {
+   "line": 928,
+   "lhs": [
+    "DNR0",
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL2"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Lemma 3.7]"
+  },
+  {
+   "line": 929,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RWKL2"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 3.10]"
+  },
+  {
+   "line": 930,
+   "lhs": [
+    "BSig2",
+    "SRT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [proof of Theorem 3.10]"
+  },
+  {
+   "line": 931,
+   "lhs": [
+    "RSAT"
+   ],
+   "op": "<->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 4.7]"
+  },
+  {
+   "line": 932,
+   "lhs": [
+    "RWKL"
+   ],
+   "op": "->",
+   "rhs": [
+    "RCOLOR3"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Lemma 5.3]"
+  },
+  {
+   "line": 933,
+   "lhs": [
+    "RCOLOR3"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 5.13]"
+  },
+  {
+   "line": 935,
+   "lhs": [
+    "RCOLOR2"
+   ],
+   "op": "->",
+   "rhs": [
+    "AST"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Proposition 6.3]"
+  },
+  {
+   "line": 936,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RCOLOR2"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 6.9]"
+  },
+  {
+   "line": 937,
+   "lhs": [
+    "WWKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RCOLOR2"
+   ],
+   "justification": "Bienvenu, Patey, and Shafer (2017) [Theorem 6.11]"
+  },
+  {
+   "line": 939,
+   "lhs": [
+    "RAN1"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "relativization and formalization of Kučera (1985)"
+  },
+  {
+   "line": 961,
+   "lhs": [
+    "FIP"
+   ],
+   "op": "<->",
+   "rhs": [
+    "GEN1"
+   ],
+   "justification": "Cholak, Downey, and Igusa (to appear) [Propositions 5.4 and 5.5]"
+  },
+  {
+   "line": 962,
+   "lhs": [
+    "nD2IP",
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "GEN1"
+   ],
+   "justification": "Cholak, Downey, and Igusa (to appear) [Proposition 5.7]"
+  },
+  {
+   "line": 964,
+   "lhs": [
+    "HYP"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "GEN1"
+   ],
+   "justification": "W. Miller and Martin (1968) [Every non-trivial $\\Delta^0_2$ degree is hyperimmune], Sacks (1963) [There is a $\\Delta^0_2$ minimal degree], and sets that join to a 1-generic are Turing-incomparable."
+  },
+  {
+   "line": 969,
+   "lhs": [
+    "ER22"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT22"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Lemma 2.1]"
+  },
+  {
+   "line": 970,
+   "lhs": [
+    "ACA"
+   ],
+   "op": "->",
+   "rhs": [
+    "ER22"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Theorem 2.4]"
+  },
+  {
+   "line": 971,
+   "lhs": [
+    "ER22"
+   ],
+   "op": "->",
+   "rhs": [
+    "ER1"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Lemma 3.1]"
+  },
+  {
+   "line": 972,
+   "lhs": [
+    "ISig2"
+   ],
+   "op": "->",
+   "rhs": [
+    "ER1"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Lemma 3.1]"
+  },
+  {
+   "line": 973,
+   "lhs": [
+    "ER1"
+   ],
+   "op": "->",
+   "rhs": [
+    "RT1"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Lemma 3.1]"
+  },
+  {
+   "line": 974,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ER1"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Theorem 3.5]"
+  },
+  {
+   "line": 975,
+   "lhs": [
+    "ER22"
+   ],
+   "op": "</=_c",
+   "rhs": [
+    "RT2"
+   ],
+   "justification": "Frittaion and Patey (to appear) [Theorem 4.2]"
+  },
+  {
+   "line": 1004,
+   "lhs": [
+    "TT12"
+   ],
+   "op": "</=_sc",
+   "rhs": [
+    "RT12"
+   ],
+   "justification": "Patey (to appear, tree theorem) [consequence of Theorem 2.2]"
+  },
+  {
+   "line": 1005,
+   "lhs": [
+    "RT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TT22"
+   ],
+   "justification": "Patey (to appear, tree theorem) [Corollary 4.12]"
+  },
+  {
+   "line": 1017,
+   "lhs": [
+    "COH",
+    "EM",
+    "Pi01G",
+    "RRT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SADS"
+   ],
+   "justification": "Wang (to appear) [Theorem 5.1]"
+  },
+  {
+   "line": 1018,
+   "lhs": [
+    "COH",
+    "EM",
+    "Pi01G",
+    "RRT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Wang (to appear) [Theorem 5.1]"
+  },
+  {
+   "line": 1019,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS3"
+   ],
+   "justification": "Wang (to appear) [Theorem 5.2]"
+  },
+  {
+   "line": 1041,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "WWKL"
+   ],
+   "justification": "Flood and Towsner (submitted) [Corollary 3.35]"
+  },
+  {
+   "line": 1042,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Flood and Towsner (submitted) [Theorem 4.18]"
+  },
+  {
+   "line": 1043,
+   "lhs": [
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWKL"
+   ],
+   "justification": "Flood and Towsner (submitted) [Theorem 5.2]"
+  },
+  {
+   "line": 1044,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "->",
+   "rhs": [
+    "RWWKL"
+   ],
+   "justification": "Flood and Towsner (submitted) [Theorem 5.3]"
+  },
+  {
+   "line": 1052,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ISig2"
+   ],
+   "justification": "Chong, Slaman, and Yang (preprint) [Corollary 4.2]"
+  },
+  {
+   "line": 1057,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "WSRRT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1058,
+   "lhs": [
+    "WSRRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRRT22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1060,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRRT32"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1062,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Patey (preprint) [Corollary 2.12]"
+  },
+  {
+   "line": 1063,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "<=_c",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "Patey (preprint) [Corollary 3.6]"
+  },
+  {
+   "line": 1064,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "Patey (preprint) [Corollary 3.7]"
+  },
+  {
+   "line": 1065,
+   "lhs": [
+    "EM"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Patey (preprint) [Theorem 3.10]"
+  },
+  {
+   "line": 1066,
+   "lhs": [
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Patey (preprint) [Theorem 3.13]"
+  },
+  {
+   "line": 1067,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SFS2"
+   ],
+   "justification": "Patey (preprint) [Lemma 4.3]"
+  },
+  {
+   "line": 1068,
+   "lhs": [
+    "RRT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Patey (preprint) [Theorem 4.5]"
+  },
+  {
+   "line": 1069,
+   "lhs": [
+    "RRT"
+   ],
+   "op": "w->",
+   "rhs": [
+    "FS"
+   ],
+   "justification": "Patey (preprint) [Corollary 4.7]"
+  },
+  {
+   "line": 1070,
+   "lhs": [
+    "TS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Patey (preprint) [Theorem 4.8]"
+  },
+  {
+   "line": 1071,
+   "lhs": [
+    "IPT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Patey (preprint) [Theorem 4.12]"
+  },
+  {
+   "line": 1072,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "TS3"
+   ],
+   "justification": "Patey (preprint) [Corollary 4.15]"
+  },
+  {
+   "line": 1073,
+   "lhs": [
+    "STS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "AMT"
+   ],
+   "justification": "Patey (preprint) [Theorem 4.19]"
+  },
+  {
+   "line": 1074,
+   "lhs": [
+    "SRRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR"
+   ],
+   "justification": "Patey (preprint) [Theorem 5.11]"
+  },
+  {
+   "line": 1075,
+   "lhs": [
+    "SRRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "Patey (preprint) [Corollary 5.23]"
+  },
+  {
+   "line": 1076,
+   "lhs": [
+    "SRRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "STS2"
+   ],
+   "justification": "Patey (preprint) [Corollary 5.23]"
+  },
+  {
+   "line": 1077,
+   "lhs": [
+    "SRRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "HYP"
+   ],
+   "justification": "Patey (preprint) [Theorem 5.24]"
+  },
+  {
+   "line": 1078,
+   "lhs": [
+    "SRRT32"
+   ],
+   "op": "->",
+   "rhs": [
+    "STS2"
+   ],
+   "justification": "Patey (preprint) [Theorem 5.26]"
+  },
+  {
+   "line": 1079,
+   "lhs": [
+    "ISig2",
+    "STS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRRT22"
+   ],
+   "justification": "Patey (preprint) [Corollary 5.30]"
+  },
+  {
+   "line": 1080,
+   "lhs": [
+    "SEM"
+   ],
+   "op": "->",
+   "rhs": [
+    "SRRT22"
+   ],
+   "justification": "Patey (preprint) [Corollary 5.32]"
+  },
+  {
+   "line": 1081,
+   "lhs": [
+    "WSRRT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "RRT22"
+   ],
+   "justification": "Patey (preprint) [Corollary 6.11]"
+  },
+  {
+   "line": 1082,
+   "lhs": [
+    "BSig2",
+    "SFS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "WSRRT22"
+   ],
+   "justification": "Patey (preprint) [Theorem 6.14]"
+  },
+  {
+   "line": 1084,
+   "lhs": [
+    "RRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "J. Miller (personal communication)"
+  },
+  {
+   "line": 1086,
+   "lhs": [
+    "SFS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "SFS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [follows from proof of Theorem 2.3]"
+  },
+  {
+   "line": 1088,
+   "lhs": [
+    "SFS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "STS3"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [follows from proof of Theorem 3.2]"
+  },
+  {
+   "line": 1089,
+   "lhs": [
+    "SFS2"
+   ],
+   "op": "->",
+   "rhs": [
+    "STS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [follows from proof of Theorem 3.2]"
+  },
+  {
+   "line": 1091,
+   "lhs": [
+    "STS3"
+   ],
+   "op": "->",
+   "rhs": [
+    "TS2"
+   ],
+   "justification": "Cholak, Giusto, Hirst, and Jockusch (2005) [follows from proof of Theorem 3.4]"
+  },
+  {
+   "line": 1093,
+   "lhs": [
+    "DNR"
+   ],
+   "op": "<=_c",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Hirschfeldt, Jockusch, Kjos-Hanssen, Lempp, and Slaman (2008) [follows from proof of Theorem 2.3]"
+  },
+  {
+   "line": 1125,
+   "lhs": [
+    "GP22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SGP22"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1127,
+   "lhs": [
+    "RT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "GP22"
+   ],
+   "justification": "Infinite sets contain infinite families of large finite sets"
+  },
+  {
+   "line": 1128,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SGP22"
+   ],
+   "justification": "Infinite sets contain infinite families of large finite sets"
+  },
+  {
+   "line": 1130,
+   "lhs": [
+    "BSig2"
+   ],
+   "op": "uPi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 1.5]; noted to be a parameterized version of the Parsons/Paris/Friedman conservation theorem"
+  },
+  {
+   "line": 1132,
+   "lhs": [
+    "COH",
+    "SGP22"
+   ],
+   "op": "->",
+   "rhs": [
+    "GP22"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [remark preceding Definition 5.3]"
+  },
+  {
+   "line": 1133,
+   "lhs": [
+    "SADS",
+    "SGP22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SRT22"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Corollary 5.4]"
+  },
+  {
+   "line": 1134,
+   "lhs": [
+    "SADS",
+    "SGP22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SEM"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Corollary 5.4]"
+  },
+  {
+   "line": 1135,
+   "lhs": [
+    "COH",
+    "EM",
+    "GP22",
+    "WKL"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Corollary 5.6]"
+  },
+  {
+   "line": 1136,
+   "lhs": [
+    "SRT22"
+   ],
+   "op": "-|>",
+   "rhs": [
+    "GP22"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [remark following proof of Theorem 5.7]"
+  },
+  {
+   "line": 1137,
+   "lhs": [
+    "GP22"
+   ],
+   "op": "->",
+   "rhs": [
+    "DNR0"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 5.7]"
+  },
+  {
+   "line": 1138,
+   "lhs": [
+    "SGP22"
+   ],
+   "op": "uPi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 6.4]"
+  },
+  {
+   "line": 1139,
+   "lhs": [
+    "ADS",
+    "GP22",
+    "WKL"
+   ],
+   "op": "uPi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 6.5]"
+  },
+  {
+   "line": 1140,
+   "lhs": [
+    "EM",
+    "WKL"
+   ],
+   "op": "uPi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 7.3 and reasoning similar to Theorem 8.2]"
+  },
+  {
+   "line": 1141,
+   "lhs": [
+    "RT22",
+    "WKL"
+   ],
+   "op": "uPi03c",
+   "rhs": [
+    "RCA"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorems 7.4 and 8.2]"
+  },
+  {
+   "line": 1142,
+   "lhs": [
+    "SGP22"
+   ],
+   "op": "->",
+   "rhs": [
+    "BSig2"
+   ],
+   "justification": "Patey and Yokoyama (preprint) [Theorem 9.1, due to Kreuzer]"
+  },
+  {
+   "line": 1144,
+   "lhs": [
+    "CSig2"
+   ],
+   "op": "form",
+   "rhs": [
+    "Pi11"
+   ],
+   "justification": null
+  },
+  {
+   "line": 1161,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "WSCAC"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1162,
+   "lhs": [
+    "WSCAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "by definition"
+  },
+  {
+   "line": 1165,
+   "lhs": [
+    "psRT22"
+   ],
+   "op": "<->",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Patey (preprint, Partial orders) [Theorem 20]"
+  },
+  {
+   "line": 1166,
+   "lhs": [
+    "ADS",
+    "WWKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "Patey (preprint, Partial orders) [Corollary 32]"
+  },
+  {
+   "line": 1167,
+   "lhs": [
+    "WSCAC"
+   ],
+   "op": "</=_c",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "Patey (preprint, Partial orders) [Corollary 40]"
+  },
+  {
+   "line": 1184,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "TT12"
+   ],
+   "justification": "easy to see"
+  },
+  {
+   "line": 1186,
+   "lhs": [
+    "STT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Patey (preprint) [Corollary 3.10]"
+  },
+  {
+   "line": 1187,
+   "lhs": [
+    "TT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Patey (preprint) [Theorem 4.1]"
+  },
+  {
+   "line": 1188,
+   "lhs": [
+    "CTT22"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ACA"
+   ],
+   "justification": "Dzhafarov and Patey (preprint) [follows from Theorem 4.6]"
+  },
+  {
+   "line": 1189,
+   "lhs": [
+    "RT22",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SER22"
+   ],
+   "justification": "Dzhafarov and Patey (preprint) [Theorem 5.5]"
+  },
+  {
+   "line": 1190,
+   "lhs": [
+    "STT22"
+   ],
+   "op": "->",
+   "rhs": [
+    "SER22"
+   ],
+   "justification": "Dzhafarov and Patey (preprint) [proof of Corollary 5.6]"
+  },
+  {
+   "line": 1212,
+   "lhs": [
+    "ProdWQO"
+   ],
+   "op": "->",
+   "rhs": [
+    "ADS"
+   ],
+   "justification": "Towsner (preprint) [Lemma 1.15]"
+  },
+  {
+   "line": 1213,
+   "lhs": [
+    "CAC",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "STS2"
+   ],
+   "justification": "Towsner (preprint) [Theorem 2.1]"
+  },
+  {
+   "line": 1214,
+   "lhs": [
+    "ADS",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "ProdWQO"
+   ],
+   "justification": "Towsner (preprint) [Theorem 3.7]"
+  },
+  {
+   "line": 1215,
+   "lhs": [
+    "ProdWQO",
+    "WKL"
+   ],
+   "op": "w-|>",
+   "rhs": [
+    "SCAC"
+   ],
+   "justification": "Towsner (preprint) [Theorem 4.6]"
+  },
+  {
+   "line": 1219,
+   "lhs": [
+    "CAC"
+   ],
+   "op": "->",
+   "rhs": [
+    "ProdWQO"
+   ],
+   "justification": "Cholak, Marcone, and Solomon (2004) [follows from Corollaries 3.4 and 4.6]"
+  }
+ ],
+ "directives": [
+  {
+   "line": 3,
+   "symbols": [
+    "ACA"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 4,
+   "symbols": [
+    "WKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 5,
+   "symbols": [
+    "WWKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 6,
+   "symbols": [
+    "RCA"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 8,
+   "symbols": [
+    "BSig3"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 9,
+   "symbols": [
+    "BSig2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 11,
+   "symbols": [
+    "RT"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 12,
+   "symbols": [
+    "RT2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 13,
+   "symbols": [
+    "RT22"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 14,
+   "symbols": [
+    "SRT2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 15,
+   "symbols": [
+    "SRT22"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 16,
+   "symbols": [
+    "SFS2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 17,
+   "symbols": [
+    "STS2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 19,
+   "symbols": [
+    "EM"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 21,
+   "symbols": [
+    "AMT"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 22,
+   "symbols": [
+    "AMT",
+    "ISig2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 24,
+   "symbols": [
+    "CAC"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 25,
+   "symbols": [
+    "ADS"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 26,
+   "symbols": [
+    "SADS"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 27,
+   "symbols": [
+    "OPT"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 29,
+   "symbols": [
+    "DNR0"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 30,
+   "symbols": [
+    "DNR"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 32,
+   "symbols": [
+    "WWKL2"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 33,
+   "symbols": [
+    "FIP"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 34,
+   "symbols": [
+    "RWKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 36,
+   "symbols": [
+    "COH"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 37,
+   "symbols": [
+    "StCOH"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 39,
+   "symbols": [
+    "GEN1",
+    "WKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 40,
+   "symbols": [
+    "COH",
+    "WKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 41,
+   "symbols": [
+    "RT22",
+    "WKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 42,
+   "symbols": [
+    "SRT22",
+    "WKL"
+   ],
+   "directive": "primary"
+  },
+  {
+   "line": 44,
+   "symbols": [
+    "POS",
+    "WWKL"
+   ],
+   "directive": "primary"
+  }
+ ],
+ "unsupported": [],
+ "symbols": [
+  {
+   "symbol": "ACA",
+   "occurrences": 31,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ADS",
+   "occurrences": 21,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "AMT",
+   "occurrences": 20,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ASRAM",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ASRT22",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "AST",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "BPi1",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "BPi2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "BSig2",
+   "occurrences": 51,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "BSig3",
+   "occurrences": 15,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CAC",
+   "occurrences": 17,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CADS",
+   "occurrences": 13,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CCAC",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "COH",
+   "occurrences": 27,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CRT22",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CSig",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CSig2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "CTT22",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "D2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "D22",
+   "occurrences": 11,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "D2IP",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "DCTp",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "DNR",
+   "occurrences": 26,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "DNR0",
+   "occurrences": 10,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "Dw2",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "EM",
+   "occurrences": 15,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ER1",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ER22",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "FIP",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "FS",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "FS2",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "FS3",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "GEN1",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "GP22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "GdREG",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "HYP",
+   "occurrences": 9,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IDelta2",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPT",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPT2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPT22",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPT3",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPT32",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPTT2",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPTT22",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPTT3",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "IPTT32",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ISig2",
+   "occurrences": 39,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ISig3",
+   "occurrences": 9,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "KL",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "OPT",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "P22",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PA",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PART",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PHPM",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "POS",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "POS1",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "POS2",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PT",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PT2",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PT22",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PT3",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PT32",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PTT2",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PTT22",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PTT3",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "PTT32",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "Pi01G",
+   "occurrences": 11,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "ProdWQO",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RAN1",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RAN2",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RCA",
+   "occurrences": 37,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RCOLOR2",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RCOLOR3",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RRT",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RRT22",
+   "occurrences": 22,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RRT32",
+   "occurrences": 13,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RRT42",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RSAT",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT1",
+   "occurrences": 12,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT12",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT2",
+   "occurrences": 15,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT22",
+   "occurrences": 45,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT3",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RT32",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RWKL",
+   "occurrences": 15,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RWKL2",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RWKLw",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RWWKL",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "RWWKL2",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SADS",
+   "occurrences": 22,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SCAC",
+   "occurrences": 16,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SEM",
+   "occurrences": 12,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SER22",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SFS2",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SFS3",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SGP22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SIPT2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SIPT22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SIPTT2",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SIPTT22",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SPT2",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SPT22",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SPTT2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SPTT22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SRAM",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SRRT22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SRRT32",
+   "occurrences": 2,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SRT2",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "SRT22",
+   "occurrences": 38,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "STS2",
+   "occurrences": 9,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "STS3",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "STT2",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "STT22",
+   "occurrences": 7,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "StCADS",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "StCOH",
+   "occurrences": 6,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "StCRT22",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TS2",
+   "occurrences": 10,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TS3",
+   "occurrences": 5,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TT1",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TT12",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TT2",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TT22",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "TT32",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "WKL",
+   "occurrences": 73,
+   "resolution": "concept:reverse-mathlib:wkl"
+  },
+  {
+   "symbol": "WSCAC",
+   "occurrences": 3,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "WSRRT22",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "WWKL",
+   "occurrences": 19,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "WWKL2",
+   "occurrences": 8,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "nD2IP",
+   "occurrences": 4,
+   "resolution": "unresolved"
+  },
+  {
+   "symbol": "psRT22",
+   "occurrences": 1,
+   "resolution": "unresolved"
+  }
+ ],
+ "resolutionNote": "resolution comes exclusively from the catalog's explicit rmzoo exact-alias crosswalk; 'unresolved' symbols are visible and non-inferential — no fuzzy or acronym-based identity"
+}
