@@ -418,6 +418,14 @@ replacing them with an inline or unrestricted proof. -/
 #rm_assert_proof_depends ReverseMathlib.Ports.efilc_hall_omega_implication
   ReverseMathlib.Omega.countableHallAt_of_efilcAt
 
+-- The separation certificate must remain visibly the named countermodel with the named
+-- Kleene-tree theorem — registration preserves the construction artifact.
+#rm_assert_proof_depends ReverseMathlib.Ports.rec_countermodel_weakKonig
+  ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+
+#rm_assert_proof_depends ReverseMathlib.Ports.rec_countermodel_weakKonig
+  ReverseMathlib.Omega.recursivePart_isTuringIdeal
+
 -- The compactness boundary is registered as a frontier declaration (an *imported* one) in
 -- ReverseMathlib.Ports.Mathlib.Hall; here we check the cut it produces.
 #eval show CoreM Unit from do
@@ -443,7 +451,7 @@ renders its honest verdict. -/
 -- zero syntactic. The Hall claim is an upper implication only: no Hall lower bound or
 -- equivalence exists at any certified scope.
 /--
-info: concepts: 3; variants: 6; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 7; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -528,7 +536,7 @@ rejected; punctuated external keys survive. The cross-module collision tests (si
 that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
-info: concepts (3):
+info: concepts (4):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
@@ -539,6 +547,8 @@ info: concepts (3):
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
     variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
     problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
+  reverse-mathlib:rca0Core — The second-order core of RCA₀ at a fixed first-order part: nonemptiness, downward Δ⁰₁ (Turing) closure, and closure under recursive join — the Turing-ideal closure conditions. A base-capability concept: it names what the base theory's ω-models satisfy by definition, so ω-scope separations have an honest typed lhs; it is not a theorem-strength concept and carries no external crosswalk
+    variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
   reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax); explicitly bounded formulations may join once their relationship is fixed. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     variant reverse-mathlib:wkl.binaryTree.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.WeakKonigAt⟩
@@ -820,7 +830,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 4; variants: 8; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 9; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -952,7 +962,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (6):
+info: facts (7):
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — recorded, no evidence linked
     note: The Hall ω walking slice: an upper implication only — countable Hall's exact classification at ω scope stays open (no lower bound is claimed)
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
@@ -960,6 +970,8 @@ info: facts (6):
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
+    note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
     note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
 base theories (2): fixRca0, rca0
@@ -1089,7 +1101,7 @@ revmath_port ambientSubPort where
 
 -- The literal True.intro is not a semantic certificate.
 /--
-error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semanticImplication citation must be a typed semantic certificate
+error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semantic citation must be a typed semantic certificate of the claim form's exact shape
 -/
 #guard_msgs in
 revmath_port bogusSemPort where
@@ -1163,7 +1175,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 4; variants: 10; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 2; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 11; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1256,7 +1268,7 @@ revmath_certify_fact fixOmegaConj where
 
 -- The literal True.intro is not a certificate for a fact either.
 /--
-error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semanticImplication citation must be a typed semantic certificate
+error: registry: 'True.intro' does not have type 'ReverseMathlib.Meta.SemanticImplicationCertificate _ _ _' (found 'True'); a kernel-checked semantic citation must be a typed semantic certificate of the claim form's exact shape
 -/
 #guard_msgs in
 revmath_certify_fact fixOmegaFact where
@@ -1333,7 +1345,7 @@ theorem smokeSemCertPAlt : ReverseMathlib.Meta.SemanticImplicationCertificate
 /--
 error: registry: 'RMSmoke.smokeSemCertPAlt' does not have type 'ReverseMathlib.Meta.SemanticEquivalenceCertificate _ _ _' (found 'SemanticImplicationCertificate
   SmokeBaseCtx SmokeModelP
-  SmokeModelP''); a kernel-checked semanticImplication citation must be a typed semantic certificate
+  SmokeModelP''); a kernel-checked semantic citation must be a typed semantic certificate of the claim form's exact shape
 -/
 #guard_msgs in
 revmath_certify_fact fixEqFact where
@@ -1348,6 +1360,53 @@ revmath_certify_fact fixEqFact where
 revmath_certify_fact fixEqFact where
   context := smokeCtx
   via := RMSmoke.smokeSemEqCertFlipped
+
+/-! #### The nonimplication path (the separation shape: countermodel-witnessed, never
+flipped, never conflated with an implication) -/
+
+rm_fact fixNonImpFact nonImplication where
+  base := fixRca0
+  scope := omegaModels
+  lhs := [smokeModelVarQ]
+  rhs := [smokeModelVarP]
+
+/-- The countermodel certificate: the model whose only set is `1` satisfies `Q` and
+falsifies `P`. -/
+theorem smokeSemNonImpCert : ReverseMathlib.Meta.SemanticNonimplicationCertificate
+    SmokeBaseCtx SmokeModelQ SmokeModelP :=
+  ⟨⟨⟨fun n => n = 1⟩, trivial, Or.inr rfl, by simp [SmokeModelP]⟩⟩
+
+/-- The right countermodel concluding against the defeq-distinct alternative target — must
+be rejected: endpoint matching is definitional, never propositional. -/
+theorem smokeSemNonImpCertAlt : ReverseMathlib.Meta.SemanticNonimplicationCertificate
+    SmokeBaseCtx SmokeModelQ SmokeModelP' :=
+  ⟨⟨⟨fun n => n = 1⟩, trivial, Or.inr rfl, by simp [SmokeModelP']⟩⟩
+
+-- An implication-shaped certificate is rejected for a nonimplication fact: a countermodel
+-- never masquerades as an implication, nor vice versa.
+/--
+error: registry: 'RMSmoke.smokeSemCertPAlt' does not have type 'ReverseMathlib.Meta.SemanticNonimplicationCertificate _ _ _' (found 'SemanticImplicationCertificate
+  SmokeBaseCtx SmokeModelP
+  SmokeModelP''); a kernel-checked semantic citation must be a typed semantic certificate of the claim form's exact shape
+-/
+#guard_msgs in
+revmath_certify_fact fixNonImpFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemCertPAlt
+
+-- The nonimplication shape never matches flipped or against a defeq-distinct endpoint.
+/--
+error: registry: semantic certificate 'RMSmoke.smokeSemNonImpCertAlt' concludes 'SmokeModelP'', which is not definitionally the required target interface 'RMSmoke.SmokeModelP'
+-/
+#guard_msgs in
+revmath_certify_fact fixNonImpFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemNonImpCertAlt
+
+-- ACCEPT: the exact countermodel certificate.
+revmath_certify_fact fixNonImpFact where
+  context := smokeCtx
+  via := RMSmoke.smokeSemNonImpCert
 
 -- A port cross-link whose endpoints do not match the fact is rejected — display metadata
 -- must not be able to lie.
@@ -1368,7 +1427,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (10):
+info: facts (12):
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.efilc_hall_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem countableHallAt_of_efilcAt; its route architecture and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1382,12 +1441,19 @@ info: facts (10):
       realization: equivalence kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
+  fixNonImpFact [nonImplication | theory fixRca0 omegaModels] smokeModelVarQ =/=> smokeModelVarP — CERTIFIED
+    via RMSmoke.smokeSemNonImpCert [context smokeCtx]
+      realization: nonimplication (countermodel) kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixOmegaConj [implication | theory fixRca0 omegaModels] smokeModelVarP+smokeModelVarQ => smokeModelVarQ — recorded, no evidence linked
   fixOmegaFact [implication | theory fixRca0 omegaModels] smokeModelVarP => smokeModelVarQ — CERTIFIED
     via RMSmoke.smokeSemCert [context smokeCtx]
       note: fixture certification
       realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
+      note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: nonimplication (countermodel) kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Two distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1), with backend object-syntax adequacy pending.
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1400,7 +1466,7 @@ info: facts (10):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1503,7 +1569,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1600,7 +1666,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 4; variants: 11; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats

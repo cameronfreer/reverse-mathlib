@@ -11,16 +11,18 @@ import ReverseMathlib.Meta.Interchange
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v2`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v3`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
 
 Schema history, versioned per the "schema changes are versioned" discipline: `v0` was the
-transitional pre-conceptual export; `v1` added the corpus family; `v2` adds the
+transitional pre-conceptual export; `v1` added the corpus family; `v2` added the
 `importedReductions` family with **both sides of every crosswalk** — the external keys as
 ingested and the resolved local ids — so the canonical artifact can be audited
-independently of the Lean environment.
+independently of the Lean environment; `v3` admits certified `nonImplication` facts
+(countermodel-witnessed separations) among the fact kinds a consumer must understand —
+they are never edges of any implication closure and never turnstile claims.
 
 Canonical-file properties:
 
@@ -417,7 +419,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v2"),
+    [("schema", Json.str "reverse-mathlib.catalog/v3"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),

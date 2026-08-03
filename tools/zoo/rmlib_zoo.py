@@ -34,7 +34,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v2"
+SCHEMA_ID = "reverse-mathlib.catalog/v3"
 
 
 def repo_root() -> Path:
@@ -201,9 +201,15 @@ def cmd_check(args: argparse.Namespace) -> None:
     variants = {v["id"].split(":", 1)[-1]: v for v in catalog.get("statementVariants", [])}
     uprobs = {q["id"].split(":", 1)[-1] for q in catalog.get("uniformProblems", [])}
     certified = [f for f in catalog.get("facts", []) if f.get("evidence")]
+    EDGE_KINDS = ("implication", "equivalence", "nonImplication")
+    for f in certified:
+        if f.get("kind") not in EDGE_KINDS:
+            problems.append(f"certified fact {f.get('id')!r} has kind {f.get('kind')!r} "
+                            "with no rendering rule — fail closed, never render silently")
     ov = fam_views["omega-facts"]
     if len(ov["edges"]) != len([f for f in certified
-                                if f.get("context", {}).get("scope") == "omegaModels"]):
+                                if f.get("context", {}).get("scope") == "omegaModels"
+                                and f.get("kind") in EDGE_KINDS]):
         problems.append("omega-facts edges do not correspond 1:1 to certified ω facts")
     for ed in ov["edges"]:
         if ed["family"] != "certifiedOmegaFact":
@@ -214,6 +220,9 @@ def cmd_check(args: argparse.Namespace) -> None:
                 problems.append(f"omega edge endpoint {ed[side]!r} not a turingIdealOmega variant")
         if (ed["kind"] == "equivalence") != bool(ed.get("bidirectional")):
             problems.append("equivalence must render as one bidirectional edge")
+        if (ed["kind"] == "nonImplication") != (ed.get("label") == "⊭ω"):
+            problems.append("a certified separation must render as exactly the ⊭ω edge "
+                            "(and nothing else may use that label)")
     iv = fam_views["imported-reductions"]
     if len(iv["edges"]) != len(catalog.get("importedReductions", [])):
         problems.append("imported-reductions edges do not correspond 1:1 to records")
@@ -413,7 +422,7 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
             src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
             tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
             detail = "; ".join(
-                f"{k}: {ed[k]}" for k in ("family", "fact", "record", "source",
+                f"{k}: {ed[k]}" for k in ("family", "kind", "fact", "record", "source",
                                           "scope", "notion", "status", "revision",
                                           "theorem", "exactLhs", "exactRhs")
                 if ed.get(k))
@@ -481,7 +490,8 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
         for f_ in facts:
             lhs = "+".join(f_.get("lhs", []))
             rhs = "+".join(f_.get("rhs", []))
-            arrow = "⇔" if f_["kind"] == "equivalence" else "⇒"
+            arrow = {"equivalence": "⇔", "implication": "⇒",
+                     "nonImplication": "⊭"}.get(f_["kind"], "⇒")
             ctx = f_.get("context", {})
             ctx_ids = sorted({ev["context"] for ev in f_["evidence"]
                               if ev.get("context")})
@@ -507,7 +517,9 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
             "from the proof routes below: each fact is certified by a typed semantic "
             "certificate against a registered context (see the "
             "<a href=\"#reference\">reference</a> for each context's exact status "
-            "wording).</em></p>\n")
+            "wording). A nonimplication (⊭) fact is a countermodel-witnessed "
+            "model-class separation — never a turnstile underivability claim and "
+            "never an edge of any implication closure.</em></p>\n")
 
     def concept_index() -> str:
         refs_by_target: dict[str, list[dict]] = {}
@@ -835,15 +847,19 @@ def build_family_views(catalog: dict) -> dict:
             continue
         if f.get("context", {}).get("scope") != "omegaModels":
             continue
-        if f["kind"] not in ("implication", "equivalence"):
+        if f["kind"] not in ("implication", "equivalence", "nonImplication"):
             continue
         lhs = f["lhs"][0].split(":", 1)[-1]
         rhs = f["rhs"][0].split(":", 1)[-1]
         omega_nodes.update([lhs, rhs])
+        labels = {"equivalence": "⊨ω ⇔", "implication": "⊨ω →",
+                  # a certified separation: countermodel-witnessed, never an
+                  # implication arrow and never part of any closure
+                  "nonImplication": "⊭ω"}
         omega_edges.append({
             "family": "certifiedOmegaFact", "fact": f["id"], "kind": f["kind"],
             "bidirectional": f["kind"] == "equivalence",
-            "label": "⊨ω ⇔" if f["kind"] == "equivalence" else "⊨ω →",
+            "label": labels[f["kind"]],
             "scope": f["context"].get("scope"), "base": f["context"].get("base"),
             "lhs": lhs, "rhs": rhs,
             "certificates": [e["certificate"] for e in f.get("evidence", [])]})
@@ -881,6 +897,7 @@ def build_family_views(catalog: dict) -> dict:
                            "status": "kernelChecked", "scope": "ambientFactorization"})
     for e in omega_edges:
         proj_edges.append({"family": "certifiedOmegaFact", "label": e["label"],
+                           "kind": e["kind"],
                            "lhsConcept": concept_of_variant(e["lhs"]),
                            "rhsConcept": concept_of_variant(e["rhs"]),
                            "exactLhs": e["lhs"], "exactRhs": e["rhs"],
@@ -934,6 +951,8 @@ def view_dot(name: str, view: dict) -> str:
         src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
+        if e.get("kind") == "nonImplication":
+            extra += ", arrowhead=tee"
         lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                      f'{style}{extra}];')
     lines.append('}')
@@ -996,6 +1015,12 @@ def cmd_build(args: argparse.Namespace) -> None:
     if page.count("<img ") != expected_imgs:
         sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
                  f"panel ({expected_imgs}), found {page.count('<img ')}")
+    if any(f.get("kind") == "nonImplication" and f.get("evidence")
+           for f in catalog.get("facts", [])):
+        # a certified separation must be framed as a countermodel, never a turnstile claim
+        for marker in ("model-class separation", "⊭ω"):
+            if marker not in page:
+                sys.exit(f"rmlib-zoo build: separation marker missing: {marker!r}")
     if catalog.get("corpus", {}).get("claims"):
         # rendered-page golden markers: the corpus section must frame absence and
         # missing bridges honestly, in the canonical order the JSON fixes

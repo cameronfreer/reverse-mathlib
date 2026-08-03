@@ -15,6 +15,7 @@ import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.CorpusAudit
 import ReverseMathlib.Ports.Omega.Catalog
 import ReverseMathlib.Ports.Omega.HallEfilc
+import ReverseMathlib.Ports.Omega.RecWkl
 import ReverseMathlib.Ports.Omega.WklEfilc
 import ReverseMathlib.Ports.Mathlib.Hall
 import ReverseMathlib.Ports.Mathlib.Konig

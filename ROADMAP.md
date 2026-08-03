@@ -323,10 +323,15 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 
 ### Tranche 4 — ω-model semantics and first exact calibrations
 
-> **Status (2026-08-03): items 22–27 are complete.** The certified state is two ω-model
-> facts (WKLω ⇔ EFILCω; EFILCω → Hallω), kernel-checked over every Turing ideal, rendered
-> per-scope on the site with the scoreboard at ω-model: 2 / all-model: 0 / syntactic: 0.
-> Item 28 (REC/WKL certified separation) remains open. Additionally landed beyond this
+> **Status (2026-08-03): items 22–28 are complete.** The certified state is three ω-model
+> facts (WKLω ⇔ EFILCω; EFILCω → Hallω; RCA₀-core ⊭ω WKL), kernel-checked over every
+> Turing ideal, rendered
+> per-scope on the site with the scoreboard at ω-model: 3 / all-model: 0 / syntactic: 0.
+> Item 28 landed as the first certified separation: `RCA₀-core ⊭ω WKL`, witnessed by the
+> countermodel REC through the explicit bounded-computation Kleene tree
+> (`ReverseMathlib/Omega/KleeneTree.lean`), registered through the new typed
+> `SemanticNonimplicationCertificate` evidence shape — a model-class separation, never a
+> turnstile `RCA₀ ⊬ WKL` claim (that needs backend soundness, which remains pending). Additionally landed beyond this
 > tranche's text: the #28 interchange contract and the #27 represented-reduction pilot
 > (WKL ≤sW EFILC, EFILC ≤W WKL certified-ordinary, Hall ≤sW EFILC — checked in
 > computable-analysis at pinned revisions, ingested as external evidence), and the

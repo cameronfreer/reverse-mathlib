@@ -150,6 +150,16 @@ structure SemanticEquivalenceCertificate {Model : Sort u} (Base P Q : Model → 
   /-- The equivalence over every model of the base context. -/
   proof : ∀ M, Base M → (P M ↔ Q M)
 
+/-- A typed semantic **nonimplication (countermodel) certificate**: some model of the base
+context satisfies the assumed statement and falsifies the target one. A nonimplication is
+never the derived negation of a failed implication search — it is witnessed by an explicit
+countermodel, and its scope honesty is the same as an implication's: the claim is exactly
+about the registered model class, never a turnstile underivability statement. -/
+structure SemanticNonimplicationCertificate {Model : Sort u} (Base P Q : Model → Prop) :
+    Prop where
+  /-- The countermodel: a model of the base context satisfying `P` and falsifying `Q`. -/
+  countermodel : ∃ M, Base M ∧ P M ∧ ¬ Q M
+
 /-- How a syntactic-derivation claim was obtained (provenance). Orthogonal to
 `DerivationArtifact`: completeness-mediated and direct proofs establish the same
 provability proposition — they differ in provenance and in what artifacts survive. -/
@@ -413,29 +423,45 @@ def contextScopeMatches : FactScope → SemanticScope → Bool
   | .allModels, .allModels => true
   | _, _ => false
 
-/-- Check that `cert` has type `SemanticImplicationCertificate base p q` (or the equivalence
-form for `exact` evidence), up to definitional equality in all three predicate positions —
-the registered base-context predicate and the exact assumed/target variant interfaces. The
-model type is argument 0 and is fixed by `base` through defeq. -/
-def checkSemanticCertificateType (cert base p q : Name) (equiv : Bool) :
+/-- The typed certificate shape a semantic claim requires: one structure per claim form,
+so a countermodel can never masquerade as an implication (or vice versa). -/
+inductive SemanticCertShape where
+  /-- `SemanticImplicationCertificate`. -/
+  | implication
+  /-- `SemanticEquivalenceCertificate` (sides may match flipped). -/
+  | equivalence
+  /-- `SemanticNonimplicationCertificate` (explicit countermodel; never flipped). -/
+  | nonimplication
+  deriving Repr, BEq
+
+/-- Check that `cert` has the exact typed certificate shape for the claim form —
+`SemanticImplicationCertificate base p q`, the equivalence form for `exact` evidence, or
+the nonimplication (countermodel) form for separations — up to definitional equality in
+all three predicate positions: the registered base-context predicate and the exact
+assumed/target variant interfaces. The model type is argument 0 and is fixed by `base`
+through defeq. Only the equivalence form may match with its sides flipped. -/
+def checkSemanticCertificateType (cert base p q : Name) (shape : SemanticCertShape) :
     CommandElabM Unit := do
   liftTermElabM do
     let info ← getConstInfo cert
     let ty ← Meta.whnfR info.type
     let fn := ty.getAppFn
-    let expected := if equiv then ``SemanticEquivalenceCertificate
-      else ``SemanticImplicationCertificate
+    let expected := match shape with
+      | .implication => ``SemanticImplicationCertificate
+      | .equivalence => ``SemanticEquivalenceCertificate
+      | .nonimplication => ``SemanticNonimplicationCertificate
     unless fn.isConstOf expected do
       throwError "registry: '{cert}' does not have type '{expected} _ _ _' (found '{ty}'); \
-        a kernel-checked semanticImplication citation must be a typed semantic certificate"
+        a kernel-checked semantic citation must be a typed semantic certificate of the \
+        claim form's exact shape"
     let args := ty.getAppArgs
     unless args.size == 4 do
       throwError "registry: unexpected arity in certificate type '{ty}'"
     unless ← Meta.isDefEq args[1]! (mkConst base) do
       throwError "registry: semantic certificate '{cert}' quantifies over base context \
         '{args[1]!}', which is not definitionally the registered context predicate '{base}'"
-    let straight ← Meta.isDefEq args[2]! (mkConst p) <&&> Meta.isDefEq args[3]! (mkConst q)
-    if equiv then
+    if shape == .equivalence then
+      let straight ← Meta.isDefEq args[2]! (mkConst p) <&&> Meta.isDefEq args[3]! (mkConst q)
       let flipped ← Meta.isDefEq args[2]! (mkConst q) <&&> Meta.isDefEq args[3]! (mkConst p)
       unless straight || flipped do
         throwError "registry: semantic equivalence certificate '{cert}' does not relate the \
@@ -454,12 +480,13 @@ def findPort? (env : Environment) (id : Name) : Option PortEntry :=
 
 /-- Validate a fact certification (issue #24). Everything is **derived from the fact**:
 its theory context must match the registered semantic context's base and scope exactly
-(never escalated); only singleton implication/equivalence facts are certifiable —
-conjunctions, non-implications, conservation, and uniform facts are rejected fail-closed
+(never escalated); only singleton implication/equivalence/nonimplication facts are
+certifiable — conjunctions, conservation, and uniform facts are rejected fail-closed
 until their schemas exist; both endpoint variants must live at the context's layer and own
 interfaces; and the cited certificate must have the exact typed shape for the fact's kind
 (`SemanticImplicationCertificate Base P Q` for implication,
-`SemanticEquivalenceCertificate` for equivalence), axiom-swept. -/
+`SemanticEquivalenceCertificate` for equivalence, and the countermodel-witnessed
+`SemanticNonimplicationCertificate` for nonimplication), axiom-swept. -/
 def validateFactCertification (cat : ConceptCatalog) (fid : FactId)
     (ctxId : SemanticContextId) (thm : Name) : CommandElabM Unit := do
   let some f := cat.facts.find? (·.id == fid)
@@ -476,11 +503,12 @@ def validateFactCertification (cat : ConceptCatalog) (fid : FactId)
   unless scope == ctx.scope do
     throwError "registry: fact '{fid}' has scope '{scope.tag}', which is not the semantic \
       context's scope '{ctx.scope.tag}'; scopes are never escalated or defaulted"
-  let (lhs, rhs, equiv) ← match f.statement with
-    | .implication l r => pure (l, r, false)
-    | .equivalence l r => pure (l, r, true)
+  let (lhs, rhs, shape) ← match f.statement with
+    | .implication l r => pure (l, r, SemanticCertShape.implication)
+    | .equivalence l r => pure (l, r, SemanticCertShape.equivalence)
+    | .nonImplication l r => pure (l, r, SemanticCertShape.nonimplication)
     | s => throwError "registry: no certificate schema exists for '{s.kindTag}' facts; only \
-        singleton implication and equivalence facts can be certified today"
+        singleton implication, equivalence, and nonimplication facts can be certified today"
   let #[pv] := lhs.variants
     | throwError "registry: conjunction certificates are rejected fail-closed until \
         conjunction semantics exists (the lhs of '{fid}' has {lhs.variants.size} conjuncts)"
@@ -504,7 +532,7 @@ def validateFactCertification (cat : ConceptCatalog) (fid : FactId)
   let some qIface := qe.interface?
     | throwError "registry: statement variant '{qv.name}' has no Lean interface"
   checkStandardAxioms thm
-  checkSemanticCertificateType thm ctx.contextDecl pIface qIface equiv
+  checkSemanticCertificateType thm ctx.contextDecl pIface qIface shape
 
 /-- The ambient a given evidence kind must live in. Kind and ambient must agree: a relative
 factorization is ambient-Lean, a semantic implication lives in model semantics, a syntactic
@@ -683,9 +711,9 @@ def validateEvidence (e : EvidenceRecord) (target : StatementVariantId)
       let some qIface := tentry.interface?
         | throwError "registry: statement variant '{target.name}' has no Lean interface"
       match e.direction with
-      | .upper => checkSemanticCertificateType thm ctx.contextDecl pIface qIface false
-      | .lower => checkSemanticCertificateType thm ctx.contextDecl qIface pIface false
-      | .exact => checkSemanticCertificateType thm ctx.contextDecl pIface qIface true
+      | .upper => checkSemanticCertificateType thm ctx.contextDecl pIface qIface .implication
+      | .lower => checkSemanticCertificateType thm ctx.contextDecl qIface pIface .implication
+      | .exact => checkSemanticCertificateType thm ctx.contextDecl pIface qIface .equivalence
     | k =>
       throwError "registry: no typed certificate schema exists yet for kernel-checked \
         '{repr k}' evidence; an axiom audit alone certifies nothing, so it is rejected \
@@ -1043,6 +1071,7 @@ elab "#revmath_facts" : command => do
       let kindWord := match f.statement with
         | .implication .. => "implication"
         | .equivalence .. => "equivalence"
+        | .nonImplication .. => "nonimplication (countermodel)"
         | _ => "fact"
       for c in certs do
         lines := lines.push s!"    via {c.thm} [context {c.context}]"
