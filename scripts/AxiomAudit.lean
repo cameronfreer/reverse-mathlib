@@ -63,7 +63,11 @@ def headlineDecls : List Name :=
    -- Hall ω slice 4: the compiled matching fibers reduce to the enumerator alone
    ``ReverseMathlib.Omega.hallFiberGraph_le_enum,
    -- Hall ω slice 4: the completed direction
-   ``ReverseMathlib.Omega.countableHallAt_of_efilcAt]
+   ``ReverseMathlib.Omega.countableHallAt_of_efilcAt,
+   -- Tranche 4: the Kleene tree — recursive membership, the diagonal, the countermodel
+   ``ReverseMathlib.Omega.recursiveSet_kleeneTree,
+   ``ReverseMathlib.Omega.not_isBinaryPathThrough_of_recursiveSet,
+   ``ReverseMathlib.Omega.not_weakKonigAt_recursivePart]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

@@ -372,6 +372,36 @@ fact. -/
    ReverseMathlib.Omega.systemTreeSet,
    Finset.all_card_le_biUnion_card_iff_existsInjective']
 
+/-! ### Kleene-tree separation route gates (tranche 4)
+
+`REC ⊭ WKLω` must be the explicit bounded-computation diagonal and nothing else: the
+countermodel theorem factors through the Kleene tree, its recursive membership decision,
+and the no-recursive-path diagonal, with mathlib's step-bounded universal evaluator
+`evaln` in the proof closure — and it reaches neither the WKL⇄EFILC bridge routes, the
+Hall route, nor the classical compactness boundary. No prepackaged nonimplication and no
+borrowed equivalence enters the separation. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+  ReverseMathlib.Omega.kleeneTree
+
+#rm_assert_proof_depends ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+  ReverseMathlib.Omega.recursiveSet_kleeneTree
+
+#rm_assert_proof_depends ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+  ReverseMathlib.Omega.not_isBinaryPathThrough_of_recursiveSet
+
+#rm_assert_proof_depends ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+  Nat.Partrec.Code.evaln
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.not_weakKonigAt_recursivePart
+  [ReverseMathlib.Omega.efilcAt_of_weakKonigAt,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.countableHallAt_of_efilcAt,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system]
+
 /-! ### Certificate-composition gate (#22 slice 3, stage 5)
 
 The registered ω equivalence certificate must remain **visibly composed from the two named

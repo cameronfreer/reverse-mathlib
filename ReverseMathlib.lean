@@ -23,3 +23,4 @@ import ReverseMathlib.Omega.InverseSystem
 import ReverseMathlib.Omega.Bridge
 import ReverseMathlib.Omega.Hall
 import ReverseMathlib.Omega.HallFromEfilc
+import ReverseMathlib.Omega.KleeneTree
