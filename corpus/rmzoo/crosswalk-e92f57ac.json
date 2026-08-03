@@ -1,0 +1,674 @@
+{
+ "schema": "rmzoo-crosswalk/1",
+ "source": {
+  "repository": "ericastor/rmzoo",
+  "revision": "e92f57acf072115744e818cabd0ac13f2e724754",
+  "file": "results.txt",
+  "sha256": "5544e76b7ab60374bdf65fb0afdbc759669148543c89164cc54618e91b1ba046"
+ },
+ "counts": {
+  "ambiguous": 0,
+  "exactAlias": 1,
+  "outOfCurrentCatalog": 97,
+  "relatedButNotAlias": 8,
+  "unknownFromSource": 25
+ },
+ "note": "every atomic symbol receives exactly one disposition; only exactAlias counts as resolved, and aliases target concepts only — never statement variants or uniform problems, never conjunctions; low catalog coverage reflects the catalog's current scope, not a defect",
+ "symbols": [
+  {
+   "symbol": "ACA",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "arithmetical comprehension; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ADS",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "ascending/descending sequence principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "AMT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "atomic model theorem; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ASRAM",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "ASRT22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "AST",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "BPi1",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Π⁰₁ bounding; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "BPi2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Π⁰₂ bounding; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "BSig2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Σ⁰₂ bounding; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "BSig3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Σ⁰₃ bounding; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "CAC",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "chain-antichain principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "CADS",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "cohesive-style ADS variant; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "CCAC",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "COH",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "cohesive set principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "CRT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "cohesive Ramsey for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "CSig",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "CSig2",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "CTT22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "D2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Δ⁰₂ infinite subset principle (all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "D22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Δ⁰₂ infinite subset principle, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "D2IP",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "DCTp",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "DNR",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "diagonally nonrecursive function existence; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "DNR0",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "DNR relative to 0' flavor per its position in the database; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "Dw2",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "EM",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Erdős–Moser tournament principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ER1",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "ER22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "FIP",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "finite intersection principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "FS",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "free set theorem (all exponents); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "FS2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "free set for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "FS3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "free set for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "GEN1",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "1-genericity existence; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "GP22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "grouping principle for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "GdREG",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Gδ-regularity (Dobrinen–Simpson); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "HYP",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "hyperimmune degree existence per its database role; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IDelta2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Δ⁰₂ induction; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized Ramsey (all exponents); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPT3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPTT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized tree theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPTT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPTT3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized tree theorem for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "IPTT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "increasing polarized tree theorem for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ISig2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Σ⁰₂ induction; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ISig3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Σ⁰₃ induction; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "KL",
+   "disposition": "relatedButNotAlias",
+   "reason": "full König's lemma for finitely branching trees (ACA-level): the catalog's wkl description deliberately keeps this a separate, currently unregistered concept"
+  },
+  {
+   "symbol": "OPT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "omitting partial types principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "P22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "PA",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "full first-order induction over the base (RMZoo's own w-> justifications read 'Full induction holds in any omega-model'); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PART",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "PHPM",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "POS",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "POS1",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "POS2",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "PT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized Ramsey (all exponents); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized Ramsey for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized Ramsey for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PT3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized Ramsey for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized Ramsey for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PTT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized tree theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PTT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PTT3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized tree theorem for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "PTT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "polarized tree theorem for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "Pi01G",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Π⁰₁-genericity principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "ProdWQO",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "products of well-quasi-orders principle; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RAN1",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "1-randomness existence; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RAN2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "2-randomness existence; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RCA",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "the RCA₀ base system itself; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RCOLOR2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "restricted coloring principle, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RCOLOR3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "restricted coloring principle, three colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RRT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "rainbow Ramsey theorem (general); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RRT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "rainbow Ramsey for pairs, 2-bounded; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RRT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "rainbow Ramsey for triples, 2-bounded; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RRT42",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "rainbow Ramsey for 4-tuples, 2-bounded; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RSAT",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "RT",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey's theorem (all exponents); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT1",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey for singletons (pigeonhole, all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT12",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "pigeonhole, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey for pairs (all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey for triples (all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "Ramsey for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "RWKL",
+   "disposition": "relatedButNotAlias",
+   "reason": "Ramsey-type weak König's lemma: homogeneity-weakened path existence, related to wkl but a distinct principle"
+  },
+  {
+   "symbol": "RWKL2",
+   "disposition": "relatedButNotAlias",
+   "reason": "Ramsey-type weak König variant: related to wkl, distinct principle"
+  },
+  {
+   "symbol": "RWKLw",
+   "disposition": "relatedButNotAlias",
+   "reason": "Ramsey-type weak König variant: related to wkl, distinct principle"
+  },
+  {
+   "symbol": "RWWKL",
+   "disposition": "relatedButNotAlias",
+   "reason": "Ramsey-type weak weak König: related to wkl, distinct principle"
+  },
+  {
+   "symbol": "RWWKL2",
+   "disposition": "relatedButNotAlias",
+   "reason": "Ramsey-type weak weak König variant: related to wkl, distinct principle"
+  },
+  {
+   "symbol": "SADS",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable ADS; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SCAC",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable chain-antichain; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SEM",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable Erdős–Moser; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SER22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "SFS2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable free set for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SFS3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable free set for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SGP22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable grouping principle for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SIPT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable increasing polarized for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SIPT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable increasing polarized for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SIPTT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable increasing polarized tree theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SIPTT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable increasing polarized tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SPT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable polarized for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SPT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable polarized for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SPTT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable polarized tree theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SPTT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable polarized tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SRAM",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "SRRT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable rainbow Ramsey for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SRRT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable rainbow Ramsey for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SRT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable Ramsey for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "SRT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable Ramsey for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "STS2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable thin set for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "STS3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable thin set for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "STT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable tree theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "STT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "stable tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "StCADS",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "strong/stability-augmented CADS variant per its equivalence line; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "StCOH",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "strong/stability-augmented COH variant per its equivalence line; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "StCRT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "strong/stability-augmented cohesive Ramsey variant per its equivalence line; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TS2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "thin set theorem for pairs; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TS3",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "thin set theorem for triples; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TT1",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "tree theorem for singletons (all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TT12",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "tree theorem for singletons, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TT2",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "tree theorem for pairs (all colors); no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TT22",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "tree theorem for pairs, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "TT32",
+   "disposition": "outOfCurrentCatalog",
+   "reason": "tree theorem for triples, two colors; no catalog concept covers it, which reflects the catalog's current scope, not a defect"
+  },
+  {
+   "symbol": "WKL",
+   "disposition": "exactAlias",
+   "target": "concept:reverse-mathlib:wkl"
+  },
+  {
+   "symbol": "WSCAC",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "WSRRT22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "WWKL",
+   "disposition": "relatedButNotAlias",
+   "reason": "weak weak König's lemma (positive-measure trees): a strictly weaker, distinct principle related to the wkl concept — not a formulation of it"
+  },
+  {
+   "symbol": "WWKL2",
+   "disposition": "relatedButNotAlias",
+   "reason": "weak weak König variant (2-random flavor per its equivalence line): distinct principle related to wkl, not a formulation of it"
+  },
+  {
+   "symbol": "nD2IP",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  },
+  {
+   "symbol": "psRT22",
+   "disposition": "unknownFromSource",
+   "reason": "not confidently identified from the pinned snapshot alone; the RMZoo documentation was not consulted for this symbol in this review, so no identification is asserted"
+  }
+ ]
+}

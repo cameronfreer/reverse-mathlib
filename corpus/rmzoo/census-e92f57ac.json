@@ -2,7 +2,7 @@
  "schema": "rmzoo-census/1",
  "tool": {
   "name": "rmzoo_census.py",
-  "version": "1"
+  "version": "2"
  },
  "source": {
   "repository": "ericastor/rmzoo",

@@ -22,7 +22,7 @@ import re
 import sys
 from pathlib import Path
 
-TOOL_VERSION = "1"
+TOOL_VERSION = "2"
 CENSUS_SCHEMA = "rmzoo-census/1"
 REPOSITORY = "ericastor/rmzoo"
 REVISION = "e92f57acf072115744e818cabd0ac13f2e724754"
@@ -154,6 +154,71 @@ def cmd_build() -> None:
           f"/{len(census['symbols'])} symbols crosswalked")
 
 
+LEDGER_SCHEMA = "rmzoo-crosswalk/1"
+DISPOSITIONS = {"exactAlias", "ambiguous", "relatedButNotAlias", "outOfCurrentCatalog",
+                "unknownFromSource"}
+
+
+def ledger_path(root: Path) -> Path:
+    return root / "corpus" / "rmzoo" / f"crosswalk-{REVISION[:8]}.json"
+
+
+def check_ledger(root: Path, census: dict) -> dict:
+    """The 131-symbol disposition ledger: exhaustive, pinned, machine-checked."""
+    lp = ledger_path(root)
+    if not lp.exists():
+        sys.exit("rmzoo_census check: crosswalk ledger missing")
+    ledger = json.loads(lp.read_text())
+    fail = lambda m: sys.exit(f"rmzoo_census check (ledger): {m}")
+    if ledger.get("schema") != LEDGER_SCHEMA:
+        fail(f"schema {ledger.get('schema')!r}, expected {LEDGER_SCHEMA!r}")
+    src = ledger.get("source", {})
+    if src.get("revision") != REVISION or src.get("sha256") != SHA256:
+        fail("ledger is not pinned to the snapshot revision and digest")
+    rows = ledger.get("symbols", [])
+    names = [r.get("symbol") for r in rows]
+    if names != sorted(names):
+        fail("symbols not sorted")
+    if len(names) != len(set(names)):
+        fail("duplicate symbol dispositions")
+    census_syms = {s["symbol"] for s in census["symbols"]}
+    if set(names) != census_syms:
+        missing = sorted(census_syms - set(names))
+        extra = sorted(set(names) - census_syms)
+        fail(f"ledger/census symbol mismatch: missing {missing}, extra {extra}")
+    walk = crosswalk(root)
+    counts = {k: 0 for k in DISPOSITIONS}
+    for r in rows:
+        d = r.get("disposition")
+        if d not in DISPOSITIONS:
+            fail(f"{r.get('symbol')}: unknown disposition {d!r}")
+        counts[d] += 1
+        if d == "exactAlias":
+            tgt = r.get("target", "")
+            if not tgt.startswith("concept:"):
+                fail(f"{r['symbol']}: exactAlias must target a concept, never a "
+                     f"statement variant or uniform problem (got {tgt!r})")
+            if walk.get(r["symbol"]) != tgt:
+                fail(f"{r['symbol']}: ledger alias {tgt!r} disagrees with the catalog "
+                     f"crosswalk {walk.get(r['symbol'])!r}")
+            if r.get("reason"):
+                fail(f"{r['symbol']}: exactAlias carries no reason field")
+        else:
+            if not r.get("reason"):
+                fail(f"{r['symbol']}: non-alias disposition requires a concise reason")
+            if r.get("target"):
+                fail(f"{r['symbol']}: non-alias disposition must not carry a target")
+    for sym, tgt in walk.items():
+        row = next((r for r in rows if r["symbol"] == sym), None)
+        if row is None or row["disposition"] != "exactAlias" or row.get("target") != tgt:
+            fail(f"catalog crosswalk entry {sym!r} not mirrored as an exactAlias row")
+    if ledger.get("counts") != {k: counts[k] for k in sorted(counts)}:
+        fail("counts object does not match recomputation")
+    if sum(counts.values()) != len(census_syms):
+        fail("disposition totals do not equal the symbol census")
+    return counts
+
+
 def cmd_check() -> None:
     root = repo_root()
     census = build_census(root)
@@ -179,7 +244,12 @@ def cmd_check() -> None:
            for r in census["relations"]):
         sys.exit("rmzoo_census check: the commented WKL <-> COLORk citation became an "
                  "edge — comments must never become mathematical relations")
+    lcounts = check_ledger(root, census)
     d = census["dispositions"]
+    print(f"rmzoo_census check: ledger ok ({lcounts['exactAlias']} exactAlias, "
+          f"{lcounts['ambiguous']} ambiguous, {lcounts['relatedButNotAlias']} related, "
+          f"{lcounts['outOfCurrentCatalog']} outOfCurrentCatalog, "
+          f"{lcounts['unknownFromSource']} unknownFromSource — only exactAlias resolves)")
     print(f"rmzoo_census check: ok ({census['source']['lineCount']} lines fully "
           f"accounted: {d['parsedRelation']} relations, {d['parsedDirective']} "
           f"directives, {d['comment']} comments, {d['blank']} blank, "
