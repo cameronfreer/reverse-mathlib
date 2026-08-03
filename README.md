@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/header.png" alt="Robot miners with lanterns excavating glowing crystals from a night-time mine, its entrance stones carved with RCA₀, WKL₀, ACA₀, ATR₀, and Π¹₁-CA₀." width="820">
-</p>
-
 # reverse-mathlib
 
 **A typed, proof-carrying atlas of mathematical strength and proof architecture in Lean.**
@@ -86,3 +82,7 @@ Useful commands once built (import `ReverseMathlib.Registry`): `#rm_deps <decl>`
 ## License
 
 Apache 2.0; see [LICENSE](LICENSE).
+
+<p align="center">
+  <img src="assets/header.png" alt="Robot miners with lanterns excavating glowing crystals from a night-time mine, its entrance stones carved with RCA₀, WKL₀, ACA₀, ATR₀, and Π¹₁-CA₀." width="820">
+</p>
