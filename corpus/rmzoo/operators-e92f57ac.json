@@ -1,0 +1,100 @@
+{
+ "schema": "rmzoo-operators/1",
+ "source": {
+  "repository": "ericastor/rmzoo",
+  "revision": "e92f57acf072115744e818cabd0ac13f2e724754",
+  "file": "README.md",
+  "sha256": "b0e2862e482738fbf9b2037db589c91ad38d98f4d3fc46540f91d5d2a1a3cfe6"
+ },
+ "baseConvention": {
+  "statement": "the default context of an unadorned implication `->` is provability in RCA₀",
+  "locator": "README.md ('Adding results'); also the query example: 'will print a justification of the fact that RT22 implies CRT22 over RCA₀'",
+  "wordingKind": "verbatim",
+  "wording": "indicates an **implication** provable in **RCA<sub>0</sub>**"
+ },
+ "negationRule": {
+  "statement": "`</=_X` negates `<=_X`; `n` prefixes negate conservation operators; `w-|>` is the ω-model non-implication",
+  "locator": "README.md"
+ },
+ "caution": "operator families are assigned from RMZoo's own documentation at the pinned revision, never from operator spelling; in particular `<=_w` is generalized computable (ω-model) reducibility, not Weihrauch",
+ "operators": {
+  "->": {
+   "meaning": "implication provable in RCA₀ — THE BASE CONVENTION, documented, not importer inference",
+   "locator": "README.md ('Adding results')",
+   "wordingKind": "verbatim",
+   "wording": "indicates an **implication** provable in **RCA<sub>0</sub>**"
+  },
+  "-|>": {
+   "meaning": "non-implication: known not provable in RCA₀",
+   "locator": "README.md ('Adding results')",
+   "wordingKind": "verbatim",
+   "wording": "**Non-implications** (i.e., implications known *not* to be provable in **RCA<sub>0</sub>**), can be entered similarly, using the operator `-|>`"
+  },
+  "w->": {
+   "meaning": "implication over all ω-models",
+   "locator": "README.md ('Adding results')",
+   "wordingKind": "verbatim",
+   "wording": "to represent this implication which, while not necessarily true in all models of **RCA<sub>0</sub>**, holds over all omega models"
+  },
+  "w-|>": {
+   "meaning": "ω-model non-implication; stronger than -|>",
+   "locator": "README.md ('Adding results')",
+   "wordingKind": "verbatim",
+   "wording": "The Zoo is programmed to understand that `->` is stronger than `w->`, and thus that `w-|>` is stronger than `-|>`"
+  },
+  "<->": {
+   "meaning": "equivalence over RCA₀ (both implications)",
+   "locator": "README.md ('Equivalences and Primary Principles')",
+   "wordingKind": "verbatim",
+   "wording": "Writing `StCOH <-> StCADS` will produce the same result as including both of the two separate implications"
+  },
+  "form": {
+   "meaning": "syntactic-form classification of a principle",
+   "locator": "README.md ('Syntactic Forms and Conservation Facts')",
+   "wordingKind": "verbatim",
+   "wording": "The Zoo also understands **syntactic forms** and **conservations facts** relating reverse-mathematical principles"
+  },
+  "<=_sW": {
+   "meaning": "strong Weihrauch reducibility",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "strong Weihrauch reducibility (`sW`)"
+  },
+  "<=_W": {
+   "meaning": "Weihrauch/uniform reducibility",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "Weihrauch/uniform reducibility (`W`)"
+  },
+  "<=_gW": {
+   "meaning": "generalized Weihrauch reducibility",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "generalized Weihrauch reducibility (`gW`)"
+  },
+  "<=_sc": {
+   "meaning": "strong computable reducibility",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "strong computable reducibility (`sc`)"
+  },
+  "<=_c": {
+   "meaning": "computable reducibility",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "computable reducibility (`c`)"
+  },
+  "<=_w": {
+   "meaning": "generalized computable reducibility — RMZoo's own documentation identifies `w` with `gc`, i.e. reducibility over ω-models; NOT Weihrauch reducibility despite the letter",
+   "locator": "README.md (reducibility list)",
+   "wordingKind": "verbatim",
+   "wording": "generalized computable reducibility (`gc`) [also known as reducibility over omega-models (`w`)]"
+  },
+  "conservation": {
+   "meaning": "X <F>c Y: X conservative over Y for consequences of syntactic form F; prefix n negates",
+   "locator": "README.md ('Syntactic Forms and Conservation Facts')",
+   "wordingKind": "verbatim",
+   "wording": "To indicate that one principle is conservative over another for consequences of a given form … prepend an `n` before the conservation operator"
+  }
+ }
+}

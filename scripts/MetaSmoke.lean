@@ -1532,18 +1532,22 @@ info: corpus sources (3):
   hirst @ 1987 thesis; 1990 paper in Contemp. Math. 106 — Marriage-theorem calibrations; bibliographic citations only — the texts were not re-consulted verbatim for this audit
   rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
   simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
-presentation families (4):
+presentation families (5):
   oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
   perfectMatchingFormulation — Perfect-matching formulations: matchings exhausting one or both sides of a bipartite system, Simpson X.3-style
+  sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
   twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
-corpus claims (3) — all reported; concept-level, never facts, never evidence:
+corpus claims (4) — all reported; concept-level, never facts, never evidence:
   hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
     wording: (not captured; locator only)
     normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
   rmzooHallAbsent [rmzoo:"results.txt (whole file, pinned revision)" | unrepresentedFormulation] concepts: countableHall, wkl
     wording (verbatim): #    WKL <-> COLORk "Hirst (1990) - Marriage theorems and reverse mathematics"
     normalized: The pinned RMZoo database contains no Hall, marriage, or transversal principle symbol. The quoted line — the only trace of the marriage literature — is commented out (never ingested) and attributes a graph-coloring equivalence, not a marriage theorem, to Hirst's paper. Outcome for this corpus: no match; nothing to transfer.
+  rmzooWklFormRPi12 [rmzoo:"results.txt lines 418 and 569 (duplicate occurrences, both preserved)" | sourceUnspecifiedFormulation] concepts: wkl
+    wording (verbatim): WKL form rPi12
+    normalized: RMZoo classifies WKL's syntactic form as rPi12 — restricted Π¹₂ in the sense of Hirschfeldt and Shore (2007), per the pinned README's form list. Operator semantics from the pinned operator ledger ('form' = syntactic-form classification); the only relation in the pinned database whose complete endpoint expression resolves through the exact-alias crosswalk. Two source occurrences, both preserved; deduplication belongs to this normalization only. Concept-level; no fact or edge registered.
   simpsonMatchingSections [simpson:"X.3.15–X.3.16" | perfectMatchingFormulation] concepts: countableHall
     wording: (not captured; locator only)
     normalized: Matching-theorem material at the cited sections, already registered as related variants of the countable-Hall concept: two-sided / perfect-matching style, not the one-sided enumerated formulation. Not re-consulted verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.

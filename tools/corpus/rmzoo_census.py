@@ -22,7 +22,7 @@ import re
 import sys
 from pathlib import Path
 
-TOOL_VERSION = "2"
+TOOL_VERSION = "3"
 CENSUS_SCHEMA = "rmzoo-census/1"
 REPOSITORY = "ericastor/rmzoo"
 REVISION = "e92f57acf072115744e818cabd0ac13f2e724754"
@@ -155,6 +155,50 @@ def cmd_build() -> None:
 
 
 LEDGER_SCHEMA = "rmzoo-crosswalk/1"
+OPS_SCHEMA = "rmzoo-operators/1"
+README_SHA256 = "b0e2862e482738fbf9b2037db589c91ad38d98f4d3fc46540f91d5d2a1a3cfe6"
+
+
+def ops_ledger_path(root: Path) -> Path:
+    return root / "corpus" / "rmzoo" / f"operators-{REVISION[:8]}.json"
+
+
+def op_family(op: str) -> str:
+    """The ledger key an operator resolves to; negations resolve to their positive."""
+    if CONSERVATION_RE.match(op):
+        return "conservation"
+    if op.startswith("</=_"):
+        return "<=_" + op[4:]
+    return op
+
+
+def check_ops_ledger(root: Path, census: dict) -> None:
+    """Operator semantics are pinned from RMZoo's own documentation — never assigned from
+    operator spelling. Every operator occurring in a parsed relation must have a sourced
+    entry, and the vendored README's digest must match the ledger's pin."""
+    lp = ops_ledger_path(root)
+    if not lp.exists():
+        sys.exit("rmzoo_census check: operator-semantics ledger missing")
+    ledger = json.loads(lp.read_text())
+    fail = lambda m: sys.exit(f"rmzoo_census check (operators): {m}")
+    if ledger.get("schema") != OPS_SCHEMA:
+        fail(f"schema {ledger.get('schema')!r}")
+    src = ledger.get("source", {})
+    if src.get("revision") != REVISION or src.get("sha256") != README_SHA256:
+        fail("ledger is not pinned to the vendored README revision and digest")
+    readme = root / "corpus" / "rmzoo" / f"README-{REVISION[:8]}.md"
+    if hashlib.sha256(readme.read_bytes()).hexdigest() != README_SHA256:
+        fail("vendored README digest does not match the pin")
+    if not ledger.get("baseConvention", {}).get("wording"):
+        fail("the RCA₀ base convention must be sourced with wording, never inferred")
+    ops = ledger.get("operators", {})
+    used = {op_family(r["op"]) for r in census["relations"]}
+    missing = sorted(used - set(ops))
+    if missing:
+        fail(f"operators without sourced semantics: {missing}")
+    for k, v in ops.items():
+        if not (v.get("meaning") and v.get("locator") and v.get("wording")):
+            fail(f"operator {k!r} entry lacks meaning/locator/wording")
 DISPOSITIONS = {"exactAlias", "ambiguous", "relatedButNotAlias", "outOfCurrentCatalog",
                 "unknownFromSource"}
 
@@ -245,6 +289,18 @@ def cmd_check() -> None:
         sys.exit("rmzoo_census check: the commented WKL <-> COLORk citation became an "
                  "edge — comments must never become mathematical relations")
     lcounts = check_ledger(root, census)
+    check_ops_ledger(root, census)
+    # stage 3 rendering rule: only relations whose COMPLETE endpoint expressions resolve
+    # (every atomic symbol an exactAlias) may render as reported corpus claims; everything
+    # else stays census-visible and non-inferential. Zero renderable is an accepted state.
+    walk = crosswalk(root)
+    renderable = [r for r in census["relations"]
+                  if all(x in walk for x in r["lhs"]) and
+                  (r["op"] == "form" or all(x in walk for x in r["rhs"]))]
+    print(f"rmzoo_census check: operator semantics pinned; renderable relations "
+          f"(all endpoints resolved): {len(renderable)} of "
+          f"{len(census['relations'])} — the rest stay census-visible, "
+          f"non-inferential")
     d = census["dispositions"]
     print(f"rmzoo_census check: ledger ok ({lcounts['exactAlias']} exactAlias, "
           f"{lcounts['ambiguous']} ambiguous, {lcounts['relatedButNotAlias']} related, "

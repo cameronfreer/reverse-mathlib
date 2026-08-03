@@ -125,6 +125,23 @@ rm_presentation_bridge perfectMatchingToOneSidedOmega where
     Turing-ideal ω layer. Until it lands, no matching classification — in particular no \
     reversal — transfers to this exact variant."
 
+rm_presentation_family sourceUnspecifiedFormulation "The corpus names the principle by \
+  symbol without fixing an exact formulation in the database itself; only concept-level \
+  claims can be transcribed"
+
+rm_corpus_claim rmzooWklFormRPi12 where
+  source := rmzoo "results.txt lines 418 and 569 (duplicate occurrences, both preserved)"
+  family := sourceUnspecifiedFormulation
+  concepts := [wkl]
+  wording := verbatim "WKL form rPi12"
+  claim := "RMZoo classifies WKL's syntactic form as rPi12 — restricted Π¹₂ in the sense \
+    of Hirschfeldt and Shore (2007), per the pinned README's form list. Operator \
+    semantics from the pinned operator ledger ('form' = syntactic-form classification); \
+    the only relation in the pinned database whose complete endpoint expression resolves \
+    through the exact-alias crosswalk. Two source occurrences, both preserved; \
+    deduplication belongs to this normalization only. Concept-level; no fact or edge \
+    registered."
+
 rm_corpus_audit hallVariantAudit
   "The Hall variant audit: RMZoo (pinned database revision), Simpson SOSOA 2nd ed. \
    §X.3.15–X.3.16 (section citations), and Hirst's marriage-theorem calibrations (1987 \
