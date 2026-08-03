@@ -246,6 +246,28 @@ def cmd_check(args: argparse.Namespace) -> None:
         dot = (views_dir / vname / "graph.dot").read_text()
         if dot.count(" -> ") != len(view["edges"]):
             problems.append(f"view {vname} DOT/JSON edge counts disagree")
+        # every DOT edge endpoint must be a declared node — otherwise Graphviz would
+        # invent nodes and the rendered SVG would disagree with the canonical JSON
+        declared = set(view["nodes"])
+        for ed in view["edges"]:
+            src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
+            tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
+            for x in (src, tgt):
+                if x not in declared:
+                    problems.append(f"view {vname} edge endpoint {x!r} not a declared node")
+        svgp = views_dir / vname / "graph.svg"
+        if svgp.exists():
+            svg = svgp.read_text()
+            if (svg.count('class="node"') != len(view["nodes"])
+                    or svg.count('class="edge"') != len(view["edges"])):
+                problems.append(f"view {vname} SVG node/edge counts disagree with JSON/DOT")
+    ambient_svg = zoo_dir(root) / "ambient-factorizations.svg"
+    ag = catalog.get("ambientGraph", {})
+    if ambient_svg.exists():
+        svg = ambient_svg.read_text()
+        if (svg.count('class="node"') != len(ag.get("nodes", []))
+                or svg.count('class="edge"') != len(ag.get("edges", []))):
+            problems.append("ambient SVG node/edge counts disagree with the catalog graph")
     # corpus section: a separate family with stable ids, referential integrity, and the
     # fail-closed display statuses (claims reported, bridges missing)
     corpus = catalog.get("corpus", {})
@@ -340,27 +362,184 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     return True
 
 
-def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
+def site_html(catalog: dict, have_svg: bool, dot_text: str,
+              view_svgs: set[str] | None = None) -> str:
     deps = catalog["dependencies"]
     e = html.escape
+    view_svgs = view_svgs or set()
+
+    def gloss(text: str, cap: int = 100) -> str:
+        """Lead-in label for a summary line: the first clause of the full text, which
+        always remains one click away — progressive disclosure, never information loss."""
+        t = (text or "").split(": ", 1)[0].split(". ", 1)[0]
+        if len(t) > cap:
+            t = t[:cap - 1].rstrip() + "…"
+        return t
 
     def note_html(text: str | None) -> str:
         if not text:
             return "<em>unknown</em>"
         return f"{e(text)} <em>[claimed, UNVERIFIED]</em>"
 
-    def variant_cards() -> str:
+    def section(sec_id: str, title: str, total: int, inner: str, note: str = "") -> str:
+        return (f'<section data-sec id="{sec_id}"><h2>{title} '
+                f'<span class="scount">({total})</span></h2>\n{note}{inner}</section>')
+
+    def graph_panel(title: str, styling: str, comment: str, nodes_n: int,
+                    edge_items: str, edges_n: int, svg_name: str | None,
+                    dot_href: str, json_href: str, open_: bool = False) -> str:
+        if svg_name:
+            fig = (f'<figure class="graph"><img src="{e(svg_name)}" '
+                   f'alt="{e(title)}: directed graph with {nodes_n} nodes and '
+                   f'{edges_n} edges"/>'
+                   f'<figcaption>Rendered from the canonical DOT; the edge-detail list '
+                   f'below is the accessible equivalent.</figcaption></figure>')
+        else:
+            fig = ("<p><em>(graph image rendered when Graphviz is available at build "
+                   "time; the edge-detail list below is the always-present accessible "
+                   "form)</em></p>")
+        return f"""<details class="graphpanel"{" open" if open_ else ""}><summary><strong>{e(title)}</strong>
+({nodes_n} nodes, {edges_n} edges; {e(styling)})</summary>
+<p><em>{e(comment)}</em></p>
+{fig}
+<details><summary>Edge details (accessible list; families distinguished by label text
+and line style, not color alone)</summary><ul>{edge_items}</ul></details>
+<p><small>Download: <a href="{e(dot_href)}">DOT</a> · <a href="{e(json_href)}">JSON</a></small></p>
+</details>"""
+
+    def view_edge_items(view: dict) -> str:
+        items = []
+        for ed in view["edges"]:
+            src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
+            tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
+            detail = "; ".join(
+                f"{k}: {ed[k]}" for k in ("family", "fact", "record", "source",
+                                          "scope", "notion", "status", "revision",
+                                          "theorem", "exactLhs", "exactRhs")
+                if ed.get(k))
+            certs = ", ".join(ed.get("certificates", []))
+            if certs:
+                detail += f"; certificates: {certs}"
+            # the label already encodes the connector (⊨ω →, ≤sW, ⇔, …); fall back to a
+            # bare arrow only when a view supplies none
+            conn = ed.get("label") or ("⇔" if ed.get("bidirectional") else "→")
+            items.append(f"<li><code>{e(str(src))}</code> {e(conn)} "
+                         f"<code>{e(str(tgt))}</code>"
+                         f"<br/><small>{e(detail)}</small></li>")
+        return "".join(items)
+
+    views = build_family_views(catalog)
+
+    def projection_section() -> str:
+        v = views["concept-projection"]
+        panel = graph_panel(
+            "Concept projection", "per-family line styles; derived closure "
+            "deliberately absent", v["comment"], len(v["nodes"]),
+            view_edge_items(v), len(v["edges"]),
+            "concept-projection.svg" if "concept-projection" in view_svgs else None,
+            "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
+            open_=True)
+        return (f'<h2 id="overview">Concept overview — a noncanonical, lossy, '
+                f'direct-only projection</h2>\n'
+                f'<p><em>One edge per direct evidence record, projected to concept '
+                f'granularity for orientation only; the per-family graphs below are '
+                f'canonical.</em></p>\n{panel}')
+
+    def canonical_graphs_section() -> str:
+        ag = catalog.get("ambientGraph", {})
+        ambient_items = "".join(
+            f'<li><code>{e(ed["source"])}</code> ambient → '
+            f'<code>{e(ed["target"])}</code>'
+            f'<br/><small>kernel-checked relative certificate: '
+            f'{e(ed["certificate"])}</small></li>'
+            for ed in ag.get("edges", []))
+        panels = [graph_panel(
+            "Ambient factorizations", "solid edges; kernel-checked relative "
+            "certificates — proof architecture, not strength",
+            "kernel-checked relative certificates in unrestricted Lean over standard "
+            "ℕ; ambient factorization, no RM semantic scope",
+            len(ag.get("nodes", [])), ambient_items, len(ag.get("edges", [])),
+            "ambient-factorizations.svg" if have_svg else None,
+            "ambient-factorizations.dot", "views/ambient-standard/graph.json")]
+        for vname, title, styling in (
+                ("omega-facts", "Certified ω facts", "bold edges; certified"),
+                ("imported-reductions", "Imported reductions",
+                 "dashed edges; external evidence")):
+            v = views[vname]
+            panels.append(graph_panel(
+                title, styling, v["comment"], len(v["nodes"]), view_edge_items(v),
+                len(v["edges"]), f"{vname}.svg" if vname in view_svgs else None,
+                f"views/{vname}/graph.dot", f"views/{vname}/graph.json"))
+        return ('<h2 id="graphs">Canonical graphs (one per evidence family — never '
+                'flattened into one)</h2>\n' + "\n".join(panels))
+
+    def facts_section() -> str:
+        facts = [f_ for f_ in catalog.get("facts", []) if f_.get("evidence")]
+        if not facts:
+            return ""
+        cards = []
+        for f_ in facts:
+            lhs = "+".join(f_.get("lhs", []))
+            rhs = "+".join(f_.get("rhs", []))
+            arrow = "⇔" if f_["kind"] == "equivalence" else "⇒"
+            ctx = f_.get("context", {})
+            ctx_ids = sorted({ev["context"] for ev in f_["evidence"]
+                              if ev.get("context")})
+            ctx_links = ", ".join(f'<a href="#ctx-{e(c)}"><code>{e(c)}</code></a>'
+                                  for c in ctx_ids)
+            ev_items = "".join(
+                f"<li>certificate <code>{e(ev['certificate'])}</code> "
+                f"[context <code>{e(ev['context'])}</code>]"
+                + (f" — {e(ev['note'])}" if ev.get("note") else "") + "</li>"
+                for ev in f_["evidence"])
+            note_block = f"<p>{e(f_['note'])}</p>" if f_.get("note") else ""
+            cards.append(f"""<div class="card" data-family="certified">
+<h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
+<span class="tag">{e(f_['kind'])}</span> <span class="tag">kernelChecked</span>
+<span class="tag">scope {e(str(ctx.get('scope', '')))}</span></h3>
+<p class="meta"><code>{e(f_['id'])}</code> · base <code>{e(str(ctx.get('base', '')))}</code>
+· context {ctx_links}</p>
+<details><summary>certifications and note</summary><ul>{ev_items}</ul>{note_block}</details>
+</div>""")
+        return section(
+            "facts-sec", "Certified semantic facts", len(cards), "\n".join(cards),
+            "<p><em>The principal conclusions — extensional classifications, distinct "
+            "from the proof routes below: each fact is certified by a typed semantic "
+            "certificate against a registered context (see the "
+            "<a href=\"#reference\">reference</a> for each context's exact status "
+            "wording).</em></p>\n")
+
+    def concept_index() -> str:
+        refs_by_target: dict[str, list[dict]] = {}
+        for r in catalog.get("externalRefs", []):
+            refs_by_target.setdefault(r["target"]["id"], []).append(r)
+        cards = []
+        for c in catalog.get("concepts", []):
+            refs = refs_by_target.get(c["id"], [])
+            ref_html = "".join(
+                f'<li><code>{e(r["namespace"])}:&quot;{e(r["key"])}&quot;</code> '
+                f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
+            refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
+            cards.append(f"""<details class="card">
+<summary><strong>{e(gloss(c['description']))}</strong> — <code>{e(c['id'])}</code></summary>
+<p>{e(c['description'])}</p>
+{refs_block}</details>""")
+        return section("concepts-sec", "Concepts", len(cards), "\n".join(cards))
+
+    def variant_index() -> str:
         cards = []
         for v in catalog["statementVariants"]:
-            cards.append(f"""<div class="card">
-<h3><code>{e(v['id'])}</code> <span class="tag">{e(v['layer'])}</span></h3>
+            cards.append(f"""<details class="card">
+<summary><strong>{e(gloss(v['description']))}</strong> — <code>{e(v['id'])}</code>
+<span class="tag">{e(v['layer'])}</span></summary>
 <p>{e(v['description'])}</p>
 <dl>
 <dt>concept</dt><dd><code>{e(v['concept'])}</code></dd>
 <dt>Lean interface</dt><dd><code>{e(v['interface'] or 'none')}</code></dd>
 <dt>module</dt><dd><code>{e(v.get('interfaceModule') or '—')}</code></dd>
-</dl></div>""")
-        return "\n".join(cards)
+</dl></details>""")
+        return section("variants-sec", "Statement variants and Lean interfaces",
+                       len(cards), "\n".join(cards))
 
     def evidence_items(port: dict) -> str:
         items = []
@@ -376,160 +555,12 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
 
-    def graph_panels() -> str:
-        views = build_family_views(catalog)
-        titles = {"omega-facts": ("Certified ω facts", "bold edges; certified"),
-                  "imported-reductions": ("Imported reductions", "dashed edges; external evidence"),
-                  "concept-projection": ("Concept projection (noncanonical, lossy, direct-only)",
-                                         "per-family line styles; derived closure deliberately absent")}
-        parts = []
-        for vname in ("omega-facts", "imported-reductions", "concept-projection"):
-            v = views[vname]
-            title, styling = titles[vname]
-            items = []
-            for ed in v["edges"]:
-                src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
-                tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
-                detail = "; ".join(
-                    f"{k}: {ed[k]}" for k in ("family", "fact", "record", "source",
-                                              "scope", "notion", "status", "revision",
-                                              "theorem", "exactLhs", "exactRhs")
-                    if ed.get(k))
-                certs = ", ".join(ed.get("certificates", []))
-                if certs:
-                    detail += f"; certificates: {certs}"
-                arrow = "⇔" if ed.get("bidirectional") else "→"
-                items.append(f"<li><code>{e(str(src))}</code> {e(ed.get('label', ''))} "
-                             f"{arrow} <code>{e(str(tgt))}</code>"
-                             f"<br/><small>{e(detail)}</small></li>")
-            parts.append(f"""<details class="graphpanel"><summary><strong>{e(title)}</strong>
-({len(v['edges'])} edges; {e(styling)})</summary>
-<p><em>{e(v['comment'])}</em></p>
-<p>Edge details (accessible list; families distinguished by label text and line style,
-not color alone):</p><ul>{''.join(items)}</ul>
-<p>DOT (canonical comparand; also at <code>views/{e(vname)}/graph.json</code>):</p>
-<pre>{e(view_dot(vname, v))}</pre></details>""")
-        return "\n".join(parts)
-
-    def facts_section() -> str:
-        facts = catalog.get("facts", [])
-        if not facts:
-            return ""
-        contexts = {c["id"]: c for c in catalog.get("semanticContexts", [])}
-        parts = ["<h2 id=\"facts-sec\">Certified semantic facts</h2>",
-                 "<p><em>Extensional classifications, distinct from the proof routes "
-                 "below: each fact is certified by a typed semantic certificate against a "
-                 "registered context. Kernel-checked over every model of the context "
-                 "predicate; the context's own status wording states what remains "
-                 "literature-backed or pending.</em></p>"]
-        for f_ in facts:
-            evs = f_.get("evidence", [])
-            if not evs:
-                continue  # uncertified facts render in the catalog data, not here
-            lhs = "+".join(x for x in f_.get("lhs", []))
-            rhs = "+".join(x for x in f_.get("rhs", []))
-            ctx = f_.get("context", {})
-            ev_items = []
-            for ev in evs:
-                cdesc = contexts.get(ev.get("context"), {}).get("description", "")
-                note = f" — {e(ev['note'])}" if ev.get("note") else ""
-                ev_items.append(
-                    f"<li>certificate <code>{e(ev['certificate'])}</code> "
-                    f"[context <code>{e(ev['context'])}</code>]{note}"
-                    f"<br/><em>context status:</em> {e(cdesc)}</li>")
-            note_row = (f"<dt>note</dt><dd>{e(f_['note'])}</dd>" if f_.get("note") else "")
-            parts.append(f"""<div class="card" data-family="certified">
-<h3><code>{e(f_['id'])}</code> <span class="tag">{e(f_['kind'])}</span></h3>
-<dl>
-<dt>endpoints</dt><dd><code>{e(lhs)}</code> {e('⇔' if f_['kind'] == 'equivalence' else '⇒')} <code>{e(rhs)}</code></dd>
-<dt>base / scope</dt><dd><code>{e(str(ctx.get('base', '')))}</code> / <code>{e(str(ctx.get('scope', '')))}</code></dd>
-{note_row}
-<dt>certifications</dt><dd><ul>{''.join(ev_items)}</ul></dd>
-</dl></div>""")
-        return "\n".join(parts)
-
-    def imports_section() -> str:
-        imps = catalog.get("importedReductions", [])
-        if not imps:
-            return ""
-        parts = ["<h2 id=\"imports-sec\">Imported reductions</h2>",
-                 "<p><em>Checked in an external machine-model repository at a pinned "
-                 "revision and ingested as external evidence — never Lean axioms, never "
-                 "certified counts; records without complete validated trust data are "
-                 "downgraded to reported.</em></p>"]
-        for r in imps:
-            trust = (f"theorem <code>{e(r['theorem'] or '(none)')}</code>; mechanism "
-                     f"<code>{e(r['mechanism'] or '(none)')}</code>")
-            down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
-                    if r.get("downgraded") else "")
-            parts.append(f"""<div class="card" data-family="imported">
-<h3><code>{e(r['id'])}</code> <span class="tag">{e(r['status'])}</span></h3>
-<dl>
-<dt>local (resolved)</dt><dd><code>{e(r['local']['lhs'])}</code> ≤ <code>{e(r['local']['rhs'])}</code> [{e(r['local']['notion'])}, {e(r['degree'])}]</dd>
-<dt>external (as ingested)</dt><dd><code>{e(r['external']['lhs'])}</code> ≤ <code>{e(r['external']['rhs'])}</code> [notion <code>{e(r['external']['notion'])}</code>, namespace <code>{e(r['namespace'])}</code>]</dd>
-<dt>source</dt><dd><code>{e(r['repository'])}</code> @ <code>{e(r['revision'])}</code></dd>
-<dt>checking</dt><dd>{trust}</dd>{down}
-<dt>note</dt><dd>{e(r['note'])}</dd>
-</dl></div>""")
-        return "\n".join(parts)
-
-    def corpus_section() -> str:
-        corpus = catalog.get("corpus")
-        if not corpus:
-            return ""
-        parts = ["<h2 id=\"corpus-sec\">Corpus audits</h2>",
-                 "<p><em>Pinned external classification claims — scoped literature "
-                 "findings, a separate family: never fact-graph edges, never certified "
-                 "counts. An absence finding means <strong>not found in this pinned "
-                 "corpus snapshot</strong>, never a mathematical negation; a "
-                 "<strong>MISSING</strong> bridge is an unproved required bridge, never "
-                 "evidence that no bridge exists.</em></p>"]
-        for a in corpus.get("audits", []):
-            parts.append(f"""<div class="card" data-family="corpus">
-<h3><code>{e(a['id'])}</code> <span class="tag">audit</span></h3>
-<dl><dt>scope</dt><dd>{e(a['scope'])}</dd>
-<dt>outcome</dt><dd><strong>{e(a['outcome'])}</strong></dd></dl></div>""")
-        parts.append("<h3>Pinned sources</h3><ul>")
-        for src in corpus.get("sources", []):
-            parts.append(f"<li><code>{e(src['namespace'])}</code> @ "
-                         f"<code>{e(src['pin'])}</code> — {e(src['description'])}</li>")
-        parts.append("</ul><h3>Presentation families</h3><ul>")
-        for f_ in corpus.get("presentationFamilies", []):
-            parts.append(f"<li><code>{e(f_['id'])}</code> — {e(f_['description'])}</li>")
-        parts.append("</ul><h3>Claims (all reported; concept-level, never attached to "
-                     "exact variants)</h3>")
-        for c in corpus.get("claims", []):
-            subjects = ", ".join(f"<code>{e(x)}</code> <span class=\"tag\">concept</span>"
-                                 for x in c.get("concepts", []))
-            if c["wordingKind"] == "absent":
-                wording = "<em>wording not captured; locator only</em>"
-            else:
-                wording = f"<em>({e(c['wordingKind'])})</em> “{e(c['wording'])}”"
-            parts.append(f"""<div class="card" data-family="corpus">
-<h3><code>{e(c['id'])}</code> <span class="tag">{e(c['status'])}</span></h3>
-<dl>
-<dt>provenance</dt><dd><code>{e(c['source'])}</code>:“{e(c['locator'])}”</dd>
-<dt>presentation family</dt><dd><code>{e(c['presentationFamily'])}</code></dd>
-<dt>subjects</dt><dd>{subjects}</dd>
-<dt>source wording</dt><dd>{wording}</dd>
-<dt>normalized claim</dt><dd>{e(c['normalizedClaim'])}</dd>
-</dl></div>""")
-        parts.append("<h3>Presentation bridges</h3>")
-        for b in corpus.get("bridges", []):
-            parts.append(f"""<div class="card" data-family="corpus">
-<h3><code>{e(b['id'])}</code> <span class="tag">MISSING — unproved required bridge</span></h3>
-<dl>
-<dt>from family</dt><dd><code>{e(b['fromFamily'])}</code></dd>
-<dt>to exact target</dt><dd><code>{e(b['target']['id'])}</code> ({e(b['target']['kind'])})</dd>
-<dt>requires</dt><dd>{e(b['requirement'])}</dd>
-</dl></div>""")
-        return "\n".join(parts)
-
-    def port_cards() -> str:
+    def ports_section() -> str:
         cards = []
         for p_ in catalog["ports"]:
-            cards.append(f"""<div class="card" data-family="ambient">
-<h3><code>{e(p_['id'])}</code> <span class="tag">{e(p_['display']['relation'])}</span></h3>
+            cards.append(f"""<details class="card" data-family="ambient">
+<summary><strong>{e(p_['display']['relation'])}</strong> — <code>{e(p_['id'])}</code>
+<span class="tag">{len(p_['evidence'])} evidence</span></summary>
 <dl>
 <dt>mathlib</dt><dd><code>{e(p_['mathlibDecl'] or 'none')}</code></dd>
 <dt>target variant</dt><dd><code>{e(p_['target'])}</code></dd>
@@ -538,31 +569,122 @@ not color alone):</p><ul>{''.join(items)}</ul>
 </dl>
 <h4>Evidence</h4>
 {evidence_items(p_)}
-<details><summary>note</summary><p>{e(p_['note'])}</p></details>
-</div>""")
-        return "\n".join(cards)
+<p>{e(p_['note'])}</p>
+</details>""")
+        return section(
+            "ports-sec", "Ports (proof routes)", len(cards), "\n".join(cards),
+            "<p><em>Mined proof architecture: how a mathlib proof factors, with "
+            "input-access records — routes, not classifications.</em></p>\n")
 
-    def concept_cards() -> str:
-        refs_by_target: dict[str, list[dict]] = {}
-        for r in catalog.get("externalRefs", []):
-            refs_by_target.setdefault(r["target"]["id"], []).append(r)
+    def imports_section() -> str:
+        imps = catalog.get("importedReductions", [])
+        if not imps:
+            return ""
+        labels = {"strongWeihrauch": "≤sW", "weihrauch": "≤W"}
         cards = []
-        for c in catalog.get("concepts", []):
-            refs = refs_by_target.get(c["id"], [])
-            ref_html = "".join(
-                f'<li><code>{e(r["namespace"])}:&quot;{e(r["key"])}&quot;</code> '
-                f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
-            refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
-            cards.append(f"""<div class="card">
-<h3><code>{e(c['id'])}</code></h3>
-<p>{e(c['description'])}</p>
-{refs_block}</div>""")
-        return "\n".join(cards)
+        for r in imps:
+            loc = r["local"]
+            label = labels.get(loc["notion"], loc["notion"])
+            lshort = loc["lhs"].split(":", 1)[-1]
+            rshort = loc["rhs"].split(":", 1)[-1]
+            trust = (f"theorem <code>{e(r['theorem'] or '(none)')}</code>; mechanism "
+                     f"<code>{e(r['mechanism'] or '(none)')}</code>")
+            down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
+                    if r.get("downgraded") else "")
+            cards.append(f"""<details class="card" data-family="imported">
+<summary><strong><code>{e(lshort)}</code> {e(label)} <code>{e(rshort)}</code></strong>
+— <code>{e(r['id'])}</code> <span class="tag">{e(r['status'])}</span></summary>
+<dl>
+<dt>local (resolved)</dt><dd><code>{e(loc['lhs'])}</code> ≤ <code>{e(loc['rhs'])}</code> [{e(loc['notion'])}, {e(r['degree'])}]</dd>
+<dt>external (as ingested)</dt><dd><code>{e(r['external']['lhs'])}</code> ≤ <code>{e(r['external']['rhs'])}</code> [notion <code>{e(r['external']['notion'])}</code>, namespace <code>{e(r['namespace'])}</code>]</dd>
+<dt>source</dt><dd><code>{e(r['repository'])}</code> @ <code>{e(r['revision'])}</code></dd>
+<dt>checking</dt><dd>{trust}</dd>{down}
+<dt>note</dt><dd>{e(r['note'])}</dd>
+</dl></details>""")
+        return section(
+            "imports-sec", "Imported reductions", len(cards), "\n".join(cards),
+            "<p><em>Checked in an external machine-model repository at a pinned "
+            "revision and ingested as external evidence — never Lean axioms, never "
+            "certified counts; records without complete validated trust data are "
+            "downgraded to reported.</em></p>\n")
 
-    graph_block = ('<p class="graph"><img src="ambient-factorizations.svg" '
-                   'alt="Ambient factorization graph: kernel-checked relative certificates">'
-                   '</p>'
-                   if have_svg else f'<div class="scroll"><pre>{e(dot_text)}</pre></div>')
+    def corpus_section() -> str:
+        corpus = catalog.get("corpus")
+        if not corpus:
+            return ""
+        cards = []
+        for a in corpus.get("audits", []):
+            cards.append(f"""<details class="card" data-family="corpus">
+<summary><strong>{e(gloss(a['scope'], 80))}</strong> — <code>{e(a['id'])}</code>
+<span class="tag">audit</span></summary>
+<dl><dt>scope</dt><dd>{e(a['scope'])}</dd>
+<dt>outcome</dt><dd><strong>{e(a['outcome'])}</strong></dd></dl></details>""")
+        for c in corpus.get("claims", []):
+            subjects = ", ".join(f"<code>{e(x)}</code> <span class=\"tag\">concept</span>"
+                                 for x in c.get("concepts", []))
+            if c["wordingKind"] == "absent":
+                wording = "<em>wording not captured; locator only</em>"
+            else:
+                wording = f"<em>({e(c['wordingKind'])})</em> “{e(c['wording'])}”"
+            cards.append(f"""<details class="card" data-family="corpus">
+<summary><strong>{e(gloss(c['normalizedClaim'], 80))}</strong> — <code>{e(c['id'])}</code>
+<span class="tag">{e(c['status'])}</span></summary>
+<dl>
+<dt>provenance</dt><dd><code>{e(c['source'])}</code>:“{e(c['locator'])}”</dd>
+<dt>presentation family</dt><dd><code>{e(c['presentationFamily'])}</code></dd>
+<dt>subjects</dt><dd>{subjects}</dd>
+<dt>source wording</dt><dd>{wording}</dd>
+<dt>normalized claim</dt><dd>{e(c['normalizedClaim'])}</dd>
+</dl></details>""")
+        for b in corpus.get("bridges", []):
+            cards.append(f"""<details class="card" data-family="corpus">
+<summary><strong>{e(gloss(b['requirement'], 80))}</strong> — <code>{e(b['id'])}</code>
+<span class="tag">MISSING — unproved required bridge</span></summary>
+<dl>
+<dt>from family</dt><dd><code>{e(b['fromFamily'])}</code></dd>
+<dt>to exact target</dt><dd><code>{e(b['target']['id'])}</code> ({e(b['target']['kind'])})</dd>
+<dt>requires</dt><dd>{e(b['requirement'])}</dd>
+</dl></details>""")
+        return section(
+            "corpus-sec", "Corpus audits", len(cards), "\n".join(cards),
+            "<p><em>Pinned external classification claims — scoped literature "
+            "findings, a separate family: never fact-graph edges, never certified "
+            "counts. An absence finding means <strong>not found in this pinned "
+            "corpus snapshot</strong>, never a mathematical negation; a "
+            "<strong>MISSING</strong> bridge is an unproved required bridge, never "
+            "evidence that no bridge exists. Pinned sources and presentation "
+            "families are in the <a href=\"#reference\">reference</a>.</em></p>\n")
+
+    def reference_section() -> str:
+        parts = ['<h2 id="reference">Reference</h2>',
+                 "<p><em>Dictionaries cited by the records above — lookup material, "
+                 "not new claims.</em></p>", "<h3>Semantic contexts</h3>"]
+        for c in catalog.get("semanticContexts", []):
+            parts.append(
+                f'<div class="refitem" id="ctx-{e(c["id"])}"><code>{e(c["id"])}</code> '
+                f'<span class="tag">base {e(str(c.get("base", "")))} · scope '
+                f'{e(str(c.get("scope", "")))}</span><br/>{e(c["description"])} '
+                f'— context predicate <code>{e(c.get("contextDecl") or "")}</code></div>')
+        notions = catalog.get("reducibilityNotions", [])
+        if notions:
+            parts.append("<h3>Reducibility notions</h3>")
+            for n_ in notions:
+                parts.append(f'<div class="refitem"><code>{e(n_["id"])}</code><br/>'
+                             f'{e(n_["description"])}</div>')
+        corpus = catalog.get("corpus", {})
+        if corpus.get("sources"):
+            parts.append("<h3>Pinned corpus sources</h3><ul>")
+            for src in corpus["sources"]:
+                parts.append(f"<li><code>{e(src['namespace'])}</code> @ "
+                             f"<code>{e(src['pin'])}</code> — {e(src['description'])}</li>")
+            parts.append("</ul>")
+        if corpus.get("presentationFamilies"):
+            parts.append("<h3>Presentation families</h3><ul>")
+            for f_ in corpus["presentationFamilies"]:
+                parts.append(f"<li><code>{e(f_['id'])}</code> — {e(f_['description'])}</li>")
+            parts.append("</ul>")
+        return "\n".join(parts)
+
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -595,11 +717,22 @@ ul {{ margin: 0.3rem 0; padding-left: 1.2rem; }}
 li {{ margin: 0.25rem 0; overflow-wrap: anywhere; }}
 .banner {{ background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
            border-radius: 6px; overflow-wrap: anywhere; }}
-.graph {{ text-align: center; }}
-.graph img {{ max-width: 100%; height: auto; }}
+.banner p {{ margin: 0.3rem 0; }}
+figure.graph {{ margin: 0.75rem 0; text-align: center; }}
+figure.graph img {{ max-width: 100%; height: auto; }}
+figcaption {{ color: #666; font-size: 0.8rem; }}
 .scroll {{ overflow-x: auto; }}
 details summary {{ cursor: pointer; color: #666; font-size: 0.85rem; }}
 details p {{ font-size: 0.85rem; color: #444; }}
+details.card > summary, details.graphpanel > summary {{ color: #1a1a1a;
+    font-size: 0.95rem; overflow-wrap: anywhere; }}
+details.graphpanel {{ background: #fff; border: 1px solid #e2e2e2;
+    border-radius: 6px; padding: 0.6rem 0.9rem; margin: 0.75rem 0; }}
+.meta {{ color: #555; font-size: 0.85rem; overflow-wrap: anywhere; }}
+.refitem {{ background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+    padding: 0.6rem 0.9rem; margin: 0.5rem 0; font-size: 0.9rem;
+    overflow-wrap: anywhere; }}
+.scount {{ font-size: 0.8rem; color: #666; font-weight: normal; }}
 footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
           border-top: 1px solid #ddd; padding-top: 0.75rem;
           overflow-wrap: anywhere; }}
@@ -607,27 +740,25 @@ a {{ color: #205ea6; }}
 </style></head><body><main>
 <h1>reverse-mathlib atlas</h1>
 <p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
-<p class="banner"><strong>Honesty note:</strong> this page displays four grades of
-evidence, permanently distinct. Every edge in the <em>graph below</em> is a kernel-checked
-relative certificate in unrestricted Lean over standard ℕ (ambient factorization — proof
-architecture, not strength). The <em>port cards</em> additionally carry the certified
-ω-model facts — kernel-checked over every Turing ideal, with the identification of Turing
-ideals with RCA₀'s ω-models literature-backed and backend object-syntax adequacy pending.
-The <em>imported reductions</em> section holds Weihrauch reductions checked in a separate
-machine-model repository at pinned revisions and ingested as external evidence, never
-axioms. The
-<em>corpus section</em> holds reported literature findings at pinned snapshots, with
-missing presentation bridges named explicitly. No <code>RCA₀ ⊢ …</code> turnstile theorem
-exists at any scope; scopes are never promoted, and derived closure results are computed,
-never registered.</p>
-<nav class="toc"><strong>Contents:</strong>
-<a href="#graphs">Graphs</a> ·
-<a href="#concepts-sec">Concepts</a> ·
-<a href="#variants-sec">Variants</a> ·
-<a href="#facts-sec">Certified facts</a> ·
-<a href="#ports-sec">Ports</a> ·
-<a href="#imports-sec">Imported reductions</a> ·
-<a href="#corpus-sec">Corpus audits</a></nav>
+<div class="banner"><p><strong>Honesty note:</strong> this atlas displays four grades of
+evidence, permanently distinct — kernel-checked ambient factorizations (proof
+architecture, not strength), certified ω-model facts over Turing ideals, imported
+reductions checked externally at pinned revisions, and reported corpus findings at pinned
+snapshots. No <code>RCA₀ ⊢ …</code> turnstile theorem exists at any scope; scopes are
+never promoted, and derived closure results are computed, never registered.</p>
+<details><summary>Full epistemics statement</summary>
+<p>Every edge in the <em>ambient factorizations</em> panel is a kernel-checked relative
+certificate in unrestricted Lean over standard ℕ — ambient factorization, proof
+architecture, not strength. The <em>certified facts</em> are kernel-checked over every
+Turing ideal; the identification of Turing ideals with RCA₀'s ω-models is
+literature-backed, with backend object-syntax adequacy pending. The <em>imported
+reductions</em> are Weihrauch reductions checked in a separate machine-model repository
+at pinned revisions and ingested as external evidence, never axioms. The <em>corpus</em>
+holds reported literature findings at pinned snapshots, with missing presentation
+bridges named explicitly; an absence finding means not found in the pinned snapshot,
+never a mathematical negation. The <em>concept projection</em> is a noncanonical, lossy,
+direct-only overview; the per-family graphs are canonical, and they are never flattened
+into one.</p></details></div>
 <p class="summary"><strong>Counts (each family separate):</strong>
 {len(catalog['concepts'])} concepts · {len(catalog['statementVariants'])} variants ·
 {len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts
@@ -642,19 +773,25 @@ never registered.</p>
 <option>corpus</option></select>
 <noscript>(filtering needs JavaScript; all content below is fully visible without
 it)</noscript></p>
-<h2 id="graphs">Graphs (one per evidence family — never flattened into one)</h2>
-{graph_panels()}
-<h2>Ambient factorizations</h2>
-{graph_block}
-<h2 id="concepts-sec">Concepts</h2>
-{concept_cards()}
-<h2 id="variants-sec">Statement variants and Lean interfaces</h2>
-{variant_cards()}
+<nav class="toc"><strong>Contents:</strong>
+<a href="#overview">Overview</a> ·
+<a href="#facts-sec">Certified facts</a> ·
+<a href="#graphs">Canonical graphs</a> ·
+<a href="#concepts-sec">Concepts</a> ·
+<a href="#variants-sec">Variants</a> ·
+<a href="#ports-sec">Ports</a> ·
+<a href="#imports-sec">Imported reductions</a> ·
+<a href="#corpus-sec">Corpus audits</a> ·
+<a href="#reference">Reference</a></nav>
+{projection_section()}
 {facts_section()}
-<h2 id="ports-sec">Ports</h2>
-{port_cards()}
+{canonical_graphs_section()}
+{concept_index()}
+{variant_index()}
+{ports_section()}
 {imports_section()}
 {corpus_section()}
+{reference_section()}
 <footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>
 (schema <code>{e(catalog["schema"])}</code>) —
 Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
@@ -669,12 +806,21 @@ function applyFilter() {{
     var okF = !f || c.getAttribute('data-family') === f;
     c.style.display = (okT && okF) ? '' : 'none';
   }});
+  document.querySelectorAll('section[data-sec]').forEach(function (s) {{
+    var cards = s.querySelectorAll('.card'), shown = 0;
+    cards.forEach(function (c) {{ if (c.style.display !== 'none') shown += 1; }});
+    var badge = s.querySelector('.scount');
+    if (badge) {{
+      badge.textContent = (shown === cards.length)
+        ? '(' + cards.length + ')'
+        : '(' + shown + ' of ' + cards.length + ' shown)';
+    }}
+    s.style.display = (cards.length > 0 && shown === 0) ? 'none' : '';
+  }});
 }}
 </script>
 </body></html>
 """
-
-
 
 
 def build_family_views(catalog: dict) -> dict:
@@ -807,12 +953,15 @@ def cmd_build(args: argparse.Namespace) -> None:
          "trust": ["kernelChecked"], "graph": catalog["ambientGraph"]},
         indent=1, sort_keys=True) + "\n")
     family_views = build_family_views(catalog)
+    view_svgs: set[str] = set()
     for vname, view in family_views.items():
         vdir = out / "views" / vname
         vdir.mkdir(parents=True, exist_ok=True)
         (vdir / "graph.json").write_text(
             json.dumps(view, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
         (vdir / "graph.dot").write_text(view_dot(vname, view))
+        if render_svg(vdir / "graph.dot", vdir / "graph.svg"):
+            view_svgs.add(vname)
     dot_text = to_dot(catalog)
     dot_path = out / "ambient-factorizations.dot"
     dot_path.write_text(dot_text)
@@ -822,14 +971,31 @@ def cmd_build(args: argparse.Namespace) -> None:
     site.mkdir(parents=True, exist_ok=True)
     if have_svg:
         shutil.copy(svg_path, site / "ambient-factorizations.svg")
+    for vname in view_svgs:
+        shutil.copy(out / "views" / vname / "graph.svg", site / f"{vname}.svg")
     # the canonical JSON is part of the public site: honest data over rendered views
     shutil.copy(zoo_dir(root) / "catalog.direct.json", site / "catalog.direct.json")
-    page = site_html(catalog, have_svg, dot_text)
-    for marker in ("Graphs (one per evidence family — never flattened into one)",
+    # downloadable canonical artifacts (only site/ is deployed): DOT/JSON per view
+    shutil.copy(dot_path, site / "ambient-factorizations.dot")
+    (site / "views" / "ambient-standard").mkdir(parents=True, exist_ok=True)
+    shutil.copy(view_dir / "graph.json",
+                site / "views" / "ambient-standard" / "graph.json")
+    for vname in family_views:
+        sdir = site / "views" / vname
+        sdir.mkdir(parents=True, exist_ok=True)
+        for fn in ("graph.json", "graph.dot"):
+            shutil.copy(out / "views" / vname / fn, sdir / fn)
+    page = site_html(catalog, have_svg, dot_text, view_svgs)
+    for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
                    "noncanonical, lossy, direct-only",
-                   "Filtering changes visibility only"):
+                   "Filtering changes visibility only",
+                   "Semantic contexts"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
+    expected_imgs = (1 if have_svg else 0) + len(view_svgs)
+    if page.count("<img ") != expected_imgs:
+        sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
+                 f"panel ({expected_imgs}), found {page.count('<img ')}")
     if catalog.get("corpus", {}).get("claims"):
         # rendered-page golden markers: the corpus section must frame absence and
         # missing bridges honestly, in the canonical order the JSON fixes
