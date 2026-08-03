@@ -35,6 +35,8 @@ oracle behavior, or quantitative data the proof produces.
 
 - **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
   reverse mathematics, and the assurance routes toward genuine `RCA₀ ⊢ …` results.
+- **[Hall–EFILC case study](docs/hall-efilc-case-study.md)** — the checkpointed worked example:
+  mining-guided capability extraction across ambient, ω-model, and Weihrauch semantics.
 - **[ROADMAP.md](ROADMAP.md)** — Simpson as the vertical theorem spine, RMZoo as the
   horizontal principle graph, the strict-RM and quantitative tracks, and the issue tranches.
 - **Live atlas**: <https://cameronfreer.github.io/reverse-mathlib/> — the evidence atlas:

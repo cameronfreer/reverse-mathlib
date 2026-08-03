@@ -376,6 +376,20 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
     deps = catalog["dependencies"]
     e = html.escape
     view_svgs = view_svgs or set()
+    case_study_href = ("https://github.com/cameronfreer/reverse-mathlib/blob/main/"
+                       "docs/hall-efilc-case-study.md")
+    case_study_concepts = {
+        "reverse-mathlib:wkl",
+        "reverse-mathlib:explicitFiniteInverseLimitCompactness",
+        "reverse-mathlib:countableHall",
+    }
+    case_study_facts = {"wklEfilcOmega", "efilcHallOmega", "rca0CoreWklOmega"}
+
+    def case_study_link(record_id: str) -> str:
+        if record_id not in case_study_concepts | case_study_facts:
+            return ""
+        return (f'<p class="meta"><a data-case-study="hall-efilc" '
+                f'href="{case_study_href}">Hall–EFILC case study</a></p>')
 
     def gloss(text: str, cap: int = 100) -> str:
         """Lead-in label for a summary line: the first clause of the full text, which
@@ -503,13 +517,14 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                 + (f" — {e(ev['note'])}" if ev.get("note") else "") + "</li>"
                 for ev in f_["evidence"])
             note_block = f"<p>{e(f_['note'])}</p>" if f_.get("note") else ""
+            study_link = case_study_link(f_["id"])
             cards.append(f"""<div class="card" data-family="certified">
 <h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
 <span class="tag">{e(f_['kind'])}</span> <span class="tag">kernelChecked</span>
 <span class="tag">scope {e(str(ctx.get('scope', '')))}</span></h3>
 <p class="meta"><code>{e(f_['id'])}</code> · base <code>{e(str(ctx.get('base', '')))}</code>
 · context {ctx_links}</p>
-<details><summary>certifications and note</summary><ul>{ev_items}</ul>{note_block}</details>
+<details><summary>certifications, note, and case study</summary><ul>{ev_items}</ul>{note_block}{study_link}</details>
 </div>""")
         return section(
             "facts-sec", "Certified semantic facts", len(cards), "\n".join(cards),
@@ -532,10 +547,11 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                 f'<li><code>{e(r["namespace"])}:&quot;{e(r["key"])}&quot;</code> '
                 f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
             refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
+            study_link = case_study_link(c["id"])
             cards.append(f"""<details class="card">
 <summary><strong>{e(gloss(c['description']))}</strong> — <code>{e(c['id'])}</code></summary>
 <p>{e(c['description'])}</p>
-{refs_block}</details>""")
+{refs_block}{study_link}</details>""")
         return section("concepts-sec", "Concepts", len(cards), "\n".join(cards))
 
     def variant_index() -> str:
@@ -1015,6 +1031,9 @@ def cmd_build(args: argparse.Namespace) -> None:
     if page.count("<img ") != expected_imgs:
         sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
                  f"panel ({expected_imgs}), found {page.count('<img ')}")
+    if page.count('data-case-study="hall-efilc"') != 6:
+        sys.exit("rmlib-zoo build: Hall–EFILC case study must be linked from exactly "
+                 "three concept cards and three certified-fact cards")
     if any(f.get("kind") == "nonImplication" and f.get("evidence")
            for f in catalog.get("facts", [])):
         # a certified separation must be framed as a countermodel, never a turnstile claim

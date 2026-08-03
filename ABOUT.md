@@ -12,14 +12,8 @@ theorem's known calibration") is a final result in its own right, not preliminar
 awaiting promotion. The slogan: *classify the theorem, preserve the proof, and never
 confuse the two.*
 
-On the calibration axis specifically:
-
-> **Today it certifies the architecture of particular Lean proofs. Eventually, reusable
-> interpretation theorems can turn some of those architecture certificates into genuine
-> reverse-mathematical upper bounds.**
-
-It is not currently proving anything over RCA₀. The live registry correctly reports zero
-certified bounds at every scope (ω-model / all-model / syntactic).
+For the complete worked example behind these distinctions, see the
+**[Hall–EFILC case study](docs/hall-efilc-case-study.md)**, pinned to checkpoint `4fea2b5`.
 
 ## 1. What it is actually doing
 
@@ -141,8 +135,8 @@ The three principles, briefly:
   refactored Hall proof factors through: finite Hall makes each level of coded partial
   transversals nonempty, EFILC threads a coherent infinite transversal through them. The
   word *explicit* is doing reverse-mathematical work: supplied enumerations keep the
-  principle at the intended WKL₀ calibration, where a merely-asserted-finite version would
-  may require additional enumeration/comprehension strength — the calibration is
+  principle at the intended WKL₀ calibration, where a merely-asserted-finite version may
+  require additional enumeration/comprehension strength — the calibration is
   presentation-sensitive.
 - **CountableHall** — the one-sided injective-transversal Hall statement (related to, not
   identical with, Simpson's perfect-matching X.3.15/X.3.16).
