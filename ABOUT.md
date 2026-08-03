@@ -149,9 +149,43 @@ The three principles, briefly:
 Each principle also has a **Turing-ideal ω form** (`WeakKonigAt`, `EFILCAt` in
 `ReverseMathlib/Omega/`): the same statement internalized to a second-order part `Ω`, with
 inputs presented by internal sets and graph-coded internal functions and outputs required to
-belong to `Ω`. Proving `WKLω ↔ EFILCω` over Turing ideals — the transformations as genuine
-Turing reductions — is the planned first exact certified ω-model calibration, reported as
-`WKL₀ ⊨ω …`, never as `⊢`.
+belong to `Ω`. `WKLω ↔ EFILCω` over Turing ideals — the transformations as genuine Turing
+reductions — **is the first certified ω-model calibration**, and `EFILCω → Hallω` (upper
+implication only) the second; both are reported as `⊨ω`, never as `⊢`.
+
+### The current certified state, at three levels
+
+| Result | Status |
+| --- | --- |
+| `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))` and `… → (EFILCω(Ω) → Hallω(Ω))` | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 2 / all-model: 0 / syntactic: 0) |
+| Reading these as `RCA₀ ⊨ω WKL ↔ EFILC`, `RCA₀ + WKL ⊨ω Hall` | Mathematically standard, **literature-backed** ([Sim09] VIII.1); backend object-syntax adequacy pending |
+| `RCA₀ ⊢ WKL ↔ EFILC` in checked object syntax | **Not established**; scopes are never promoted |
+
+The composites (`WKLω → Hallω` through the certified leaves; `Hall ≤W WKL` through the
+imported Weihrauch leaves) remain **derived closure results**, computable by any consumer
+and registered by none — linked ports and derivable edges never inflate the unique-fact
+scoreboard.
+
+Two further evidence grades live alongside the certified facts, permanently distinct:
+
+- **Imported checked** uniform reductions, proved natively in the
+  [computable-analysis](https://github.com/cameronfreer/computable-analysis) machine model
+  at pinned revisions and ingested through a versioned JSON interchange as external
+  evidence — never Lean axioms, never certified counts: `WKL ≤sW EFILC` (decoder reads the
+  section answer alone; strongness enforced by the postprocessor's type), `EFILC ≤W WKL`
+  (**certified ordinary** — the theorem never asserts non-strong-reducibility), and
+  `Hall ≤sW EFILC` for the exact one-sided relation-plus-enumerator presentation. These
+  give the recorded input-access profiles typed, representation-relative meaning: the two
+  lenses (ω-model and uniform) agree without either being inferred from the other.
+- **Reported** corpus findings at pinned snapshots: what RMZoo (pinned database revision;
+  no Hall/marriage symbol exists — its sole trace is a commented-out citation), Simpson
+  (X.3.15/X.3.16, two-sided/perfect-matching family), and Hirst (society calibrations)
+  classify, with source wording preserved apart from normalized concept-level claims, and
+  the presentation bridges that would be required before any reversal transfers recorded
+  explicitly as **MISSING**. Audit outcome: no matching reversal found in the audited
+  corpus; the exact lower bound for the one-sided variant remains open — never "new"
+  without separate priority evidence, and absence of evidence is never displayed as
+  evidence of absence.
 
 ## 2. How this relates to existing reverse mathematics
 

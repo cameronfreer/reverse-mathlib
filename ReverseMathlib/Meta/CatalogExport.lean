@@ -5,6 +5,7 @@ Authors: Cameron Freer
 -/
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Corpus
+import ReverseMathlib.Meta.Interchange
 
 /-!
 # Deterministic catalog export
@@ -429,6 +430,22 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
      ("facts", Json.arr (facts.map factJson)),
      ("semanticContexts", Json.arr (semanticContexts.map contextEntryJson)),
      ("ports", Json.arr (snapshot.ports.map portJson)),
+     ("importedReductions", Json.arr
+       (((importedReductionExt.getState env).qsort fun a b => a.id < b.id).map fun r =>
+         Json.mkObj
+           [("id", Json.str r.id),
+            ("namespace", Json.str (toString r.ns.name)),
+            ("repository", Json.str r.repository),
+            ("revision", Json.str r.revision),
+            ("notion", Json.str (toString r.notion.name)),
+            ("lhs", Json.str s!"reverse-mathlib:{r.lhs.name}"),
+            ("rhs", Json.str s!"reverse-mathlib:{r.rhs.name}"),
+            ("degree", Json.str r.degree.tag),
+            ("status", Json.str r.status.tag),
+            ("theorem", optStrJson r.theoremName?),
+            ("mechanism", optStrJson r.mechanism?),
+            ("downgraded", optStrJson r.downgraded?),
+            ("note", Json.str r.note)])),
      ("corpus", corpusJson env),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \

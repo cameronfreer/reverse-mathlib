@@ -14,13 +14,19 @@ particular proof takes, which stronger ambient resources make a standard or eleg
 transformation possible, what the statement's presentation supplies, and what witnesses,
 oracle behavior, or quantitative data the proof produces.
 
-> **Today it certifies facts about particular Lean proofs and ambient factorizations.** Some
-> are candidates for genuine reverse-mathematical bounds after suitable interpretation
-> bridges. Others are final results in their own right: canonical, overpowered, generic,
-> quantitative, or presentation-revealing proof routes that should never be mistaken for
-> minimal theorem calibrations. It is not currently proving anything over RCA₀ — the
-> registry correctly reports zero certified bounds at every scope (ω-model / all-model /
-> syntactic).
+> **Today it certifies exactly two ω-model facts, and nothing over RCA₀ itself.** The
+> registry pins `WKLω ⇔ EFILCω` and `EFILCω → Hallω`, each kernel-checked over **every
+> Turing ideal**; the identification of Turing ideals with the ω-models of RCA₀ is
+> literature-backed, with object-syntax adequacy pending; and no `RCA₀ ⊢ …` turnstile
+> claim exists at any scope (the scoreboard reads ω-model: 2, all-model: 0, syntactic: 0,
+> and scopes are never promoted). Alongside these live two further evidence grades, kept
+> permanently distinct: **imported checked** Weihrauch reductions (`WKL ≤sW EFILC`,
+> `EFILC ≤W WKL` certified-ordinary, `Hall ≤sW EFILC`), proved natively in
+> [computable-analysis](https://github.com/cameronfreer/computable-analysis) at pinned
+> revisions and ingested as external evidence — never axioms; and **reported** corpus
+> findings (what RMZoo, Simpson, and Hirst classify, at pinned snapshots), with missing
+> presentation bridges named explicitly. Everything else remains ambient Lean
+> factorization: proof-route archaeology, not strength.
 
 *Classify the theorem, preserve the proof, and never confuse the two.*
 

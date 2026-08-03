@@ -161,6 +161,15 @@ def cmd_check(args: argparse.Namespace) -> None:
                             f"ambientFactorization")
     if find_key(catalog, "timestamp"):
         problems.append("canonical catalog must not contain timestamps")
+    imps = catalog.get("importedReductions", [])
+    imp_ids = [x["id"] for x in imps]
+    if imp_ids != sorted(imp_ids):
+        problems.append("importedReductions not sorted by id")
+    for r in imps:
+        if r.get("status") not in ("importedChecked", "reported"):
+            problems.append(f"imported reduction {r.get('id')!r} has invalid status")
+        if r.get("status") == "importedChecked" and not (r.get("theorem") and r.get("mechanism") and r.get("revision")):
+            problems.append(f"imported reduction {r.get('id')!r} importedChecked without trust fields")
     # corpus section: a separate family with stable ids, referential integrity, and the
     # fail-closed display statuses (claims reported, bridges missing)
     corpus = catalog.get("corpus", {})
@@ -290,6 +299,30 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             bits.append(f"ambient: {e(d['ambient'])}; scope: {e(d['scope'])}")
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
+
+    def imports_section() -> str:
+        imps = catalog.get("importedReductions", [])
+        if not imps:
+            return ""
+        parts = ["<h2>Imported reductions</h2>",
+                 "<p><em>Checked in an external machine-model repository at a pinned "
+                 "revision and ingested as external evidence — never Lean axioms, never "
+                 "certified counts; records without complete validated trust data are "
+                 "downgraded to reported.</em></p>"]
+        for r in imps:
+            trust = (f"theorem <code>{e(r['theorem'] or '(none)')}</code>; mechanism "
+                     f"<code>{e(r['mechanism'] or '(none)')}</code>")
+            down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
+                    if r.get("downgraded") else "")
+            parts.append(f"""<div class="card">
+<h3><code>{e(r['id'])}</code> <span class="tag">{e(r['status'])}</span></h3>
+<dl>
+<dt>reduction</dt><dd><code>{e(r['lhs'])}</code> ≤ <code>{e(r['rhs'])}</code> [{e(r['notion'])}, {e(r['degree'])}]</dd>
+<dt>source</dt><dd><code>{e(r['repository'])}</code> @ <code>{e(r['revision'])}</code></dd>
+<dt>checking</dt><dd>{trust}</dd>{down}
+<dt>note</dt><dd>{e(r['note'])}</dd>
+</dl></div>""")
+        return "\n".join(parts)
 
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
@@ -425,11 +458,19 @@ a {{ color: #205ea6; }}
 </style></head><body><main>
 <h1>reverse-mathlib zoo — ambient factorizations</h1>
 <p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
-<p class="banner"><strong>Honesty note:</strong> every edge below is a kernel-checked
-<em>relative certificate in unrestricted Lean over standard ℕ</em> (scope:
-ambientFactorization). Nothing on this page is a reverse-mathematics implication, an ω-model
-result, or a subsystem theorem; those require the typed catalog and backend, and render as
-<em>pending</em> until they exist.</p>
+<p class="banner"><strong>Honesty note:</strong> this page displays four grades of
+evidence, permanently distinct. Every edge in the <em>graph below</em> is a kernel-checked
+relative certificate in unrestricted Lean over standard ℕ (ambient factorization — proof
+architecture, not strength). The <em>port cards</em> additionally carry the certified
+ω-model facts — kernel-checked over every Turing ideal, with the identification of Turing
+ideals with RCA₀'s ω-models literature-backed and backend object-syntax adequacy pending.
+The <em>imported reductions</em> section holds Weihrauch reductions checked in a separate
+machine-model repository at pinned revisions and ingested as external evidence, never
+axioms. The
+<em>corpus section</em> holds reported literature findings at pinned snapshots, with
+missing presentation bridges named explicitly. No <code>RCA₀ ⊢ …</code> turnstile theorem
+exists at any scope; scopes are never promoted, and derived closure results are computed,
+never registered.</p>
 {graph_block}
 <h2>Concepts</h2>
 {concept_cards()}
@@ -437,6 +478,7 @@ result, or a subsystem theorem; those require the typed catalog and backend, and
 {variant_cards()}
 <h2>Ports</h2>
 {port_cards()}
+{imports_section()}
 {corpus_section()}
 <footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>
 (schema <code>{e(catalog["schema"])}</code>) —
