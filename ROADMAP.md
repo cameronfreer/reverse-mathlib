@@ -323,6 +323,18 @@ mappings must be extensible. No RMZoo importer inside Milestone 1.
 
 ### Tranche 4 — ω-model semantics and first exact calibrations
 
+> **Status (2026-08-03): items 22–27 are complete.** The certified state is two ω-model
+> facts (WKLω ⇔ EFILCω; EFILCω → Hallω), kernel-checked over every Turing ideal, rendered
+> per-scope on the site with the scoreboard at ω-model: 2 / all-model: 0 / syntactic: 0.
+> Item 28 (REC/WKL certified separation) remains open. Additionally landed beyond this
+> tranche's text: the #28 interchange contract and the #27 represented-reduction pilot
+> (WKL ≤sW EFILC, EFILC ≤W WKL certified-ordinary, Hall ≤sW EFILC — checked in
+> computable-analysis at pinned revisions, ingested as external evidence), and the
+> RMZoo seam now has a pinned source census (1219 lines fully dispositioned) and an
+> exhaustive 131-symbol crosswalk ledger. The Hall variant audit is complete: no matching
+> reversal in the audited corpus; the exact lower bound remains open, with both required
+> presentation bridges recorded MISSING.
+
 Split (2026-07-30) so the first genuine semantic result lands early; the Turing jump and ACAω
 are deliberately **off the critical path**. Verified at the pinned mathlib revision:
 `Mathlib/Computability/RecursiveIn.lean` and `TuringDegree.lean` supply oracle computability

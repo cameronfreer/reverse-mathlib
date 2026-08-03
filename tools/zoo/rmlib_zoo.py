@@ -34,7 +34,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v1"
+SCHEMA_ID = "reverse-mathlib.catalog/v2"
 
 
 def repo_root() -> Path:
@@ -165,11 +165,33 @@ def cmd_check(args: argparse.Namespace) -> None:
     imp_ids = [x["id"] for x in imps]
     if imp_ids != sorted(imp_ids):
         problems.append("importedReductions not sorted by id")
+    if len(imp_ids) != len(set(imp_ids)):
+        problems.append("duplicate ids in importedReductions")
+    notion_ids = {x["id"] for x in catalog.get("reducibilityNotions", [])}
+    uprob_ids = {x["id"].split(":", 1)[-1] for x in catalog.get("uniformProblems", [])}
+    DEGREES = {"exact", "representative", "variantSensitive", "notAssigned"}
     for r in imps:
+        rid = r.get("id")
         if r.get("status") not in ("importedChecked", "reported"):
-            problems.append(f"imported reduction {r.get('id')!r} has invalid status")
-        if r.get("status") == "importedChecked" and not (r.get("theorem") and r.get("mechanism") and r.get("revision")):
-            problems.append(f"imported reduction {r.get('id')!r} importedChecked without trust fields")
+            problems.append(f"imported reduction {rid!r} has invalid status")
+        if r.get("status") == "importedChecked":
+            if not (r.get("theorem") and r.get("mechanism")):
+                problems.append(f"imported reduction {rid!r} importedChecked without trust fields")
+            rev = r.get("revision", "")
+            if not (len(rev) == 40 and all(c in "0123456789abcdef" for c in rev)):
+                problems.append(f"imported reduction {rid!r} importedChecked without 40-hex revision")
+        if r.get("degree") not in DEGREES:
+            problems.append(f"imported reduction {rid!r} has unknown degree")
+        ext, loc = r.get("external"), r.get("local")
+        if not (ext and loc and all(ext.get(k) for k in ("notion", "lhs", "rhs"))
+                and all(loc.get(k) for k in ("notion", "lhs", "rhs"))):
+            problems.append(f"imported reduction {rid!r} missing external/local crosswalk keys")
+            continue
+        if loc["notion"] not in notion_ids:
+            problems.append(f"imported reduction {rid!r} resolves unknown notion")
+        for side in ("lhs", "rhs"):
+            if loc[side].split(":", 1)[-1] not in uprob_ids:
+                problems.append(f"imported reduction {rid!r} {side} resolves unknown problem")
     # corpus section: a separate family with stable ids, referential integrity, and the
     # fail-closed display statuses (claims reported, bridges missing)
     corpus = catalog.get("corpus", {})
@@ -300,6 +322,43 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             items.append("<li>" + " — ".join(bits) + "</li>")
         return "<ul>" + "\n".join(items) + "</ul>"
 
+    def facts_section() -> str:
+        facts = catalog.get("facts", [])
+        if not facts:
+            return ""
+        contexts = {c["id"]: c for c in catalog.get("semanticContexts", [])}
+        parts = ["<h2>Certified semantic facts</h2>",
+                 "<p><em>Extensional classifications, distinct from the proof routes "
+                 "below: each fact is certified by a typed semantic certificate against a "
+                 "registered context. Kernel-checked over every model of the context "
+                 "predicate; the context's own status wording states what remains "
+                 "literature-backed or pending.</em></p>"]
+        for f_ in facts:
+            evs = f_.get("evidence", [])
+            if not evs:
+                continue  # uncertified facts render in the catalog data, not here
+            lhs = "+".join(x for x in f_.get("lhs", []))
+            rhs = "+".join(x for x in f_.get("rhs", []))
+            ctx = f_.get("context", {})
+            ev_items = []
+            for ev in evs:
+                cdesc = contexts.get(ev.get("context"), {}).get("description", "")
+                note = f" — {e(ev['note'])}" if ev.get("note") else ""
+                ev_items.append(
+                    f"<li>certificate <code>{e(ev['certificate'])}</code> "
+                    f"[context <code>{e(ev['context'])}</code>]{note}"
+                    f"<br/><em>context status:</em> {e(cdesc)}</li>")
+            note_row = (f"<dt>note</dt><dd>{e(f_['note'])}</dd>" if f_.get("note") else "")
+            parts.append(f"""<div class="card">
+<h3><code>{e(f_['id'])}</code> <span class="tag">{e(f_['kind'])}</span></h3>
+<dl>
+<dt>endpoints</dt><dd><code>{e(lhs)}</code> {e('⇔' if f_['kind'] == 'equivalence' else '⇒')} <code>{e(rhs)}</code></dd>
+<dt>base / scope</dt><dd><code>{e(str(ctx.get('base', '')))}</code> / <code>{e(str(ctx.get('scope', '')))}</code></dd>
+{note_row}
+<dt>certifications</dt><dd><ul>{''.join(ev_items)}</ul></dd>
+</dl></div>""")
+        return "\n".join(parts)
+
     def imports_section() -> str:
         imps = catalog.get("importedReductions", [])
         if not imps:
@@ -317,7 +376,8 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
             parts.append(f"""<div class="card">
 <h3><code>{e(r['id'])}</code> <span class="tag">{e(r['status'])}</span></h3>
 <dl>
-<dt>reduction</dt><dd><code>{e(r['lhs'])}</code> ≤ <code>{e(r['rhs'])}</code> [{e(r['notion'])}, {e(r['degree'])}]</dd>
+<dt>local (resolved)</dt><dd><code>{e(r['local']['lhs'])}</code> ≤ <code>{e(r['local']['rhs'])}</code> [{e(r['local']['notion'])}, {e(r['degree'])}]</dd>
+<dt>external (as ingested)</dt><dd><code>{e(r['external']['lhs'])}</code> ≤ <code>{e(r['external']['rhs'])}</code> [notion <code>{e(r['external']['notion'])}</code>, namespace <code>{e(r['namespace'])}</code>]</dd>
 <dt>source</dt><dd><code>{e(r['repository'])}</code> @ <code>{e(r['revision'])}</code></dd>
 <dt>checking</dt><dd>{trust}</dd>{down}
 <dt>note</dt><dd>{e(r['note'])}</dd>
@@ -417,7 +477,7 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str) -> str:
     return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>reverse-mathlib zoo — ambient factorizations</title>
+<title>reverse-mathlib atlas</title>
 <style>
 * {{ box-sizing: border-box; }}
 body {{ font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
@@ -456,7 +516,7 @@ footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
           overflow-wrap: anywhere; }}
 a {{ color: #205ea6; }}
 </style></head><body><main>
-<h1>reverse-mathlib zoo — ambient factorizations</h1>
+<h1>reverse-mathlib atlas</h1>
 <p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
 <p class="banner"><strong>Honesty note:</strong> this page displays four grades of
 evidence, permanently distinct. Every edge in the <em>graph below</em> is a kernel-checked
@@ -471,11 +531,13 @@ axioms. The
 missing presentation bridges named explicitly. No <code>RCA₀ ⊢ …</code> turnstile theorem
 exists at any scope; scopes are never promoted, and derived closure results are computed,
 never registered.</p>
+<h2>Ambient factorizations</h2>
 {graph_block}
 <h2>Concepts</h2>
 {concept_cards()}
 <h2>Statement variants and Lean interfaces</h2>
 {variant_cards()}
+{facts_section()}
 <h2>Ports</h2>
 {port_cards()}
 {imports_section()}

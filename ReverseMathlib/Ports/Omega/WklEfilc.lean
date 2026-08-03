@@ -22,15 +22,16 @@ kernel-checked over **every Turing ideal**; the identification of Turing ideals 
 pending. Nothing here is an unqualified RM bound.
 
 **Input-access records** (data *consumed by the transformations*, not correctness
-hypotheses; candidate uniformity profiles await the represented-reduction layer, #27):
+hypotheses), each now independently witnessed by an imported checked Weihrauch reduction —
+the ω theorems did not produce the Weihrauch theorems; the two lenses agree independently:
 
 * **EFILCω → WKLω** — compiler `treeToSystem`: the input tree; decoder
-  `sectionPathInternal`: the section answer only. Candidate strong-uniform profile,
-  pending #27.
+  `sectionPathInternal`: the section answer only. Witnessed by the imported strong
+  reduction `wkl_le_efilc.strongWeihrauch`.
 * **WKLω → EFILCω** — compiler `systemToTree`: fiber graph ⊕ bonding graph; decoder
   `pathSectionFunction`: fiber graph ⊕ path answer, with bonding data correctness-only in
-  the decoder (enforced in the decoder's type). Candidate ordinary-uniform profile,
-  pending #27.
+  the decoder (enforced in the decoder's type). Witnessed by the imported
+  certified-ordinary reduction `efilc_le_wkl.weihrauch`.
 -/
 
 namespace ReverseMathlib.Ports
@@ -70,11 +71,13 @@ revmath_port weakKonigEfilcOmega where
     Simpson, SOSOA; presentation-sensitive)"
   note := "Input access (data consumed by the transformations, not correctness \
     hypotheses). EFILCω → WKLω: compiler treeToSystem reads the input tree; decoder \
-    sectionPathInternal reads the section answer only — candidate strong-uniform profile, \
-    pending #27. WKLω → EFILCω: compiler systemToTree reads fiber graph ⊕ bonding graph; \
-    decoder pathSectionFunction reads fiber graph ⊕ path answer, bonding data \
-    correctness-only in the decoder (enforced in the decoder's type) — candidate \
-    ordinary-uniform profile, pending #27."
+    sectionPathInternal reads the section answer only — independently witnessed by the \
+    imported strong reduction wkl_le_efilc.strongWeihrauch. WKLω → EFILCω: compiler \
+    systemToTree reads fiber graph ⊕ bonding graph; decoder pathSectionFunction reads \
+    fiber graph ⊕ path answer, bonding data correctness-only in the decoder (enforced in \
+    the decoder's type) — independently witnessed by the imported certified-ordinary \
+    reduction efilc_le_wkl.weihrauch. The ω theorems did not produce the Weihrauch \
+    theorems: the two lenses agree independently."
   evidence semanticImplication exact kernelChecked modelSemantics scope omegaModels
     context rca0.turingIdealOmega
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence

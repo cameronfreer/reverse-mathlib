@@ -435,7 +435,7 @@ info: weakKonigEfilcOmega
     supports fact: wklEfilcOmega
   candidate classical classification: WKL₀-level equivalence over RCA₀ for coded presentations (cf. Simpson, SOSOA; presentation-sensitive) [claimed, UNVERIFIED]
   certified ω-model equivalence (all ω-models, exact)
-  note: Input access (data consumed by the transformations, not correctness hypotheses). EFILCω → WKLω: compiler treeToSystem reads the input tree; decoder sectionPathInternal reads the section answer only — candidate strong-uniform profile, pending #27. WKLω → EFILCω: compiler systemToTree reads fiber graph ⊕ bonding graph; decoder pathSectionFunction reads fiber graph ⊕ path answer, bonding data correctness-only in the decoder (enforced in the decoder's type) — candidate ordinary-uniform profile, pending #27.
+  note: Input access (data consumed by the transformations, not correctness hypotheses). EFILCω → WKLω: compiler treeToSystem reads the input tree; decoder sectionPathInternal reads the section answer only — independently witnessed by the imported strong reduction wkl_le_efilc.strongWeihrauch. WKLω → EFILCω: compiler systemToTree reads fiber graph ⊕ bonding graph; decoder pathSectionFunction reads fiber graph ⊕ path answer, bonding data correctness-only in the decoder (enforced in the decoder's type) — independently witnessed by the imported certified-ordinary reduction efilc_le_wkl.weihrauch. The ω theorems did not produce the Weihrauch theorems: the two lenses agree independently.
 -/
 #guard_msgs in
 #revmath_port? weakKonigEfilcOmega

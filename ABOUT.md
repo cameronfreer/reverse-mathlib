@@ -115,7 +115,7 @@ The catalog keeps distinct:
 | concept | `reverse-mathlib:wkl` |
 | exact statement variant | `reverse-mathlib:wkl.binaryTree.ambient` |
 | Lean interface | `ReverseMathlib.Standard.WeakKonig` |
-| future uniform problem | binary path selection under a specified representation |
+| represented uniform problem | binary path selection under a specified representation |
 
 This prevents a common RM mistake: treating "WKL", arbitrary finitely branching Kőnig's
 lemma, binary-tree path choice, and an ambient Lean theorem as one object.
@@ -142,15 +142,17 @@ The three principles, briefly:
   transversals nonempty, EFILC threads a coherent infinite transversal through them. The
   word *explicit* is doing reverse-mathematical work: supplied enumerations keep the
   principle at the intended WKL₀ calibration, where a merely-asserted-finite version would
-  force the weak system to recover enumeration data (ACA-level behavior).
+  may require additional enumeration/comprehension strength — the calibration is
+  presentation-sensitive.
 - **CountableHall** — the one-sided injective-transversal Hall statement (related to, not
   identical with, Simpson's perfect-matching X.3.15/X.3.16).
 
 Each principle also has a **Turing-ideal ω form** (`WeakKonigAt`, `EFILCAt` in
 `ReverseMathlib/Omega/`): the same statement internalized to a second-order part `Ω`, with
 inputs presented by internal sets and graph-coded internal functions and outputs required to
-belong to `Ω`. `WKLω ↔ EFILCω` over Turing ideals — the transformations as genuine Turing
-reductions — **is the first certified ω-model calibration**, and `EFILCω → Hallω` (upper
+belong to `Ω`. `WKLω ↔ EFILCω` over Turing ideals — with explicit relative-computability proofs
+establishing internality (distinct from the Type-2 Weihrauch reductions) — **is the first
+certified ω-model calibration**, and `EFILCω → Hallω` (upper
 implication only) the second; both are reported as `⊨ω`, never as `⊢`.
 
 ### The current certified state, at three levels
@@ -159,7 +161,7 @@ implication only) the second; both are reported as `⊨ω`, never as `⊢`.
 | --- | --- |
 | `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))` and `… → (EFILCω(Ω) → Hallω(Ω))` | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 2 / all-model: 0 / syntactic: 0) |
 | Reading these as `RCA₀ ⊨ω WKL ↔ EFILC`, `RCA₀ + WKL ⊨ω Hall` | Mathematically standard, **literature-backed** ([Sim09] VIII.1); backend object-syntax adequacy pending |
-| `RCA₀ ⊢ WKL ↔ EFILC` in checked object syntax | **Not established**; scopes are never promoted |
+| `RCA₀ ⊢ WKL ↔ EFILC` (and `RCA₀ + WKL ⊢ Hall`) in checked object syntax | **Not established**; scopes are never promoted |
 
 The composites (`WKLω → Hallω` through the certified leaves; `Hall ≤W WKL` through the
 imported Weihrauch leaves) remain **derived closure results**, computable by any consumer

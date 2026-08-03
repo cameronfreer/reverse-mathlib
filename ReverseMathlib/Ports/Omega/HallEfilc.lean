@@ -23,11 +23,12 @@ context identification with RCA₀'s ω-models remains literature-backed with ba
 adequacy pending.
 
 **Input-access records** (data *consumed by the transformation*, not correctness
-hypotheses; candidate uniformity profiles await the represented-reduction layer, #27):
+hypotheses), independently witnessed by the imported strong reduction
+`hall_le_efilc.strongWeihrauch` — the ω theorem did not produce the Weihrauch theorem:
 
 * **EFILCω → Hallω** — compiler `hallToSystem`: the candidate **enumerator only** (the
   candidate relation is correctness-only, enforced in the fiber compiler's type); decoder
-  `sectionTransversalFunction`: the section answer only. Candidate profile pending #27.
+  `sectionTransversalFunction`: the section answer only.
 -/
 
 namespace ReverseMathlib.Ports
@@ -78,10 +79,12 @@ revmath_port countableHallOmega where
   note := "Input access (data consumed by the transformations, not correctness \
     hypotheses). EFILCω → Hallω: compiler hallToSystem reads the candidate enumerator \
     only — the candidate relation is correctness-only, enforced in the fiber compiler's \
-    type; decoder sectionTransversalFunction reads the section answer only. Candidate \
-    uniformity profile pending #27. Level nonemptiness reuses mathlib's finite Hall \
-    theorem; the infinite Hall theorem, the compactness boundary, and the selection \
-    scaffolding are excluded by the route gates in scripts/MetaSmoke.lean."
+    type; decoder sectionTransversalFunction reads the section answer only — \
+    independently witnessed by the imported strong reduction \
+    hall_le_efilc.strongWeihrauch (the ω theorem did not produce the Weihrauch theorem). \
+    Level nonemptiness reuses mathlib's finite Hall theorem; the infinite Hall theorem, \
+    the compactness boundary, and the selection scaffolding are excluded by the route \
+    gates in scripts/MetaSmoke.lean."
   evidence semanticImplication upper kernelChecked modelSemantics scope omegaModels
     context rca0.turingIdealOmega
     via ReverseMathlib.Ports.efilc_hall_omega_implication

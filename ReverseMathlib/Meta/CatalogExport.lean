@@ -11,14 +11,18 @@ import ReverseMathlib.Meta.Interchange
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v0`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v2`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
 
-Canonical-file properties (`reverse-mathlib.catalog/v0` is **transitional and pre-conceptual**:
-its principle ids are today's registry/capability ids, not the layered conceptual ids of
-issue #3; `catalog/v1` is published only after the #4 variant migration):
+Schema history, versioned per the "schema changes are versioned" discipline: `v0` was the
+transitional pre-conceptual export; `v1` added the corpus family; `v2` adds the
+`importedReductions` family with **both sides of every crosswalk** — the external keys as
+ingested and the resolved local ids — so the canonical artifact can be audited
+independently of the Lean environment.
+
+Canonical-file properties:
 
 * IDs are canonical strings (declaration and registry names), never generated numerics;
 * **set-like arrays are canonically sorted; order-bearing arrays preserve declared order** —
@@ -413,7 +417,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v1"),
+    [("schema", Json.str "reverse-mathlib.catalog/v2"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
@@ -437,9 +441,14 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
             ("namespace", Json.str (toString r.ns.name)),
             ("repository", Json.str r.repository),
             ("revision", Json.str r.revision),
-            ("notion", Json.str (toString r.notion.name)),
-            ("lhs", Json.str s!"reverse-mathlib:{r.lhs.name}"),
-            ("rhs", Json.str s!"reverse-mathlib:{r.rhs.name}"),
+            ("external", Json.mkObj
+              [("notion", Json.str r.notionKey),
+               ("lhs", Json.str r.lhsKey),
+               ("rhs", Json.str r.rhsKey)]),
+            ("local", Json.mkObj
+              [("notion", Json.str (toString r.notion.name)),
+               ("lhs", Json.str s!"reverse-mathlib:{r.lhs.name}"),
+               ("rhs", Json.str s!"reverse-mathlib:{r.rhs.name}")]),
             ("degree", Json.str r.degree.tag),
             ("status", Json.str r.status.tag),
             ("theorem", optStrJson r.theoremName?),

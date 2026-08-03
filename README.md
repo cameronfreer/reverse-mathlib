@@ -14,7 +14,7 @@ particular proof takes, which stronger ambient resources make a standard or eleg
 transformation possible, what the statement's presentation supplies, and what witnesses,
 oracle behavior, or quantitative data the proof produces.
 
-> **Today it certifies exactly two ω-model facts, and nothing over RCA₀ itself.** The
+> **Today it certifies exactly two ω-model facts — and no all-model or syntactic object-language RCA₀ result.** The
 > registry pins `WKLω ⇔ EFILCω` and `EFILCω → Hallω`, each kernel-checked over **every
 > Turing ideal**; the identification of Turing ideals with the ω-models of RCA₀ is
 > literature-backed, with object-syntax adequacy pending; and no `RCA₀ ⊢ …` turnstile
@@ -34,8 +34,9 @@ oracle behavior, or quantitative data the proof produces.
   reverse mathematics, and the assurance routes toward genuine `RCA₀ ⊢ …` results.
 - **[ROADMAP.md](ROADMAP.md)** — Simpson as the vertical theorem spine, RMZoo as the
   horizontal principle graph, the strict-RM and quantitative tracks, and the issue tranches.
-- **Live zoo**: <https://cameronfreer.github.io/reverse-mathlib/> — the ambient-factorization
-  graph, the catalog, and the canonical
+- **Live atlas**: <https://cameronfreer.github.io/reverse-mathlib/> — the evidence atlas:
+  certified semantic facts, the ambient-factorization graph, imported reductions, corpus
+  audits, and the canonical
   [`catalog.direct.json`](https://cameronfreer.github.io/reverse-mathlib/catalog.direct.json).
 
 ## What exists today
