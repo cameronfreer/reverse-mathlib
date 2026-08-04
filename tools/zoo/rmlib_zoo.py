@@ -268,6 +268,12 @@ def cmd_check(args: argparse.Namespace) -> None:
             elif len(notions) != 1:
                 problems.append("mixed-notion merged edge must carry the explicit "
                                 "strongImpliesOrdinary weakening annotation")
+            want_status = ("importedChecked"
+                           if fwd["status"] == "importedChecked"
+                           and rev["status"] == "importedChecked" else "reported")
+            if ed.get("status") != want_status:
+                problems.append("merged edge status must be derived from both premises "
+                                "(importedChecked only when both directions are)")
     for ed in iv["edges"]:
         if ed["family"] != "importedReduction":
             problems.append("imported-reductions view mixes families")
@@ -557,15 +563,20 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
 
     def legend_html() -> str:
         def arrow(stroke: str, width: str, dash: str = "", head: str = "arrow",
-                  both: bool = False) -> str:
+                  both: bool = False, open_head: bool = False,
+                  open_tail: bool = False) -> str:
             d = f' stroke-dasharray="{dash}"' if dash else ""
-            left = ('<path d="M8 1 L1 5 L8 9 z" fill="#444"/>' if both else "")
+            tail_style = ('fill="none" stroke="#444" stroke-width="1.2"'
+                          if open_tail else 'fill="#444"')
+            left = (f'<path d="M8 1 L1 5 L8 9 z" {tail_style}/>' if both else "")
             if head == "tee":
                 right = ('<line x1="43" y1="0.5" x2="43" y2="9.5" stroke="#444" '
                          'stroke-width="2.5"/>')
                 x2 = "43"
             else:
-                right = '<path d="M38 1 L45 5 L38 9 z" fill="#444"/>'
+                head_style = ('fill="none" stroke="#444" stroke-width="1.2"'
+                              if open_head else 'fill="#444"')
+                right = f'<path d="M38 1 L45 5 L38 9 z" {head_style}/>'
                 x2 = "38"
             x1 = "8" if both else "1"
             return (f'<svg width="46" height="10" viewBox="0 0 46 10" aria-hidden="true">'
@@ -574,7 +585,9 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
         return f"""<div class="legend" role="img" aria-label="Graph legend: solid arrow =
 ambient kernel-checked proof route; bold arrow = certified omega-model fact; bold
 double-headed arrow = certified equivalence; bold arrow ending in a bar = certified
-separation; dashed arrow = imported reduction at a pinned revision">
+separation; dashed arrow = imported reduction at a pinned revision; dashed double-headed
+arrow with one filled and one open head = mutual ordinary reduction where the filled head
+marks the direction also certified strong">
 <span class="lg">{arrow("#444", "1.3")} ambient: kernel-checked proof route (not
 strength)</span>
 <span class="lg">{arrow("#444", "2.8")} ⊨ω: certified ω-model fact</span>
@@ -583,13 +596,15 @@ strength)</span>
 (countermodel)</span>
 <span class="lg">{arrow("#444", "1.6", dash="5 3")} ≤sW / ≤W: imported reduction
 (pinned, external)</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} ≤W both
+ways: filled head also certified strong (≤sW); open head ordinary only</span>
 </div>"""
 
     def projection_section() -> str:
         v = views["concept-projection"]
         panel = graph_panel(
-            "Concept projection", "per-family line styles; derived closure "
-            "deliberately absent", v["comment"], len(v["nodes"]),
+            "Concept projection", "per-family line styles; no transitive closure",
+            v["comment"], len(v["nodes"]),
             view_edge_items(v), len(v["edges"]),
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
             "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
@@ -1008,8 +1023,24 @@ def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[di
             out.append(e)
             seen.add(k)
             continue
+        na, nb = e.get("notion"), other.get("notion")
+        if na and nb and na != nb and {na, nb} != {"strongWeihrauch", "weihrauch"}:
+            # an unknown mixed-notion pair never merges silently — fail open to two
+            # directed edges rather than inventing a weakening rule
+            out.append(e)
+            seen.add(k)
+            continue
         merged = dict(e)
         merged["bidirectional"] = True
+        sa, sb = e.get("status"), other.get("status")
+        if sa or sb:
+            merged["status"] = ("importedChecked"
+                                if sa == "importedChecked" and sb == "importedChecked"
+                                else "reported")
+        if e.get("revision") != other.get("revision"):
+            merged.pop("revision", None)
+        for fld in ("theorem", "external"):
+            merged.pop(fld, None)
         recs = [x for ed in (e, other) for x in
                 ([ed["record"]] if ed.get("record") else []) +
                 ([ed["source"]] if ed.get("source") and "record" not in ed else [])]
@@ -1024,7 +1055,6 @@ def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[di
         certs = (e.get("certificates", []) or []) + (other.get("certificates", []) or [])
         if certs:
             merged["certificates"] = certs
-        na, nb = e.get("notion"), other.get("notion")
         if na and nb and na != nb:
             # ≤sW entails ≤W: the merged double-headed edge is the ordinary notion, and
             # the strong direction is recorded as an explicit weakening — a typed
@@ -1146,12 +1176,11 @@ def build_family_views(catalog: dict) -> dict:
             "nodes": sorted(imp_nodes), "edges": imp_edges},
         "concept-projection": {
             "view": "concept-projection", "family": "mixed-direct-only",
-            "comment": "NONCANONICAL, LOSSY, direct-only projection to concept "
-                       "granularity; every edge keeps family, scope, exact endpoint "
-                       "ids, and status; parallel edges stay separate; derived closure "
-                       "is deliberately absent until edges can carry typed derivation "
-                       "records; missing bridges and unary form claims never render as "
-                       "edges",
+            "comment": "NONCANONICAL, LOSSY projection to concept granularity; every "
+                       "edge keeps family, scope, exact endpoint ids, and status; NO "
+                       "TRANSITIVE CLOSURE — only validated display merges with named "
+                       "premises (antiparallel pairs; the explicit ≤sW ⇒ ≤W weakening); "
+                       "missing bridges and unary form claims never render as edges",
             "nodes": sorted({c["id"].split(":", 1)[-1]
                              for c in catalog.get("concepts", [])}),
             "edges": proj_edges},
@@ -1238,7 +1267,8 @@ def cmd_build(args: argparse.Namespace) -> None:
             shutil.copy(out / "views" / vname / fn, sdir / fn)
     page = site_html(catalog, have_svg, dot_text, view_svgs)
     for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
-                   "noncanonical, lossy, direct-only",
+                   "NONCANONICAL, LOSSY",
+                   "only validated display merges with named premises",
                    "Filtering changes visibility only",
                    "Semantic contexts"):
         if marker not in page:
