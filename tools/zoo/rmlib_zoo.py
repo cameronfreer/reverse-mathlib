@@ -868,7 +868,10 @@ def build_family_views(catalog: dict) -> dict:
         lhs = f["lhs"][0].split(":", 1)[-1]
         rhs = f["rhs"][0].split(":", 1)[-1]
         omega_nodes.update([lhs, rhs])
-        labels = {"equivalence": "⊨ω ⇔", "implication": "⊨ω →",
+        # non-directional labels: the DRAWN arrowheads carry direction (dir=both
+        # for an equivalence, tee for a separation); a textual arrow beside an
+        # edge fights the rendered one, so labels carry only the relation text
+        labels = {"equivalence": "⊨ω", "implication": "⊨ω",
                   # a certified separation: countermodel-witnessed, never an
                   # implication arrow and never part of any closure
                   "nonImplication": "⊭ω"}
@@ -906,7 +909,7 @@ def build_family_views(catalog: dict) -> dict:
     proj_edges = []
     for e in catalog.get("ambientGraph", {}).get("edges", []):
         proj_edges.append({"family": "ambientFactorization",
-                           "label": "→" if e.get("direction") != "exact" else "⇔",
+                           "label": "ambient",
                            "lhsConcept": iface_concept.get(e.get("source"), ""),
                            "rhsConcept": iface_concept.get(e.get("target"), ""),
                            "exactLhs": e.get("source"), "exactRhs": e.get("target"),
