@@ -31,6 +31,21 @@ oracle behavior, or quantitative data the proof produces.
 > presentation bridges named explicitly. Everything else remains ambient Lean
 > factorization: proof-route archaeology, not strength.
 
+**The first program: mining Lean proofs for WKL-shaped compactness routes.**
+reverse-mathlib's first mathematical program mines ordinary Lean proofs for WKL-shaped
+compactness arguments — not to label theorems WKL-equivalent automatically, but to extract
+reusable capabilities whose upper bounds, equivalences, representations, and computational
+content are then certified at explicit scopes. The first extracted capability is EFILC
+(explicit finite inverse-limit compactness, the boundary found inside mathlib's infinite
+Hall proof): certified equivalent to binary-tree WKL at the Turing-ideal ω layer, and
+mutually Weihrauch-reducible with it at the represented-problem layer (one direction
+strong). Countable Hall is presently a downstream upper-bound consumer of that capability
+— not another certified equivalent; its reversal is an audited open question. The REC/WKL
+separation is the program's negative control: the route gates prove it touches none of
+the EFILC machinery, so the capability is a discovered boundary, not a universal
+intermediary. Reversals are sought separately, never inferred from the mined route. This
+is the spine of the project's first chapter, not the ontology of the whole atlas.
+
 *Classify the theorem, preserve the proof, and never confuse the two.*
 
 - **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
