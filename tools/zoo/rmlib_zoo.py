@@ -488,13 +488,13 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
 ambient kernel-checked proof route; bold arrow = certified omega-model fact; bold
 double-headed arrow = certified equivalence; bold arrow ending in a bar = certified
 separation; dashed arrow = imported reduction at a pinned revision">
-<span class="lg">{arrow("#444", "1.3")} ambient — kernel-checked proof route (not
+<span class="lg">{arrow("#444", "1.3")} ambient: kernel-checked proof route (not
 strength)</span>
-<span class="lg">{arrow("#444", "2.8")} ⊨ω — certified ω-model fact</span>
-<span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω — certified equivalence</span>
-<span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω — certified separation
+<span class="lg">{arrow("#444", "2.8")} ⊨ω: certified ω-model fact</span>
+<span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω: certified equivalence</span>
+<span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω: certified separation
 (countermodel)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3")} ≤sW / ≤W — imported reduction
+<span class="lg">{arrow("#444", "1.6", dash="5 3")} ≤sW / ≤W: imported reduction
 (pinned, external)</span>
 </div>"""
 
@@ -807,11 +807,10 @@ details.graphpanel {{ background: #fff; border: 1px solid #e2e2e2;
     padding: 0.6rem 0.9rem; margin: 0.5rem 0; font-size: 0.9rem;
     overflow-wrap: anywhere; }}
 .scount {{ font-size: 0.8rem; color: #666; font-weight: normal; }}
-.legend {{ display: flex; flex-wrap: wrap; gap: 0.35rem 1.4rem; font-size: 0.78rem;
+.legend {{ display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem;
     color: #555; background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
     padding: 0.5rem 0.9rem; margin: 0.5rem 0; }}
-.legend .lg {{ display: inline-flex; align-items: center; gap: 0.45rem;
-    white-space: nowrap; }}
+.legend .lg {{ display: flex; align-items: center; gap: 0.45rem; }}
 .legend svg {{ flex: none; }}
 footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
           border-top: 1px solid #ddd; padding-top: 0.75rem;
