@@ -1192,9 +1192,10 @@ def cmd_build(args: argparse.Namespace) -> None:
                    "Semantic contexts"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
-    if page.count('<div class="legend"') != 2:
+    legend_count = page.count('<div class="legend"')
+    if legend_count != 2:
         sys.exit(f"rmlib-zoo build: expected exactly two legend placements, found "
-                 f"{page.count('<div class=\"legend\"')}")
+                 f"{legend_count}")
     expected_imgs = (1 if have_svg else 0) + len(view_svgs)
     if page.count("<img ") != expected_imgs:
         sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
