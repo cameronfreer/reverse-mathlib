@@ -244,6 +244,23 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"projection edge with forbidden family {ed['family']!r}")
         if not (ed.get("exactLhs") and ed.get("exactRhs") and ed.get("status")):
             problems.append("projection edge missing exact endpoints or status")
+    # closed label sets per family, and no directional glyph may appear in any graph
+    # label: direction is carried by drawn arrowheads only (dir=both / tee), never by
+    # label text — the gate that keeps the Stroop bug from returning
+    LABELS_BY_FAMILY = {"certifiedOmegaFact": {"⊨ω", "⊭ω"},
+                        "importedReduction": {"≤sW", "≤W"},
+                        "ambientFactorization": {"ambient"}}
+    GLYPHS = ("→", "←", "⇒", "⇐", "⇔", "->", "<-", "=>", "<=>")
+    for vname, view in fam_views.items():
+        for ed in view["edges"]:
+            lab = ed.get("label", "")
+            allowed = LABELS_BY_FAMILY.get(ed.get("family"))
+            if allowed is not None and lab not in allowed:
+                problems.append(f"view {vname} edge label {lab!r} outside the closed "
+                                f"label set of family {ed.get('family')!r}")
+            if any(g in lab for g in GLYPHS):
+                problems.append(f"view {vname} edge label {lab!r} contains a directional "
+                                "glyph; direction belongs to drawn arrowheads only")
     for vname, view in fam_views.items():
         vpath = views_dir / vname / "graph.json"
         if not vpath.exists():
