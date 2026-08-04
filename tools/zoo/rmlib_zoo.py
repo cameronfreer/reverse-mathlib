@@ -236,10 +236,38 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append("imported-reductions edges do not cover the records exactly "
                         "once each (antiparallel pairs merge into one bidirectional "
                         "edge carrying both records)")
+    imp_by_id = {x["id"]: x for x in imps}
     for ed in iv["edges"]:
-        if ed.get("bidirectional") and len(ed.get("records", [])) != 2:
-            problems.append("a merged bidirectional imported edge must carry exactly "
-                            "its two source records")
+        if ed.get("bidirectional"):
+            if len(ed.get("records", [])) != 2:
+                problems.append("a merged bidirectional imported edge must carry exactly "
+                                "its two source records")
+                continue
+            fwd = imp_by_id.get(ed.get("forwardRecord"))
+            rev = imp_by_id.get(ed.get("reverseRecord"))
+            if fwd is None or rev is None:
+                problems.append("merged imported edge lacks directional source metadata "
+                                "(forwardRecord/reverseRecord)")
+                continue
+            if (fwd["local"]["lhs"].split(":", 1)[-1] != ed["lhs"]
+                    or fwd["local"]["rhs"].split(":", 1)[-1] != ed["rhs"]
+                    or rev["local"]["lhs"].split(":", 1)[-1] != ed["rhs"]
+                    or rev["local"]["rhs"].split(":", 1)[-1] != ed["lhs"]):
+                problems.append("merged imported edge's directional records do not "
+                                "certify the directions they are attached to")
+            notions = {fwd["local"]["notion"], rev["local"]["notion"]}
+            if ed.get("derivation") == "strongImpliesOrdinary":
+                if notions != {"strongWeihrauch", "weihrauch"}:
+                    problems.append("strongImpliesOrdinary weakening claimed but the "
+                                    "two records are not one strong + one ordinary")
+                strong = fwd if fwd["local"]["notion"] == "strongWeihrauch" else rev
+                want_end = "head" if strong is fwd else "tail"
+                if ed.get("strongEnd") != want_end:
+                    problems.append("merged edge's strongEnd does not point at the "
+                                    "direction certified strong")
+            elif len(notions) != 1:
+                problems.append("mixed-notion merged edge must carry the explicit "
+                                "strongImpliesOrdinary weakening annotation")
     for ed in iv["edges"]:
         if ed["family"] != "importedReduction":
             problems.append("imported-reductions view mixes families")
@@ -318,9 +346,15 @@ def cmd_check(args: argparse.Namespace) -> None:
     ag = catalog.get("ambientGraph", {})
     if ambient_svg.exists():
         svg = ambient_svg.read_text()
+        aedges = ag.get("edges", [])
+        apairs = sum(1 for e in aedges
+                     if (e["target"], e["source"]) in
+                        {(x["source"], x["target"]) for x in aedges}
+                     and e["source"] < e["target"])
         if (svg.count('class="node"') != len(ag.get("nodes", []))
-                or svg.count('class="edge"') != len(ag.get("edges", []))):
-            problems.append("ambient SVG node/edge counts disagree with the catalog graph")
+                or svg.count('class="edge"') != len(aedges) - apairs):
+            problems.append("ambient SVG node/edge counts disagree with the catalog "
+                            "graph (antiparallel pairs draw once, double-headed)")
     # corpus section: a separate family with stable ids, referential integrity, and the
     # fail-closed display statuses (claims reported, bridges missing)
     corpus = catalog.get("corpus", {})
@@ -981,6 +1015,10 @@ def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[di
                 ([ed["source"]] if ed.get("source") and "record" not in ed else [])]
         if recs:
             merged["records"] = recs
+            # directional source metadata: which record certifies which drawn direction
+            if e.get("record") and other.get("record"):
+                merged["forwardRecord"] = e["record"]
+                merged["reverseRecord"] = other["record"]
             merged.pop("record", None)
             merged.pop("source", None)
         certs = (e.get("certificates", []) or []) + (other.get("certificates", []) or [])
