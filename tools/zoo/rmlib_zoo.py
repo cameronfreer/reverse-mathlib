@@ -470,6 +470,34 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
 
     views = build_family_views(catalog)
 
+    def legend_html() -> str:
+        def arrow(stroke: str, width: str, dash: str = "", head: str = "arrow",
+                  both: bool = False) -> str:
+            d = f' stroke-dasharray="{dash}"' if dash else ""
+            left = ('<path d="M8 1 L1 5 L8 9 z" fill="#444"/>' if both else "")
+            if head == "tee":
+                right = ('<line x1="43" y1="0.5" x2="43" y2="9.5" stroke="#444" '
+                         'stroke-width="2.5"/>')
+            else:
+                right = '<path d="M38 1 L45 5 L38 9 z" fill="#444"/>'
+            x1 = "8" if both else "1"
+            return (f'<svg width="46" height="10" viewBox="0 0 46 10" aria-hidden="true">'
+                    f'<line x1="{x1}" y1="5" x2="38" y2="5" stroke="{stroke}" '
+                    f'stroke-width="{width}"{d}/>{left}{right}</svg>')
+        return f"""<div class="legend" role="img" aria-label="Graph legend: solid arrow =
+ambient kernel-checked proof route; bold arrow = certified omega-model fact; bold
+double-headed arrow = certified equivalence; bold arrow ending in a bar = certified
+separation; dashed arrow = imported reduction at a pinned revision">
+<span class="lg">{arrow("#444", "1.3")} ambient — kernel-checked proof route (not
+strength)</span>
+<span class="lg">{arrow("#444", "2.8")} ⊨ω — certified ω-model fact</span>
+<span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω — certified equivalence</span>
+<span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω — certified separation
+(countermodel)</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3")} ≤sW / ≤W — imported reduction
+(pinned, external)</span>
+</div>"""
+
     def projection_section() -> str:
         v = views["concept-projection"]
         panel = graph_panel(
@@ -483,7 +511,7 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
                 f'granularity for orientation only; the per-family graphs below are '
-                f'canonical.</em></p>\n{panel}')
+                f'canonical.</em></p>\n{legend_html()}\n{panel}')
 
     def canonical_graphs_section() -> str:
         ag = catalog.get("ambientGraph", {})
@@ -511,7 +539,8 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                 len(v["edges"]), f"{vname}.svg" if vname in view_svgs else None,
                 f"views/{vname}/graph.dot", f"views/{vname}/graph.json"))
         return ('<h2 id="graphs">Canonical graphs (one per evidence family — never '
-                'flattened into one)</h2>\n' + "\n".join(panels))
+                'flattened into one)</h2>\n' + legend_html() + "\n"
+                + "\n".join(panels))
 
     def facts_section() -> str:
         facts = [f_ for f_ in catalog.get("facts", []) if f_.get("evidence")]
@@ -778,6 +807,12 @@ details.graphpanel {{ background: #fff; border: 1px solid #e2e2e2;
     padding: 0.6rem 0.9rem; margin: 0.5rem 0; font-size: 0.9rem;
     overflow-wrap: anywhere; }}
 .scount {{ font-size: 0.8rem; color: #666; font-weight: normal; }}
+.legend {{ display: flex; flex-wrap: wrap; gap: 0.35rem 1.4rem; font-size: 0.78rem;
+    color: #555; background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+    padding: 0.5rem 0.9rem; margin: 0.5rem 0; }}
+.legend .lg {{ display: inline-flex; align-items: center; gap: 0.45rem;
+    white-space: nowrap; }}
+.legend svg {{ flex: none; }}
 footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
           border-top: 1px solid #ddd; padding-top: 0.75rem;
           overflow-wrap: anywhere; }}
@@ -1044,7 +1079,8 @@ def cmd_build(args: argparse.Namespace) -> None:
     for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
                    "noncanonical, lossy, direct-only",
                    "Filtering changes visibility only",
-                   "Semantic contexts"):
+                   "Semantic contexts",
+                   'aria-label="Graph legend'):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
     expected_imgs = (1 if have_svg else 0) + len(view_svgs)
