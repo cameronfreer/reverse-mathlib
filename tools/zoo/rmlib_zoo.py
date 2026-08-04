@@ -229,8 +229,17 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append("a certified separation must render as exactly the ⊭ω edge "
                             "(and nothing else may use that label)")
     iv = fam_views["imported-reductions"]
-    if len(iv["edges"]) != len(catalog.get("importedReductions", [])):
-        problems.append("imported-reductions edges do not correspond 1:1 to records")
+    iv_records = []
+    for ed in iv["edges"]:
+        iv_records += ed.get("records", [ed.get("record")])
+    if sorted(iv_records) != sorted(x["id"] for x in imps):
+        problems.append("imported-reductions edges do not cover the records exactly "
+                        "once each (antiparallel pairs merge into one bidirectional "
+                        "edge carrying both records)")
+    for ed in iv["edges"]:
+        if ed.get("bidirectional") and len(ed.get("records", [])) != 2:
+            problems.append("a merged bidirectional imported edge must carry exactly "
+                            "its two source records")
     for ed in iv["edges"]:
         if ed["family"] != "importedReduction":
             problems.append("imported-reductions view mixes families")
@@ -238,11 +247,18 @@ def cmd_check(args: argparse.Namespace) -> None:
             if ed[side] not in uprobs:
                 problems.append(f"imported edge endpoint {ed[side]!r} not a uniform problem")
     pv = fam_views["concept-projection"]
-    expected = (len(catalog.get("ambientGraph", {}).get("edges", []))
+    amb_edges = catalog.get("ambientGraph", {}).get("edges", [])
+    amb_pair_count = sum(1 for e in amb_edges
+                         if (e["target"], e["source"]) in
+                            {(x["source"], x["target"]) for x in amb_edges}
+                         and e["source"] < e["target"])
+    expected = ((len(amb_edges) - amb_pair_count)
                 + len(ov["edges"]) + len(iv["edges"]))
     if len(pv["edges"]) != expected:
-        problems.append("concept projection must contain exactly the direct edges — no "
-                        "derived closure, no bridges, no unary claims")
+        problems.append("concept projection must contain exactly the direct edges "
+                        "(antiparallel pairs merged with both sources) — no derived "
+                        "closure beyond the explicit weakening annotation, no bridges, "
+                        "no unary claims")
     allowed = {"ambientFactorization", "certifiedOmegaFact", "importedReduction"}
     for ed in pv["edges"]:
         if ed["family"] not in allowed:
@@ -379,10 +395,27 @@ def to_dot(catalog: dict) -> str:
         label = dot_escape(n["display"]["label"])
         lines.append(f'  "{dot_escape(n["id"])}" [label="{label}", '
                      f'tooltip="{dot_escape(n["id"])}"];')
+    # antiparallel pairs (exact-direction relative certificates) draw once, double-headed,
+    # with BOTH certificates in the tooltip — a display merge, records stay canonical
+    pairs = {(e["source"], e["target"]): e for e in graph["edges"]}
+    seen = set()
     for e in graph["edges"]:
+        k = (e["source"], e["target"])
+        if k in seen:
+            continue
+        rk = (k[1], k[0])
+        other = pairs.get(rk)
+        if other is not None and rk not in seen and k != rk:
+            tooltip = f'{e["certificate"]} / {other["certificate"]}'
+            extra = ", dir=both"
+            seen.add(rk)
+        else:
+            tooltip = e["certificate"]
+            extra = ""
+        seen.add(k)
         lines.append(f'  "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
                      f'[label="{AMBIENT_EDGE_LABEL}", '
-                     f'tooltip="{dot_escape(e["certificate"])}"];')
+                     f'tooltip="{dot_escape(tooltip)}"{extra}];')
     lines.append("}")
     return "\n".join(lines) + "\n"
 
@@ -468,6 +501,11 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                                           "scope", "notion", "status", "revision",
                                           "theorem", "exactLhs", "exactRhs")
                 if ed.get(k))
+            if ed.get("records"):
+                detail += "; records (both directions): " + ", ".join(ed["records"])
+            if ed.get("derivation") == "strongImpliesOrdinary":
+                detail += ("; one direction certified strong (≤sW) and shown here at "
+                           "the ordinary notion by the explicit weakening ≤sW ⇒ ≤W")
             certs = ", ".join(ed.get("certificates", []))
             if certs:
                 detail += f"; certificates: {certs}"
@@ -915,6 +953,51 @@ function applyFilter() {{
 """
 
 
+
+def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[dict]:
+    """Merge antiparallel edge pairs WITHIN one family into a single bidirectional edge
+    that carries BOTH source records — a display merge with full provenance, never a
+    silent closure. For a mixed strong/ordinary reduction pair the merged edge is labeled
+    at the ordinary notion and the strong direction is annotated with the explicit
+    weakening rule (strongImpliesOrdinary)."""
+    by_pair = {(e[src_key], e[tgt_key]): e for e in edges}
+    out, seen = [], set()
+    for e in edges:
+        k = (e[src_key], e[tgt_key])
+        if k in seen:
+            continue
+        rk = (k[1], k[0])
+        other = by_pair.get(rk)
+        if other is None or rk in seen or k == rk:
+            out.append(e)
+            seen.add(k)
+            continue
+        merged = dict(e)
+        merged["bidirectional"] = True
+        recs = [x for ed in (e, other) for x in
+                ([ed["record"]] if ed.get("record") else []) +
+                ([ed["source"]] if ed.get("source") and "record" not in ed else [])]
+        if recs:
+            merged["records"] = recs
+            merged.pop("record", None)
+            merged.pop("source", None)
+        certs = (e.get("certificates", []) or []) + (other.get("certificates", []) or [])
+        if certs:
+            merged["certificates"] = certs
+        na, nb = e.get("notion"), other.get("notion")
+        if na and nb and na != nb:
+            # ≤sW entails ≤W: the merged double-headed edge is the ordinary notion, and
+            # the strong direction is recorded as an explicit weakening — a typed
+            # derivation annotation, never an undocumented inference
+            merged["notion"] = "weihrauch"
+            merged["label"] = "≤W"
+            merged["derivation"] = "strongImpliesOrdinary"
+        seen.add(k)
+        seen.add(rk)
+        out.append(merged)
+    return out
+
+
 def build_family_views(catalog: dict) -> dict:
     """The per-family direct-evidence views. Every edge corresponds to exactly one source
     record; families never mix inside a view; derived closure is deliberately absent
@@ -959,6 +1042,7 @@ def build_family_views(catalog: dict) -> dict:
             "lhs": lhs, "rhs": rhs, "repository": r["repository"],
             "revision": r["revision"], "theorem": r.get("theorem"),
             "external": r["external"]})
+    imp_edges = merge_antiparallel(imp_edges, "lhs", "rhs")
     # direct-only concept projection: noncanonical and lossy by construction; every
     # edge keeps its family, scope/notion, exact endpoint ids, and evidence status;
     # parallel edges stay separate; bridges and unary claims never appear.
@@ -971,13 +1055,16 @@ def build_family_views(catalog: dict) -> dict:
         c = problems.get(pid, {}).get("concept", "")
         return c.split(":", 1)[-1] if c else ""
     proj_edges = []
+    amb_proj = []
     for e in catalog.get("ambientGraph", {}).get("edges", []):
-        proj_edges.append({"family": "ambientFactorization",
+        amb_proj.append({"family": "ambientFactorization",
                            "label": "ambient",
                            "lhsConcept": iface_concept.get(e.get("source"), ""),
                            "rhsConcept": iface_concept.get(e.get("target"), ""),
                            "exactLhs": e.get("source"), "exactRhs": e.get("target"),
+                           "certificates": [e.get("certificate")],
                            "status": "kernelChecked", "scope": "ambientFactorization"})
+    proj_edges.extend(merge_antiparallel(amb_proj, "exactLhs", "exactRhs"))
     for e in omega_edges:
         proj_edges.append({"family": "certifiedOmegaFact", "label": e["label"],
                            "kind": e["kind"],
@@ -987,12 +1074,19 @@ def build_family_views(catalog: dict) -> dict:
                            "status": "kernelChecked", "scope": "omegaModels",
                            "source": e["fact"], "bidirectional": e["bidirectional"]})
     for e in imp_edges:
-        proj_edges.append({"family": "importedReduction", "label": e["label"],
-                           "lhsConcept": concept_of_problem(e["lhs"]),
-                           "rhsConcept": concept_of_problem(e["rhs"]),
-                           "exactLhs": e["lhs"], "exactRhs": e["rhs"],
-                           "status": e["status"], "scope": e["notion"],
-                           "source": e["record"]})
+        pe = {"family": "importedReduction", "label": e["label"],
+              "lhsConcept": concept_of_problem(e["lhs"]),
+              "rhsConcept": concept_of_problem(e["rhs"]),
+              "exactLhs": e["lhs"], "exactRhs": e["rhs"],
+              "status": e["status"], "scope": e["notion"]}
+        if e.get("records"):
+            pe["records"] = e["records"]
+            pe["bidirectional"] = True
+            if e.get("derivation"):
+                pe["derivation"] = e["derivation"]
+        else:
+            pe["source"] = e["record"]
+        proj_edges.append(pe)
     return {
         "omega-facts": {
             "view": "omega-facts", "family": "certifiedOmegaFact",
@@ -1035,7 +1129,11 @@ def view_dot(name: str, view: dict) -> str:
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
         if e.get("kind") == "nonImplication":
-            extra += ", arrowhead=tee"
+            # the separation symbol sits at the tee end, next to the blocked head
+            lines.append(f'  "{src}" -> "{tgt}" '
+                         f'[headlabel="{e.get("label", "")}", labeldistance=2.2, '
+                         f'{style}{extra}, arrowhead=tee];')
+            continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                      f'{style}{extra}];')
     lines.append('}')
