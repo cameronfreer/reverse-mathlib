@@ -504,8 +504,10 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
             if ed.get("records"):
                 detail += "; records (both directions): " + ", ".join(ed["records"])
             if ed.get("derivation") == "strongImpliesOrdinary":
-                detail += ("; one direction certified strong (≤sW) and shown here at "
-                           "the ordinary notion by the explicit weakening ≤sW ⇒ ≤W")
+                detail += ("; one direction certified strong (≤sW) — the filled "
+                           "arrowhead — and shown here at the ordinary notion by the "
+                           "explicit weakening ≤sW ⇒ ≤W; the open arrowhead direction "
+                           "is certified ordinary only")
             certs = ", ".join(ed.get("certificates", []))
             if certs:
                 detail += f"; certificates: {certs}"
@@ -988,10 +990,13 @@ def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[di
         if na and nb and na != nb:
             # ≤sW entails ≤W: the merged double-headed edge is the ordinary notion, and
             # the strong direction is recorded as an explicit weakening — a typed
-            # derivation annotation, never an undocumented inference
+            # derivation annotation, never an undocumented inference. The strong
+            # direction stays visible in the drawn geometry: filled arrowhead on the
+            # strong direction, open arrowhead on the ordinary-only one.
             merged["notion"] = "weihrauch"
             merged["label"] = "≤W"
             merged["derivation"] = "strongImpliesOrdinary"
+            merged["strongEnd"] = "head" if na == "strongWeihrauch" else "tail"
         seen.add(k)
         seen.add(rk)
         out.append(merged)
@@ -1084,6 +1089,8 @@ def build_family_views(catalog: dict) -> dict:
             pe["bidirectional"] = True
             if e.get("derivation"):
                 pe["derivation"] = e["derivation"]
+            if e.get("strongEnd"):
+                pe["strongEnd"] = e["strongEnd"]
         else:
             pe["source"] = e["record"]
         proj_edges.append(pe)
@@ -1128,11 +1135,17 @@ def view_dot(name: str, view: dict) -> str:
         src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
+        if e.get("strongEnd") == "head":
+            extra += ", arrowhead=normal, arrowtail=onormal"
+        elif e.get("strongEnd") == "tail":
+            extra += ", arrowhead=onormal, arrowtail=normal"
         if e.get("kind") == "nonImplication":
             # the separation symbol sits at the tee end, next to the blocked head
+            # labeldistance is a multiplier from the head: keep the symbol tight
+            # against the tee, angled below the edge line away from neighbors
             lines.append(f'  "{src}" -> "{tgt}" '
-                         f'[headlabel="{e.get("label", "")}", labeldistance=2.2, '
-                         f'{style}{extra}, arrowhead=tee];')
+                         f'[headlabel="{e.get("label", "")}", labeldistance=1.1, '
+                         f'labelangle=-40, {style}{extra}, arrowhead=tee];')
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                      f'{style}{extra}];')
