@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import argparse
 import html
+import re
 import json
 import shutil
 import subprocess
@@ -35,6 +36,10 @@ import sys
 from pathlib import Path
 
 SCHEMA_ID = "reverse-mathlib.catalog/v3"
+# The one label the canonical ambient graph carries; shared so the label gate covers
+# to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
+# labels — direction belongs to drawn arrowheads only.
+AMBIENT_EDGE_LABEL = "ambient, kernel checked"
 
 
 def repo_root() -> Path:
@@ -251,6 +256,12 @@ def cmd_check(args: argparse.Namespace) -> None:
                         "importedReduction": {"≤sW", "≤W"},
                         "ambientFactorization": {"ambient"}}
     GLYPHS = ("→", "←", "⇒", "⇐", "⇔", "->", "<-", "=>", "<=>")
+    for dot_name, dot_text_ in ([("ambient-factorizations", to_dot(catalog))]
+                                + [(vn, view_dot(vn, vw)) for vn, vw in fam_views.items()]):
+        for lab in re.findall(r'label="([^"]*)"', dot_text_):
+            if any(g in lab for g in GLYPHS):
+                problems.append(f"DOT {dot_name} label {lab!r} contains a directional "
+                                "glyph; direction belongs to drawn arrowheads only")
     for vname, view in fam_views.items():
         for ed in view["edges"]:
             lab = ed.get("label", "")
@@ -370,7 +381,7 @@ def to_dot(catalog: dict) -> str:
                      f'tooltip="{dot_escape(n["id"])}"];')
     for e in graph["edges"]:
         lines.append(f'  "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
-                     f'[label="ambient, kernel checked", '
+                     f'[label="{AMBIENT_EDGE_LABEL}", '
                      f'tooltip="{dot_escape(e["certificate"])}"];')
     lines.append("}")
     return "\n".join(lines) + "\n"
@@ -478,11 +489,13 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
             if head == "tee":
                 right = ('<line x1="43" y1="0.5" x2="43" y2="9.5" stroke="#444" '
                          'stroke-width="2.5"/>')
+                x2 = "43"
             else:
                 right = '<path d="M38 1 L45 5 L38 9 z" fill="#444"/>'
+                x2 = "38"
             x1 = "8" if both else "1"
             return (f'<svg width="46" height="10" viewBox="0 0 46 10" aria-hidden="true">'
-                    f'<line x1="{x1}" y1="5" x2="38" y2="5" stroke="{stroke}" '
+                    f'<line x1="{x1}" y1="5" x2="{x2}" y2="5" stroke="{stroke}" '
                     f'stroke-width="{width}"{d}/>{left}{right}</svg>')
         return f"""<div class="legend" role="img" aria-label="Graph legend: solid arrow =
 ambient kernel-checked proof route; bold arrow = certified omega-model fact; bold
@@ -1078,10 +1091,12 @@ def cmd_build(args: argparse.Namespace) -> None:
     for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
                    "noncanonical, lossy, direct-only",
                    "Filtering changes visibility only",
-                   "Semantic contexts",
-                   'aria-label="Graph legend'):
+                   "Semantic contexts"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
+    if page.count('<div class="legend"') != 2:
+        sys.exit(f"rmlib-zoo build: expected exactly two legend placements, found "
+                 f"{page.count('<div class=\"legend\"')}")
     expected_imgs = (1 if have_svg else 0) + len(view_svgs)
     if page.count("<img ") != expected_imgs:
         sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
