@@ -585,19 +585,22 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
         return f"""<div class="legend" role="img" aria-label="Graph legend: solid arrow =
 ambient kernel-checked proof route; bold arrow = certified omega-model fact; bold
 double-headed arrow = certified equivalence; bold arrow ending in a bar = certified
-separation; dashed arrow = imported reduction at a pinned revision; dashed double-headed
-arrow with one filled and one open head = mutual ordinary reduction where the filled head
-marks the direction also certified strong">
+separation; dashed arrows = imported reductions at pinned revisions, filled head
+certified strong, open head certified ordinary only; dashed double-headed arrow with one
+filled and one open head = mutual ordinary reduction where the filled head marks the
+direction also certified strong">
 <span class="lg">{arrow("#444", "1.3")} ambient: kernel-checked proof route (not
 strength)</span>
 <span class="lg">{arrow("#444", "2.8")} ⊨ω: certified ω-model fact</span>
 <span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω: certified equivalence</span>
 <span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω: certified separation
 (countermodel)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3")} ≤sW / ≤W: imported reduction
-(pinned, external)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} ≤W both
-ways: filled head also certified strong (≤sW); open head ordinary only</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3")} imported ≤sW reduction: filled
+head (pinned, external)</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", open_head=True)} imported ≤W
+reduction: open head (pinned, external)</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} mutual
+≤W: the filled end is additionally certified ≤sW; the open end is ordinary-only</span>
 </div>"""
 
     def projection_section() -> str:
@@ -1206,13 +1209,19 @@ def view_dot(name: str, view: dict) -> str:
             extra += ", arrowhead=normal, arrowtail=onormal"
         elif e.get("strongEnd") == "tail":
             extra += ", arrowhead=onormal, arrowtail=normal"
+        elif e.get("family") == "importedReduction" and e.get("notion"):
+            # family-wide convention, single edges included: filled head = certified
+            # strong (≤sW); open head = certified ordinary only (≤W)
+            hd = "normal" if e["notion"] == "strongWeihrauch" else "onormal"
+            extra += f", arrowhead={hd}"
+            if e.get("bidirectional"):
+                extra += f", arrowtail={hd}"
         if e.get("kind") == "nonImplication":
-            # the separation symbol sits at the tee end, next to the blocked head
-            # labeldistance is a multiplier from the head: keep the symbol tight
-            # against the tee, angled below the edge line away from neighbors
-            lines.append(f'  "{src}" -> "{tgt}" '
-                         f'[headlabel="{e.get("label", "")}", labeldistance=1.1, '
-                         f'labelangle=-40, {style}{extra}, arrowhead=tee];')
+            # ordinary centered label: the relation holds along the whole separation
+            # edge; the tee alone marks the blocked direction. Crowding is a
+            # spacing/routing concern, never solved by attaching the symbol to the tee.
+            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
+                         f'{style}{extra}, arrowhead=tee];')
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                      f'{style}{extra}];')
