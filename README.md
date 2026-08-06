@@ -80,6 +80,33 @@ is the spine of the project's first chapter, not the ontology of the whole atlas
 - **A deterministic exporter and site**: canonical JSON extracted from the elaborated
   environment's persistent extension state, rendered to the Pages site on every push.
 
+## External checked evidence: the ω-semantics bridge
+
+[reverse-mathlib-foundation](https://github.com/cameronfreer/reverse-mathlib-foundation)
+is an **external checked bridge** between this repository and
+[FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
+a separate workspace pinning exact revisions of both, proving that the frozen ω-layer
+objects here are the models and satisfaction relations of genuine L₂ sentences. It
+provides, as kernel-checked theorems with typed export records:
+
+- **one-way context realization** — every Turing ideal satisfies an explicit semantic
+  RCA₀ theory on ω-structures (realization evidence only; no converse claim);
+- **unconditional exact statement adapters** — closed sentences whose satisfaction, for
+  an *arbitrary* second-order part, is exactly the frozen `WeakKonigAt` / `EFILCAt` /
+  `CountableHallAt`;
+- **checked ω-model countermodels** — the recursive-set structure satisfies the RCA₀
+  theory and falsifies the ŴKL and EFILC sentences (via the Kleene tree certified
+  here);
+- **calculus-relative nonderivability** — a bridge-local Henkin-safe calculus, sound
+  over all Henkin structures, in which the RCA₀ theory does not derive the ŴKL
+  sentence. Explicitly *not* an unqualified standard-calculus RCA₀ ⊬ WKL: the
+  comparison with a pinned standard proof system is recorded as pending.
+
+None of this changes the certified scoreboard here — adequacy evidence upgrades the
+interpretation of existing facts, it is not another mathematical leaf — and the bridge
+is not yet ingested: ingestion as versioned, pinned JSON evidence is a planned separate
+tranche.
+
 ## Structure
 
 - `ReverseMathlib/` — mathematical root: `Standard/` principle statements, `Slice/` relative
