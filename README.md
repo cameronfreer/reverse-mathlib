@@ -122,7 +122,7 @@ tranche.
 
 ## Building
 
-Pinned to Lean `v4.32.0` and the matching mathlib revision.
+Pinned to Lean `v4.32.2` and the matching mathlib revision.
 
 ```sh
 lake exe cache get
