@@ -85,9 +85,9 @@ is the spine of the project's first chapter, not the ontology of the whole atlas
 [reverse-mathlib-foundation](https://github.com/cameronfreer/reverse-mathlib-foundation)
 is an **external checked bridge** between this repository and
 [FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
-a separate workspace pinning exact revisions of both, proving that the frozen ω-layer
-objects here are the models and satisfaction relations of genuine L₂ sentences. It
-provides, as kernel-checked theorems with typed export records:
+a separate workspace pinning exact revisions of both and relating the frozen ω-layer
+capabilities here to explicit L₂ sentences evaluated with Foundation's Tarski semantics.
+It provides, as kernel-checked theorems with typed export records:
 
 - **one-way context realization** — every Turing ideal satisfies an explicit semantic
   RCA₀ theory on ω-structures (realization evidence only; no converse claim);
