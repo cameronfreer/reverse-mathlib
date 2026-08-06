@@ -1724,35 +1724,64 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
 
 /-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/2' (this reader accepts 'rmlib-bridge-evidence/1'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json"
+rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: record 'fix.wrongkind': alias rmFoundationBridge:"rca0/turingIdealOmega" resolves to semanticContext 'rca0.turingIdealOmega' — statement adapters target registered statement variants only, never objects of another kind -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/wrong_kind_alias.json"
+rm_ingest_bridge_evidence "fixtures/backend/wrong_kind_alias.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: record 'fix.anchor': semantic anchor mismatch — resolved context 'rca0.turingIdealOmega' has contextDecl 'ReverseMathlib.Omega.IsTuringIdeal', but the record declares 'ReverseMathlib.Omega.WeakKonigAt' -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/anchor_mismatch.json"
+rm_ingest_bridge_evidence "fixtures/backend/anchor_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: record 'fix.brokenref': calculusRecord 'fix.nonexistent' does not name a record in this file -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/broken_reference.json"
+rm_ingest_bridge_evidence "fixtures/backend/broken_reference.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: duplicate record id 'fix.dup' -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/duplicate_id.json"
+rm_ingest_bridge_evidence "fixtures/backend/duplicate_id.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: fingerprint coverage mismatch — the covered declaration sets differ (7 required locally, 0 in file; 7 missing, first 'ReverseMathlib.Omega.IsTuringIdeal'; 0 extra); an under- or over-covered manifest is rejected whole -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/coverage_mismatch.json"
+rm_ingest_bridge_evidence "fixtures/backend/coverage_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: fingerprint mismatch at 'ReverseMathlib.Omega.IsTuringIdeal' — the backend's checked interface differs from this workspace's declaration; revision drift is acceptable only when the semantic interface is unchanged -/
 #guard_msgs in
-rm_ingest_bridge_evidence "fixtures/backend/payload_mismatch.json"
+rm_ingest_bridge_evidence "fixtures/backend/payload_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: unknown fingerprint schema 'lean-interface-expr/2' (this reader accepts 'lean-interface-expr/1') -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/unknown_fp_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: source revision: 'abc123' is not a full lowercase 40-hex revision -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/malformed_revision.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: artifact revision: 'NOTHEX' is not a full lowercase 40-hex revision -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/coverage_mismatch.json" artifactRevision := "NOTHEX"
+
+/-- error: backend evidence: record 'fix.unktag': unknown direction 'backward' (this family records one-way realizations; only 'forward' exists) -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/unknown_tag.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.refkind': calculusRecord 'fix.adapterA' has kind 'statementAdapter', not calculusIdentity -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/ref_kind_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.refsent': sentence 'Fix.otherSentence' disagrees with referenced adapter's sentence 'Fix.wklSentence' -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/ref_sentence_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+-- Downgrade paths: mathlib mismatch and empty/malformed coordinates ingest as
+-- `reported` with visible reasons — never hard failures, never `backendChecked`.
+rm_ingest_bridge_evidence "fixtures/backend/mathlib_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+rm_ingest_bridge_evidence "fixtures/backend/empty_coordinates.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 -- The downgrade path: a toolchain gap ingests as `reported` with a visible reason —
 -- never a hard failure of the repository, never `backendChecked`.
-rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json"
+rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 #eval show CoreM Unit from do
   let env ← getEnv
@@ -1762,6 +1791,31 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json"
   check (e.status == .reported) "toolchain gap downgrades to reported"
   check (((e.downgraded?.getD "").splitOn "toolchain mismatch").length > 1)
     "downgrade reason is visible and names the toolchain gap"
+  let some m := entries.find? (·.id == "fix.mlmismatch")
+    | throwError "mathlib-mismatch fixture record not ingested"
+  check (m.status == .reported) "mathlib gap downgrades to reported"
+  check (((m.downgraded?.getD "").splitOn "mathlib revision mismatch").length > 1)
+    "downgrade reason names the mathlib gap"
+  let some c := entries.find? (·.id == "fix.emptycoord")
+    | throwError "empty-coordinates fixture record not ingested"
+  check (c.status == .reported) "empty coordinates downgrade to reported"
+  check (((c.downgraded?.getD "").splitOn "empty checking audit").length > 1)
+    "downgrade reason names the empty audit"
+  check (((c.downgraded?.getD "").splitOn "missing theorem").length > 1)
+    "empty theorem counts as missing"
+  check (c.theoremName?.isNone) "empty theorem string is normalized to none"
+  -- both-revisions provenance on the production artifact
+  let prodEntries := entries.filter
+    (·.repository == "cameronfreer/reverse-mathlib-foundation")
+  for e in prodEntries do
+    check (e.revision == "39ec48b16a25d1380b09dd3dfc2818e42bdfbbfb")
+      "production export/check revision is the artifact's embedded revision"
+    check (e.artifactRevision == "ad99bc5bda3e5abfef6093ce32ae4c3032bea975")
+      "production artifact-publishing revision is stored distinctly"
+    check (e.foundationRevision == "9800e78127294798496adc6e37c8b9ded637d93a")
+      "Foundation pin preserved through ingestion"
+    check (e.mechanism? == some "leanKernel" && e.audit?.isSome)
+      "structured checking data preserved through ingestion"
 
 -- Backend ingestion (production + fixtures) adds no certified fact: the scoreboard is
 -- byte-identical to the pre-ingestion check above.

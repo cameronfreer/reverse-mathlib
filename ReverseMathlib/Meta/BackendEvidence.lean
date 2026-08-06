@@ -122,15 +122,36 @@ structure BackendEvidenceEntry where
   ns : ExternalNamespaceId
   /-- The source repository (`owner/repo`). -/
   repository : String
-  /-- The backend export revision (40-hex). -/
+  /-- The backend **export/check** revision (40-hex): the commit at which the emitter
+  ran and the artifact's fingerprints were checked — the artifact's embedded
+  `source.revision`. -/
   revision : String
+  /-- The backend **artifact-publishing** revision (40-hex): the commit whose tree
+  contains this artifact byte-for-byte. Distinct from `revision` by self-reference:
+  the artifact cannot be committed at the revision it records. Supplied externally at
+  the ingestion site. -/
+  artifactRevision : String
+  /-- The repository-relative path of the vendored artifact, linking the canonical
+  export back to the raw ingested bytes. -/
+  artifactPath : String
   /-- The backend's checked revision of this repository (40-hex). -/
   rmRevision : String
+  /-- The backend's Foundation dependency revision (40-hex). -/
+  foundationRevision : String
+  /-- The backend's mathlib dependency revision (40-hex). -/
+  mathlibRevision : String
   /-- The backend toolchain. -/
   toolchain : String
+  /-- The declared checking mechanism, when validly supplied. -/
+  mechanism? : Option String
+  /-- The declared audit entry point, when validly supplied. -/
+  audit? : Option String
+  /-- The declared allowed-axiom list, as supplied. -/
+  allowedAxioms : Array String
   /-- The exported record constant on the backend side. -/
   exportName : String
-  /-- The backing theorem, when the kind carries one. -/
+  /-- The backing theorem, when the kind carries one (empty strings count as
+  missing). -/
   theoremName? : Option String
   /-- The validated trust status. -/
   status : BackendStatus
@@ -189,28 +210,67 @@ checking in this project's sense. -/
 private def standardAxioms : List String :=
   ["Classical.choice", "Quot.sound", "propext"]
 
-/-- Incomplete-checking-coordinate reasons (downgrade, never hard failure): missing
-checking block, unrecognized mechanism, missing audit, or a nonstandard axiom list. -/
-private def checkingReasons (json : Json) : Array String := Id.run do
+/-- The parsed checking block plus its incomplete-coordinate reasons (downgrade, never
+hard failure): missing checking block, unrecognized or empty mechanism, missing / empty
+/ non-string audit, or a nonstandard axiom list. Empty strings count as missing —
+malformed trust coordinates must never become `backendChecked`. -/
+private structure CheckingData where
+  reasons : Array String
+  mechanism? : Option String
+  audit? : Option String
+  allowedAxioms : Array String
+
+private def parseChecking (json : Json) : CheckingData := Id.run do
   let mut reasons : Array String := #[]
   let .ok checking := json.getObjVal? "checking"
-    | return #["missing checking block"]
-  match (checking.getObjValAs? String "mechanism").toOption with
-  | some "leanKernel" => pure ()
-  | some m => reasons := reasons.push s!"unrecognized checking mechanism '{m}'"
-  | none => reasons := reasons.push "missing checking mechanism"
-  if (checking.getObjVal? "audit").isOk.not then
-    reasons := reasons.push "missing checking audit"
+    | return ⟨#["missing checking block"], none, none, #[]⟩
+  let mechanism? ← do
+    match checking.getObjVal? "mechanism" with
+    | .error _ =>
+      reasons := reasons.push "missing checking mechanism"
+      pure none
+    | .ok v => match v.getStr? with
+      | .error _ =>
+        reasons := reasons.push "malformed checking mechanism (not a string)"
+        pure none
+      | .ok "leanKernel" => pure (some "leanKernel")
+      | .ok "" =>
+        reasons := reasons.push "empty checking mechanism"
+        pure none
+      | .ok m =>
+        reasons := reasons.push s!"unrecognized checking mechanism '{m}'"
+        pure (some m)
+  let audit? ← do
+    match checking.getObjVal? "audit" with
+    | .error _ =>
+      reasons := reasons.push "missing checking audit"
+      pure none
+    | .ok v => match v.getStr? with
+      | .error _ =>
+        reasons := reasons.push "malformed checking audit (not a string)"
+        pure none
+      | .ok "" =>
+        reasons := reasons.push "empty checking audit"
+        pure none
+      | .ok a => pure (some a)
+  let mut allowedAxioms : Array String := #[]
   match (checking.getObjValAs? (Array Json) "allowedAxioms").toOption with
   | some axs =>
     for a in axs do
       match a.getStr? with
       | .ok s =>
+        allowedAxioms := allowedAxioms.push s
         if !standardAxioms.contains s then
           reasons := reasons.push s!"nonstandard axiom '{s}'"
       | .error _ => reasons := reasons.push "malformed allowedAxioms entry"
   | none => reasons := reasons.push "missing or malformed allowedAxioms"
-  return reasons
+  return ⟨reasons, mechanism?, audit?, allowedAxioms⟩
+
+/-- Empty strings count as absent trust coordinates. -/
+private def nonempty? (s? : Option String) : Option String :=
+  match s? with
+  | some "" => none
+  | v => v
 
 /-- Resolve an external key to a registered semantic context — wrong-kind targets are
 the cross-family hard error. -/
@@ -356,10 +416,14 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
 end BackendEvidence
 
 open BackendEvidence in
-/-- `rm_ingest_bridge_evidence "path.json"`: ingest a versioned backend-evidence file.
-Fail-closed throughout; see the module docstring for the hard-failure/downgrade
-boundary. -/
-elab "rm_ingest_bridge_evidence " path:str : command => do
+/-- `rm_ingest_bridge_evidence "path.json" artifactRevision := "<40-hex>"`: ingest a
+versioned backend-evidence file. `artifactRevision` is the backend commit whose tree
+contains the vendored artifact byte-for-byte — necessarily distinct from the artifact's
+embedded export/check revision, which by self-reference cannot contain the artifact;
+both are stored, exported, and rendered. Fail-closed throughout; see the module
+docstring for the hard-failure/downgrade boundary. -/
+elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str :
+    command => do
   let cat ← requireCleanCatalog
   let content ← try liftM (IO.FS.readFile ⟨path.getString⟩)
     catch e => throwErrorAt path
@@ -384,11 +448,12 @@ elab "rm_ingest_bridge_evidence " path:str : command => do
     throwErrorAt path "backend evidence: source repository must be nonempty"
   let revision ← requireRevision (← getStr source "revision" "evidence source")
     "source revision"
+  let artifactRevision ← requireRevision artRev.getString "artifact revision"
   let toolchain ← getStr source "toolchain" "evidence source"
   let deps ← getObj source "dependencies" "evidence source"
   let rmRevision ← requireRevision (← getStr deps "reverse-mathlib" "dependencies")
     "reverse-mathlib dependency revision"
-  let _ ← requireRevision (← getStr deps "Foundation" "dependencies")
+  let foundationRevision ← requireRevision (← getStr deps "Foundation" "dependencies")
     "Foundation dependency revision"
   let mlRevision ← requireRevision (← getStr deps "mathlib" "dependencies")
     "mathlib dependency revision"
@@ -418,7 +483,8 @@ elab "rm_ingest_bridge_evidence " path:str : command => do
   | none =>
     downgradeReasons := downgradeReasons.push
       "cannot determine this workspace's mathlib revision"
-  downgradeReasons := downgradeReasons ++ checkingReasons json
+  let checking := parseChecking json
+  downgradeReasons := downgradeReasons ++ checking.reasons
   -- phase 1: parse every record before resolving anything; duplicate ids are hard
   let recordsJson ← getArr json "records" "evidence file"
   let existing := (backendEvidenceExt.getState (← getEnv)).map (·.id)
@@ -497,28 +563,36 @@ elab "rm_ingest_bridge_evidence " path:str : command => do
       throwErrorAt path "backend evidence: fingerprint mismatch at '{n}' — the \
         backend's checked interface differs from this workspace's declaration; \
         revision drift is acceptable only when the semantic interface is unchanged"
-  -- final status and storage
-  let downgraded? : Option String :=
-    if downgradeReasons.isEmpty then none
-    else some (String.intercalate "; " downgradeReasons.toList)
+  -- final status and storage: per-record coordinate completeness (empty strings count
+  -- as missing — malformed trust coordinates must never become backendChecked)
   for r in linked do
-    let perRecordMissingTheorem :=
-      r.shell.theoremName?.isNone &&
+    let theoremName? := nonempty? r.shell.theoremName?
+    let mut recordReasons := downgradeReasons
+    if theoremName?.isNone &&
         ["contextRealization", "statementAdapter",
-          "calculusNonderivability"].contains r.shell.kind
+          "calculusNonderivability"].contains r.shell.kind then
+      recordReasons := recordReasons.push "missing theorem"
+    if r.shell.exportName.isEmpty then
+      recordReasons := recordReasons.push "empty export name"
+    if let .calculusIdentity _ derivability soundness _ := r.data then
+      if soundness.isEmpty then
+        recordReasons := recordReasons.push "empty soundness name"
+      if derivability.isEmpty then
+        recordReasons := recordReasons.push "empty derivability name"
     let (status, reason?) :=
       if r.shell.claimedStatus == "reported" then
         (BackendStatus.reported, some "reported at source")
-      else if perRecordMissingTheorem then
+      else if recordReasons.isEmpty then
+        (BackendStatus.backendChecked, none)
+      else
         (BackendStatus.reported,
-          some ((downgraded?.getD "").append
-            (if downgraded?.isSome then "; missing theorem" else "missing theorem")))
-      else match downgraded? with
-        | some reason => (BackendStatus.reported, some reason)
-        | none => (BackendStatus.backendChecked, none)
+          some (String.intercalate "; " recordReasons.toList))
     modifyEnv fun env => backendEvidenceExt.addEntry env
-      { id := r.shell.id, ns := ⟨nsName⟩, repository, revision, rmRevision, toolchain,
-        exportName := r.shell.exportName, theoremName? := r.shell.theoremName?,
+      { id := r.shell.id, ns := ⟨nsName⟩, repository, revision, artifactRevision,
+        artifactPath := path.getString, rmRevision, foundationRevision,
+        mathlibRevision := mlRevision, toolchain, mechanism? := checking.mechanism?,
+        audit? := checking.audit?, allowedAxioms := checking.allowedAxioms,
+        exportName := r.shell.exportName, theoremName?,
         status, downgraded? := reason?, data := r.data }
 
 /-- Scope-safe rendering of one record — generated from the typed fields, so the
@@ -550,8 +624,15 @@ elab "#rm_backend_evidence" : command => do
   for e in entries do
     lines := lines.push s!"  {e.ns.name}:\"{e.id}\" [{e.data.kindTag}] — {e.status.tag}"
     lines := lines.push s!"    {e.render}"
-    lines := lines.push s!"    source: {e.repository} @ {e.revision} \
-      (checked reverse-mathlib {e.rmRevision}; toolchain {e.toolchain})"
+    lines := lines.push s!"    source: {e.repository} — export/check @ {e.revision}, \
+      artifact @ {e.artifactRevision} ({e.artifactPath})"
+    lines := lines.push s!"    dependencies: reverse-mathlib {e.rmRevision}; \
+      Foundation {e.foundationRevision}; mathlib {e.mathlibRevision}; toolchain \
+      {e.toolchain}"
+    let mech := e.mechanism?.getD "(none)"
+    let audit := e.audit?.getD "(none)"
+    lines := lines.push s!"    checking: mechanism {mech}; audit {audit}; allowed \
+      axioms {e.allowedAxioms.toList}"
     match e.theoremName? with
     | some t => lines := lines.push s!"    theorem: {t}; export: {e.exportName}"
     | none => lines := lines.push s!"    export: {e.exportName}"

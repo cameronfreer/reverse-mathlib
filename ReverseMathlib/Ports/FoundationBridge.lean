@@ -50,6 +50,11 @@ rm_external_ref rmFoundationBridge
   "countableHall/oneSidedInjective.enumeratedCandidates.turingIdealOmega" exactAlias
   statement countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega
 
+/- The artifact-publishing revision: the bridge commit whose tree contains the vendored
+artifact byte-for-byte. Necessarily distinct from the artifact's embedded export/check
+revision (`39ec48b…`) — by self-reference, the artifact cannot be committed at the
+revision it records. Both are stored, exported, and rendered. -/
 rm_ingest_bridge_evidence "imports/reverse-mathlib-foundation/rmlib-bridge-evidence.json"
+  artifactRevision := "ad99bc5bda3e5abfef6093ce32ae4c3032bea975"
 
 end ReverseMathlib.Ports

@@ -186,6 +186,20 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"backendEvidence {rid}: unknown kind {r.get('kind')!r}")
         if r.get("status") not in ("backendChecked", "reported"):
             problems.append(f"backendEvidence {rid}: unknown status {r.get('status')!r}")
+        src = r.get("source", {})
+        chk = r.get("checking", {})
+        for f in ("repository", "exportRevision", "artifactRevision", "artifactPath",
+                  "toolchain"):
+            if not src.get(f):
+                problems.append(f"backendEvidence {rid}: missing source.{f}")
+        for f in ("reverse-mathlib", "Foundation", "mathlib"):
+            if not src.get("dependencies", {}).get(f):
+                problems.append(f"backendEvidence {rid}: missing source.dependencies.{f}")
+        if r.get("status") == "backendChecked":
+            if not chk.get("mechanism") or not chk.get("audit") or \
+                    not chk.get("allowedAxioms"):
+                problems.append(f"backendEvidence {rid}: backendChecked without complete "
+                                "checking coordinates")
         if r.get("kind") == "calculusNonderivability":
             data = r.get("data", {})
             for ref_field in ("calculusRecord", "sentenceAdapter"):
@@ -817,7 +831,13 @@ reduction: open head (pinned, external)</span>
             return ""
         cards = []
         for r in bes:
-            trust = (f"theorem <code>{e(r.get('theorem') or '(none)')}</code>; export "
+            src = r["source"]
+            chk = r["checking"]
+            deps = src["dependencies"]
+            trust = (f"mechanism <code>{e(chk.get('mechanism') or '(none)')}</code>; "
+                     f"audit <code>{e(chk.get('audit') or '(none)')}</code>; allowed "
+                     f"axioms <code>{e(', '.join(chk.get('allowedAxioms', [])))}</code>; "
+                     f"theorem <code>{e(r.get('theorem') or '(none)')}</code>; export "
                      f"<code>{e(r['export'])}</code>")
             down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
                     if r.get("downgraded") else "")
@@ -826,9 +846,14 @@ reduction: open head (pinned, external)</span>
 <span class="tag">{e(r['status'])}</span></summary>
 <dl>
 <dt>statement</dt><dd>{e(r['display']['rendered'])}</dd>
-<dt>source</dt><dd><code>{e(r['repository'])}</code> @ <code>{e(r['revision'])}</code>
-(checked reverse-mathlib <code>{e(r['checkedReverseMathlibRevision'])}</code>,
-toolchain <code>{e(r['toolchain'])}</code>)</dd>
+<dt>source</dt><dd><code>{e(src['repository'])}</code> — export/check
+<code>{e(src['exportRevision'])}</code>, artifact
+<code>{e(src['artifactRevision'])}</code>
+(<a href="https://github.com/{e(src['repository'])}/blob/{e(src['artifactRevision'])}/evidence/rmlib-bridge-evidence.json">raw artifact</a>;
+vendored at <code>{e(src['artifactPath'])}</code>)</dd>
+<dt>dependencies</dt><dd>reverse-mathlib <code>{e(deps['reverse-mathlib'])}</code>;
+Foundation <code>{e(deps['Foundation'])}</code>; mathlib
+<code>{e(deps['mathlib'])}</code>; toolchain <code>{e(src['toolchain'])}</code></dd>
 <dt>checking</dt><dd>{trust}</dd>{down}
 </dl></details>""")
         return section(
