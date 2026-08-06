@@ -69,6 +69,14 @@ structure UniformProblemId where
   name : Name
   deriving Inhabited, Repr, BEq, Hashable
 
+/-- A semantic-context identifier. -/
+structure SemanticContextId where
+  /-- The identifying name. -/
+  name : Name
+  deriving Inhabited, Repr, BEq, Hashable
+
+instance : ToString SemanticContextId := ⟨fun c => toString c.name⟩
+
 instance : ToString ConceptId := ⟨fun c => toString c.name⟩
 instance : ToString StatementVariantId := ⟨fun v => toString v.name⟩
 instance : ToString UniformProblemId := ⟨fun q => toString q.name⟩
@@ -85,6 +93,10 @@ inductive CatalogObjectRef where
   (issue #28); external reduction records name their notion through a registered alias,
   never by matching strings. -/
   | reducibilityNotion (id : ReducibilityNotionId)
+  /-- A registered semantic context — the crosswalk target for backend context-realization
+  evidence; backend records name their context through a registered alias, never by
+  matching strings. -/
+  | semanticContext (id : SemanticContextId)
   deriving Inhabited, Repr, BEq
 
 /-- Stable serialization of a catalog object reference: kind tag plus prefixed id. -/
@@ -93,6 +105,7 @@ def CatalogObjectRef.kindTag : CatalogObjectRef → String
   | .statement _ => "statement"
   | .uniformProblem _ => "uniformProblem"
   | .reducibilityNotion _ => "reducibilityNotion"
+  | .semanticContext _ => "semanticContext"
 
 /-- The underlying name of a reference. -/
 def CatalogObjectRef.name : CatalogObjectRef → Name
@@ -100,6 +113,7 @@ def CatalogObjectRef.name : CatalogObjectRef → Name
   | .statement i => i.name
   | .uniformProblem i => i.name
   | .reducibilityNotion i => i.name
+  | .semanticContext i => i.name
 
 /-- An external namespace identifier (`rmzoo`, `simpson`, `concordance`, `sanders`, …) —
 registered through `rm_namespace`, never a hard-coded allowlist. -/
@@ -500,14 +514,6 @@ initialize factExt : SimplePersistentEnvExtension FactEntry (Array FactEntry) �
     addImportedFn := mkStateFromImportedEntries Array.push #[]
   }
 
-/-- A semantic-context identifier. -/
-structure SemanticContextId where
-  /-- The identifying name. -/
-  name : Name
-  deriving Inhabited, Repr, BEq, Hashable
-
-instance : ToString SemanticContextId := ⟨fun c => toString c.name⟩
-
 /-- A registered semantic context (issue #6): the typed target of scoped semantic
 certificates. It ties a base theory and a scope (`omegaModels` or `allModels` — never
 `provability`) to the Lean predicate `contextDecl : Model → Prop` that certificates quantify
@@ -667,6 +673,11 @@ def ConceptCatalog.ofEnv (env : Environment) : ConceptCatalog := Id.run do
       if !(reducibilityNotionExt.getState env).any (·.id.name == nid.name) then
         let msg := s!"reference {r.ns.name}:\"{r.key}\" targets unregistered reducibility \
           notion '{nid.name}'"
+        cat := { cat with conflicts := cat.conflicts.push msg }
+    | .semanticContext cid =>
+      if !(semanticContextExt.getState env).any (·.id.name == cid.name) then
+        let msg := s!"reference {r.ns.name}:\"{r.key}\" targets unregistered semantic \
+          context '{cid.name}'"
         cat := { cat with conflicts := cat.conflicts.push msg }
     cat := { cat with refs := cat.refs.push r }
     if r.relation == .exactAlias then
@@ -830,8 +841,9 @@ private def parseTarget (kind tgt : Syntax) : CommandElabM CatalogObjectRef :=
   | `statement => pure (.statement ⟨tgt.getId⟩)
   | `uniformProblem => pure (.uniformProblem ⟨tgt.getId⟩)
   | `reducibilityNotion => pure (.reducibilityNotion ⟨tgt.getId⟩)
+  | `semanticContext => pure (.semanticContext ⟨tgt.getId⟩)
   | k => throwErrorAt kind "concept catalog: unknown target kind '{k}' (expected concept | \
-      statement | uniformProblem | reducibilityNotion)"
+      statement | uniformProblem | reducibilityNotion | semanticContext)"
 
 /-- `rm_external_ref ns "key" relation targetKind target`: register a typed external
 reference, e.g. `rm_external_ref rmzoo "WKL" exactAlias concept wkl`. -/
@@ -856,6 +868,9 @@ elab "rm_external_ref " ns:ident key:str rel:ident kind:ident tgt:ident : comman
   | .reducibilityNotion nid =>
     unless cat.reducibilityNotions.any (·.id.name == nid.name) do
       throwErrorAt tgt "concept catalog: unknown reducibility notion '{nid.name}'"
+  | .semanticContext cid =>
+    unless cat.semanticContexts.any (·.id.name == cid.name) do
+      throwErrorAt tgt "concept catalog: unknown semantic context '{cid.name}'"
   if relation == .exactAlias then
     if let some existing := cat.aliasMap[(nsName, key.getString)]? then
       throwErrorAt key "concept catalog: exact alias {nsName}:\"{key.getString}\" already \

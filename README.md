@@ -102,10 +102,19 @@ It provides, as kernel-checked theorems with typed export records:
   sentence. Explicitly *not* an unqualified standard-calculus RCA₀ ⊬ WKL: the
   comparison with a pinned standard proof system is recorded as pending.
 
-None of this changes the certified scoreboard here — adequacy evidence upgrades the
-interpretation of existing facts, it is not another mathematical leaf — and the bridge
-is not yet ingested: ingestion as versioned, pinned JSON evidence is a planned separate
-tranche.
+The bridge is **ingested** as versioned, pinned JSON backend evidence
+(`rmlib-bridge-evidence/1`, `imports/reverse-mathlib-foundation/`): four typed record
+kinds stored in their own backend-evidence family, with the bridge's interface
+fingerprints (`lean-interface-expr/1`) recomputed locally at ingestion, so any semantic
+drift in the referenced declarations fails closed while documentation-only commits stay
+compatible. Displayed by `#rm_backend_evidence` and rendered as its own atlas section.
+
+The resulting evidence state, kept permanently distinct: **checked** forward context
+realization (one-way) and **checked** unconditional statement adapters; **pending**
+converse context adequacy; **pending** standard-calculus comparison for the bridge
+calculus. None of this changes the certified scoreboard — backend evidence upgrades the
+interpretation of existing facts, it is not another mathematical leaf, and it enters no
+graph edge, port, closure, or certified count.
 
 ## Structure
 

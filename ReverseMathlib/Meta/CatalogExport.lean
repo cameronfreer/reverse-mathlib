@@ -6,12 +6,13 @@ Authors: Cameron Freer
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Corpus
 import ReverseMathlib.Meta.Interchange
+import ReverseMathlib.Meta.BackendEvidence
 
 /-!
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v3`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v4`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
@@ -22,7 +23,11 @@ transitional pre-conceptual export; `v1` added the corpus family; `v2` added the
 ingested and the resolved local ids — so the canonical artifact can be audited
 independently of the Lean environment; `v3` admits certified `nonImplication` facts
 (countermodel-witnessed separations) among the fact kinds a consumer must understand —
-they are never edges of any implication closure and never turnstile claims.
+they are never edges of any implication closure and never turnstile claims; `v4` adds the
+`backendEvidence` family (external checked backend records with both sides of every
+crosswalk, their typed record references, and their trust statuses — never certified
+facts, never graph edges) and admits `semanticContext` among external-reference target
+kinds.
 
 Canonical-file properties:
 
@@ -419,7 +424,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v3"),
+    [("schema", Json.str "reverse-mathlib.catalog/v4"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
@@ -457,6 +462,55 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
             ("mechanism", optStrJson r.mechanism?),
             ("downgraded", optStrJson r.downgraded?),
             ("note", Json.str r.note)])),
+     ("backendEvidence", Json.arr
+       (((backendEvidenceExt.getState env).qsort fun a b => a.id < b.id).map fun r =>
+         let dataJson : Json := match r.data with
+           | .contextRealization theory contextKey context contextPred direction
+               realizationStatus =>
+             Json.mkObj
+               [("theory", Json.str theory),
+                ("external", Json.mkObj [("contextKey", Json.str contextKey)]),
+                ("local", Json.mkObj
+                  [("context", Json.str (toString context.name)),
+                   ("contextDecl", nameJson contextPred)]),
+                ("direction", Json.str direction),
+                ("realizationStatus", Json.str realizationStatus)]
+           | .statementAdapter sentence capability variantKey variant adapterStatus =>
+             Json.mkObj
+               [("sentence", Json.str sentence),
+                ("external", Json.mkObj [("variantKey", Json.str variantKey)]),
+                ("local", Json.mkObj
+                  [("variant", Json.str (toString variant.name)),
+                   ("interface", nameJson capability)]),
+                ("adapterStatus", Json.str adapterStatus)]
+           | .calculusIdentity calculusId derivability soundness standardComparison =>
+             Json.mkObj
+               [("calculusId", Json.str calculusId),
+                ("derivability", Json.str derivability),
+                ("soundness", Json.str soundness),
+                ("standardComparison", Json.str standardComparison)]
+           | .calculusNonderivability calculusRecord sentenceAdapter calculusId theory
+               sentence =>
+             Json.mkObj
+               [("calculusRecord", Json.str calculusRecord),
+                ("sentenceAdapter", Json.str sentenceAdapter),
+                ("calculusId", Json.str calculusId),
+                ("theory", Json.str theory),
+                ("sentence", Json.str sentence)]
+         Json.mkObj
+           [("id", Json.str r.id),
+            ("kind", Json.str r.data.kindTag),
+            ("namespace", Json.str (toString r.ns.name)),
+            ("repository", Json.str r.repository),
+            ("revision", Json.str r.revision),
+            ("checkedReverseMathlibRevision", Json.str r.rmRevision),
+            ("toolchain", Json.str r.toolchain),
+            ("export", Json.str r.exportName),
+            ("theorem", optStrJson r.theoremName?),
+            ("status", Json.str r.status.tag),
+            ("downgraded", optStrJson r.downgraded?),
+            ("data", dataJson),
+            ("display", Json.mkObj [("rendered", Json.str r.render)])])),
      ("corpus", corpusJson env),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \

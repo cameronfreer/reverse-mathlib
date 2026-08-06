@@ -1,0 +1,38 @@
+{
+ "schema": "rmlib-bridge-evidence/1",
+ "fingerprintSchema": "lean-interface-expr/1",
+ "source": {
+  "repository": "example/fixture-backend",
+  "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "toolchain": "leanprover/lean4:v4.32.2",
+  "dependencies": {
+   "reverse-mathlib": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "Foundation": "cccccccccccccccccccccccccccccccccccccccc",
+   "mathlib": "905b95818eb32af7874a58b427f50c1711a5e96c"
+  }
+ },
+ "namespace": "rmFoundationBridge",
+ "checking": {
+  "mechanism": "leanKernel",
+  "allowedAxioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "audit": "fixture"
+ },
+ "fingerprints": [],
+ "records": [
+  {
+   "kind": "statementAdapter",
+   "id": "fix.wrongkind",
+   "status": "backendChecked",
+   "export": "Fix.export",
+   "theorem": "Fix.thm",
+   "sentence": "Fix.sentence",
+   "capability": "ReverseMathlib.Omega.WeakKonigAt",
+   "variantKey": "rca0/turingIdealOmega",
+   "adapterStatus": "unconditional"
+  }
+ ]
+}
