@@ -19,17 +19,24 @@ oracle behavior, or quantitative data the proof produces.
 > Turing ideal**, and the first certified **separation** `RCA₀-core ⊭ω WKL` — a typed
 > countermodel certificate witnessed by REC through an explicit bounded-computation Kleene
 > tree, a model-class separation and never a turnstile underivability claim. The
-> identification of Turing ideals with the ω-models of RCA₀ is literature-backed, with
-> object-syntax adequacy pending, and no `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists
-> at any scope (the scoreboard reads ω-model: 3, all-model: 0, syntactic: 0, and scopes
-> are never promoted). Alongside these live two further evidence grades, kept
-> permanently distinct: **imported checked** Weihrauch reductions (`WKL ≤sW EFILC`,
+> identification of Turing ideals with the ω-models of RCA₀ is literature-backed;
+> object-syntax **forward context realization** (every Turing ideal satisfies an
+> explicit semantic RCA₀ theory on ω-structures) and **exact statement adapters** for
+> ŴKL/EFILC/Hall are checked backend evidence, while **converse context adequacy** and
+> the backend calculus's **standard-calculus comparison** remain pending — so no
+> `RCA₀ ⊢ …` or unqualified `RCA₀ ⊬ …` turnstile claim exists at any scope (the
+> scoreboard reads ω-model: 3, all-model: 0, syntactic: 0, and scopes are never
+> promoted). Alongside these live three additional evidence grades, kept permanently
+> distinct: **imported checked** Weihrauch reductions (`WKL ≤sW EFILC`,
 > `EFILC ≤W WKL` certified-ordinary, `Hall ≤sW EFILC`), proved natively in
 > [computable-analysis](https://github.com/cameronfreer/computable-analysis) at pinned
-> revisions and ingested as external evidence — never axioms; and **reported** corpus
-> findings (what RMZoo, Simpson, and Hirst classify, at pinned snapshots), with missing
-> presentation bridges named explicitly. Everything else remains ambient Lean
-> factorization: proof-route archaeology, not strength.
+> revisions and ingested as external evidence — never axioms; **backend** records from
+> the [ω-semantics bridge](https://github.com/cameronfreer/reverse-mathlib-foundation)
+> (realization, adapters, and a calculus-relative nonderivability, ingested with
+> locally recomputed interface fingerprints); and **reported** corpus findings (what
+> RMZoo, Simpson, and Hirst classify, at pinned snapshots), with missing presentation
+> bridges named explicitly. Everything else remains ambient Lean factorization:
+> proof-route archaeology, not strength.
 
 **The first program: mining Lean proofs for WKL-shaped compactness routes.**
 reverse-mathlib's first mathematical program mines ordinary Lean proofs for WKL-shaped
@@ -102,10 +109,19 @@ It provides, as kernel-checked theorems with typed export records:
   sentence. Explicitly *not* an unqualified standard-calculus RCA₀ ⊬ WKL: the
   comparison with a pinned standard proof system is recorded as pending.
 
-None of this changes the certified scoreboard here — adequacy evidence upgrades the
-interpretation of existing facts, it is not another mathematical leaf — and the bridge
-is not yet ingested: ingestion as versioned, pinned JSON evidence is a planned separate
-tranche.
+The bridge is **ingested** as versioned, pinned JSON backend evidence
+(`rmlib-bridge-evidence/1`, `imports/reverse-mathlib-foundation/`): four typed record
+kinds stored in their own backend-evidence family, with the bridge's interface
+fingerprints (`lean-interface-expr/1`) recomputed locally at ingestion, so any semantic
+drift in the referenced declarations fails closed while documentation-only commits stay
+compatible. Displayed by `#rm_backend_evidence` and rendered as its own atlas section.
+
+The resulting evidence state, kept permanently distinct: **checked** forward context
+realization (one-way) and **checked** unconditional statement adapters; **pending**
+converse context adequacy; **pending** standard-calculus comparison for the bridge
+calculus. None of this changes the certified scoreboard — backend evidence upgrades the
+interpretation of existing facts, it is not another mathematical leaf, and it enters no
+graph edge, port, closure, or certified count.
 
 ## Structure
 

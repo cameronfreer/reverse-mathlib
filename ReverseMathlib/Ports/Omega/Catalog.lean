@@ -45,10 +45,13 @@ rm_semantic_context rca0.turingIdealOmega where
   layer := turingIdealOmega
   decl := ReverseMathlib.Omega.IsTuringIdeal
   description := "The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. \
-    Two distinct claims, never conflated: an implication certified against this context is \
+    Distinct claims, never conflated: an implication certified against this context is \
     kernel-checked over every Turing ideal; the identification of Turing ideals with the \
-    ω-models of RCA₀ is literature-backed ([Sim09] VIII.1), with backend object-syntax \
-    adequacy pending."
+    ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence \
+    (rmFoundationBridge) adds: checked forward context realization (every Turing ideal \
+    satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked \
+    unconditional statement adapters; converse context adequacy remains pending, and the \
+    backend calculus's standard-calculus comparison remains pending."
 
 rm_statement_variant wkl.binaryTree.turingIdealOmega where
   concept := wkl

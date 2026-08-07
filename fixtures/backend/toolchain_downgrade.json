@@ -1,0 +1,68 @@
+{
+ "schema": "rmlib-bridge-evidence/1",
+ "fingerprintSchema": "lean-interface-expr/1",
+ "source": {
+  "repository": "example/fixture-backend",
+  "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "toolchain": "leanprover/lean4:v4.31.0",
+  "dependencies": {
+   "reverse-mathlib": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+   "Foundation": "cccccccccccccccccccccccccccccccccccccccc",
+   "mathlib": "905b95818eb32af7874a58b427f50c1711a5e96c"
+  }
+ },
+ "namespace": "rmFoundationBridge",
+ "checking": {
+  "mechanism": "leanKernel",
+  "allowedAxioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ],
+  "audit": "fixture"
+ },
+ "fingerprints": [
+  {
+   "name": "ReverseMathlib.Omega.IsTuringIdeal",
+   "canonicalInterface": "(ind _.\"ReverseMathlib\".\"Omega\".\"IsTuringIdeal\" 0 (P d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (S 0)) (ctors (_.\"ReverseMathlib\".\"Omega\".\"IsTuringIdeal\".\"mk\" (P i (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (P d (a (a (c _.\"Set\".\"Nonempty\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\".\"sets\") (b 0))) (P d (P i (a (c _.\"Set\" 0) (c _.\"Nat\")) (P i (a (c _.\"Set\" 0) (c _.\"Nat\")) (P d (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (c _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\")) (b 3)) (b 0)) (P d (a (a (c _.\"ReverseMathlib\".\"Omega\".\"TuringReducibleSet\") (b 2)) (b 1)) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (c _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\")) (b 5)) (b 3)))))) (P d (P i (a (c _.\"Set\" 0) (c _.\"Nat\")) (P i (a (c _.\"Set\" 0) (c _.\"Nat\")) (P d (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (c _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\")) (b 4)) (b 1)) (P d (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (c _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\")) (b 5)) (b 1)) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (c _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\")) (b 6)) (a (a (c _.\"ReverseMathlib\".\"Omega\".\"joinSet\") (b 3)) (b 2))))))) (a (c _.\"ReverseMathlib\".\"Omega\".\"IsTuringIdeal\") (b 3)))))))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.OmegaPart",
+   "canonicalInterface": "(ind _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\" 0 (S (s 0)) (ctors (_.\"ReverseMathlib\".\"Omega\".\"OmegaPart\".\"mk\" (P d (a (c _.\"Set\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.TuringReducibleSet",
+   "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"TuringReducibleSet\" 0 (P d (a (c _.\"Set\" 0) (c _.\"Nat\")) (P d (a (c _.\"Set\" 0) (c _.\"Nat\")) (S 0))) (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (a (a (c _.\"Nat\".\"RecursiveIn\") (a (a (a (a (c _.\"Singleton\".\"singleton\" 0 0) (a (a (c _.\"PFun\" 0 0) (c _.\"Nat\")) (c _.\"Nat\"))) (a (c _.\"Set\" 0) (a (a (c _.\"PFun\" 0 0) (c _.\"Nat\")) (c _.\"Nat\")))) (a (c _.\"Set\".\"instSingletonSet\" 0) (a (a (c _.\"PFun\" 0 0) (c _.\"Nat\")) (c _.\"Nat\")))) (a (c _.\"ReverseMathlib\".\"Omega\".\"charFn\") (b 0)))) (a (c _.\"ReverseMathlib\".\"Omega\".\"charFn\") (b 1))))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.charFn",
+   "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"charFn\" 0 (P d (a (c _.\"Set\" 0) (c _.\"Nat\")) (a (a (c _.\"PFun\" 0 0) (c _.\"Nat\")) (c _.\"Nat\"))) (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (l d (c _.\"Nat\") (a (a (c _.\"Part\".\"some\" 0) (c _.\"Nat\")) (a (a (a (a (a (c _.\"ite\" (s 0)) (c _.\"Nat\")) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (c _.\"Nat\")) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"Set\".\"instMembership\" 0) (c _.\"Nat\"))) (b 1)) (b 0))) (a (c _.\"Classical\".\"propDecidable\") (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (c _.\"Nat\")) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"Set\".\"instMembership\" 0) (c _.\"Nat\"))) (b 1)) (b 0)))) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 1)) (a (c _.\"instOfNatNat\") (n 1)))) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 0)) (a (c _.\"instOfNatNat\") (n 0))))))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.instMembershipSetNatOmegaPart",
+   "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"instMembershipSetNatOmegaPart\" 0 (a (a (c _.\"Membership\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (a (a (a (c _.\"Membership\".\"mk\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\")) (l d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"Set\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\")))) (a (c _.\"Set\".\"instMembership\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\")))) (a (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\".\"sets\") (b 1))) (b 0))))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.joinSet",
+   "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"joinSet\" 0 (P d (a (c _.\"Set\" 0) (c _.\"Nat\")) (P d (a (c _.\"Set\" 0) (c _.\"Nat\")) (a (c _.\"Set\" 0) (c _.\"Nat\")))) (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (l d (a (c _.\"Set\" 0) (c _.\"Nat\")) (a (a (c _.\"setOf\" 0) (c _.\"Nat\")) (l d (c _.\"Nat\") (a (a (c _.\"Or\") (a (a (c _.\"And\") (a (a (a (c _.\"Eq\" (s 0)) (c _.\"Nat\")) (a (a (a (a (a (a (c _.\"HMod\".\"hMod\" 0 0 0) (c _.\"Nat\")) (c _.\"Nat\")) (c _.\"Nat\")) (a (a (c _.\"instHMod\" 0) (c _.\"Nat\")) (c _.\"Nat\".\"instMod\"))) (b 0)) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 2)) (a (c _.\"instOfNatNat\") (n 2))))) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 0)) (a (c _.\"instOfNatNat\") (n 0))))) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (c _.\"Nat\")) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"Set\".\"instMembership\" 0) (c _.\"Nat\"))) (b 2)) (a (a (a (a (a (a (c _.\"HDiv\".\"hDiv\" 0 0 0) (c _.\"Nat\")) (c _.\"Nat\")) (c _.\"Nat\")) (a (a (c _.\"instHDiv\" 0) (c _.\"Nat\")) (c _.\"Nat\".\"instDiv\"))) (b 0)) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 2)) (a (c _.\"instOfNatNat\") (n 2))))))) (a (a (c _.\"And\") (a (a (a (c _.\"Eq\" (s 0)) (c _.\"Nat\")) (a (a (a (a (a (a (c _.\"HMod\".\"hMod\" 0 0 0) (c _.\"Nat\")) (c _.\"Nat\")) (c _.\"Nat\")) (a (a (c _.\"instHMod\" 0) (c _.\"Nat\")) (c _.\"Nat\".\"instMod\"))) (b 0)) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 2)) (a (c _.\"instOfNatNat\") (n 2))))) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 1)) (a (c _.\"instOfNatNat\") (n 1))))) (a (a (a (a (a (c _.\"Membership\".\"mem\" 0 0) (c _.\"Nat\")) (a (c _.\"Set\" 0) (c _.\"Nat\"))) (a (c _.\"Set\".\"instMembership\" 0) (c _.\"Nat\"))) (b 1)) (a (a (a (a (a (a (c _.\"HDiv\".\"hDiv\" 0 0 0) (c _.\"Nat\")) (c _.\"Nat\")) (c _.\"Nat\")) (a (a (c _.\"instHDiv\" 0) (c _.\"Nat\")) (c _.\"Nat\".\"instDiv\"))) (b 0)) (a (a (a (c _.\"OfNat\".\"ofNat\" 0) (c _.\"Nat\")) (n 2)) (a (c _.\"instOfNatNat\") (n 2))))))))))))"
+  },
+  {
+   "name": "ReverseMathlib.Omega.OmegaPart.sets",
+   "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\".\"sets\" 0 (P d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (a (c _.\"Set\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\")))) (l d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (pr _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\" 0 (b 0))))"
+  }
+ ],
+ "records": [
+  {
+   "kind": "contextRealization",
+   "id": "fix.downgrade",
+   "status": "backendChecked",
+   "export": "Fix.export",
+   "theorem": "Fix.thm",
+   "theory": "Fix.Theory",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "direction": "forward",
+   "realizationStatus": "realizationOnly"
+  }
+ ]
+}

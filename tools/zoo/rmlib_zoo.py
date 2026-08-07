@@ -35,7 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v3"
+SCHEMA_ID = "reverse-mathlib.catalog/v4"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
@@ -172,6 +172,44 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append("importedReductions not sorted by id")
     if len(imp_ids) != len(set(imp_ids)):
         problems.append("duplicate ids in importedReductions")
+    bes = catalog.get("backendEvidence", [])
+    be_ids = [x["id"] for x in bes]
+    if be_ids != sorted(be_ids):
+        problems.append("backendEvidence not sorted by id")
+    if len(be_ids) != len(set(be_ids)):
+        problems.append("duplicate ids in backendEvidence")
+    BE_KINDS = {"contextRealization", "statementAdapter", "calculusIdentity",
+                "calculusNonderivability"}
+    for r in bes:
+        rid = r.get("id")
+        if r.get("kind") not in BE_KINDS:
+            problems.append(f"backendEvidence {rid}: unknown kind {r.get('kind')!r}")
+        if r.get("status") not in ("backendChecked", "reported"):
+            problems.append(f"backendEvidence {rid}: unknown status {r.get('status')!r}")
+        src = r.get("source", {})
+        chk = r.get("checking", {})
+        for f in ("repository", "exportRevision", "artifactRevision", "artifactPath",
+                  "toolchain"):
+            if not src.get(f):
+                problems.append(f"backendEvidence {rid}: missing source.{f}")
+        for f in ("reverse-mathlib", "Foundation", "mathlib"):
+            if not src.get("dependencies", {}).get(f):
+                problems.append(f"backendEvidence {rid}: missing source.dependencies.{f}")
+        if r.get("status") == "backendChecked":
+            if not chk.get("mechanism") or not chk.get("audit") or \
+                    not chk.get("allowedAxioms"):
+                problems.append(f"backendEvidence {rid}: backendChecked without complete "
+                                "checking coordinates")
+        if r.get("kind") == "calculusNonderivability":
+            data = r.get("data", {})
+            for ref_field in ("calculusRecord", "sentenceAdapter"):
+                if data.get(ref_field) not in be_ids:
+                    problems.append(f"backendEvidence {rid}: broken record reference "
+                                    f"{ref_field}={data.get(ref_field)!r}")
+            rendered = r.get("display", {}).get("rendered", "")
+            if "pending" not in rendered or data.get("calculusId", "") not in rendered:
+                problems.append(f"backendEvidence {rid}: rendering must carry the "
+                                "calculus id and the pending comparison qualifier")
     notion_ids = {x["id"] for x in catalog.get("reducibilityNotions", [])}
     uprob_ids = {x["id"].split(":", 1)[-1] for x in catalog.get("uniformProblems", [])}
     DEGREES = {"exact", "representative", "variantSensitive", "notAssigned"}
@@ -787,6 +825,47 @@ reduction: open head (pinned, external)</span>
             "certified counts; records without complete validated trust data are "
             "downgraded to reported.</em></p>\n")
 
+    def backend_section() -> str:
+        bes = catalog.get("backendEvidence", [])
+        if not bes:
+            return ""
+        cards = []
+        for r in bes:
+            src = r["source"]
+            chk = r["checking"]
+            deps = src["dependencies"]
+            trust = (f"mechanism <code>{e(chk.get('mechanism') or '(none)')}</code>; "
+                     f"audit <code>{e(chk.get('audit') or '(none)')}</code>; allowed "
+                     f"axioms <code>{e(', '.join(chk.get('allowedAxioms', [])))}</code>; "
+                     f"theorem <code>{e(r.get('theorem') or '(none)')}</code>; export "
+                     f"<code>{e(r['export'])}</code>")
+            down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
+                    if r.get("downgraded") else "")
+            cards.append(f"""<details class="card" data-family="backend">
+<summary><strong>[{e(r['kind'])}]</strong> <code>{e(r['id'])}</code>
+<span class="tag">{e(r['status'])}</span></summary>
+<dl>
+<dt>statement</dt><dd>{e(r['display']['rendered'])}</dd>
+<dt>source</dt><dd><code>{e(src['repository'])}</code> — export/check
+<code>{e(src['exportRevision'])}</code>, artifact
+<code>{e(src['artifactRevision'])}</code>
+(<a href="https://github.com/{e(src['repository'])}/blob/{e(src['artifactRevision'])}/evidence/rmlib-bridge-evidence.json">raw artifact</a>;
+vendored at <code>{e(src['artifactPath'])}</code>)</dd>
+<dt>dependencies</dt><dd>reverse-mathlib <code>{e(deps['reverse-mathlib'])}</code>;
+Foundation <code>{e(deps['Foundation'])}</code>; mathlib
+<code>{e(deps['mathlib'])}</code>; toolchain <code>{e(src['toolchain'])}</code></dd>
+<dt>checking</dt><dd>{trust}</dd>{down}
+</dl></details>""")
+        return section(
+            "backend-sec", "Backend evidence", len(cards), "\n".join(cards),
+            "<p><em>External checked backend records (the ω-semantics bridge), with "
+            "interface fingerprints recomputed locally at ingestion. Kept distinct: "
+            "checked forward context realization (one-way — never unrestricted "
+            "semantic RCA₀ claims); checked unconditional statement adapters; "
+            "converse context adequacy still pending; the nonderivability is "
+            "calculus-relative with the standard-calculus comparison still pending. "
+            "No certified fact, no graph edge, no scoreboard contribution.</em></p>\n")
+
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
         if not corpus:
@@ -948,6 +1027,7 @@ into one.</p></details></div>
 {len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts
 (ω-model) · {len(catalog['ports'])} ports ·
 {len(catalog.get('importedReductions', []))} imported reductions ·
+{len(catalog.get('backendEvidence', []))} backend evidence records ·
 {len(catalog.get('corpus', {}).get('claims', []))} corpus claims ·
 {len(catalog.get('corpus', {}).get('bridges', []))} missing bridges</p>
 <p class="filters">Filter:
@@ -965,6 +1045,7 @@ it)</noscript></p>
 <a href="#variants-sec">Variants</a> ·
 <a href="#ports-sec">Ports</a> ·
 <a href="#imports-sec">Imported reductions</a> ·
+<a href="#backend-sec">Backend evidence</a> ·
 <a href="#corpus-sec">Corpus audits</a> ·
 <a href="#reference">Reference</a></nav>
 {projection_section()}
@@ -974,6 +1055,7 @@ it)</noscript></p>
 {variant_index()}
 {ports_section()}
 {imports_section()}
+{backend_section()}
 {corpus_section()}
 {reference_section()}
 <footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>

@@ -9,9 +9,12 @@ import ReverseMathlib.Meta.Commands
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Concepts
 import ReverseMathlib.Meta.Interchange
+import ReverseMathlib.Meta.InterfaceEncoder
+import ReverseMathlib.Meta.BackendEvidence
 import ReverseMathlib.Meta.CatalogExport
 import ReverseMathlib.Ports.Catalog
 import ReverseMathlib.Ports.ComputableAnalysis
+import ReverseMathlib.Ports.FoundationBridge
 import ReverseMathlib.Ports.CorpusAudit
 import ReverseMathlib.Ports.Omega.Catalog
 import ReverseMathlib.Ports.Omega.HallEfilc
