@@ -337,12 +337,66 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"projection edge with forbidden family {ed['family']!r}")
         if not (ed.get("exactLhs") and ed.get("exactRhs") and ed.get("status")):
             problems.append("projection edge missing exact endpoints or status")
+    # typed computed closure: view-only derived edges, each the conclusion of a proof
+    # tree that typechecks; the evaluator's fail-closed fixtures run here too
+    for name in selftest_derivations():
+        problems.append(f"computed-closure evaluator fixture did not fail closed: {name}")
+    cv = fam_views["computed-closure"]
+    derived = [e for e in cv["edges"] if e.get("family") == "computedClosure"]
+    premises = [e for e in cv["edges"] if e.get("family") != "computedClosure"]
+    if len(derived) != len(COMPUTED_DERIVATIONS):
+        problems.append("computed-closure must contain exactly the declared derivations "
+                        "— derived edges are hand-declared, never searched")
+    if len({e["id"] for e in derived}) != len(derived):
+        problems.append("derived edge ids must be unique and stable")
+    fact_ids = {f["id"] for f in catalog.get("facts", []) if f.get("evidence")}
+    red_ids = {r["id"] for r in catalog.get("importedReductions", [])}
+    cited: set[str] = set()
+    for ed in derived:
+        if ed.get("status") != "computedView":
+            problems.append(f"derived edge {ed['id']!r} must carry status computedView, "
+                            "never a certified or imported status")
+        if not ed.get("leaves"):
+            problems.append(f"derived edge {ed['id']!r} cites no leaves")
+        for leaf in ed.get("leaves", []):
+            if leaf not in fact_ids and leaf not in red_ids:
+                problems.append(f"derived edge {ed['id']!r} cites unknown leaf {leaf!r}")
+            cited.add(leaf)
+        if not ed.get("derivation") or not ed.get("derivationText"):
+            problems.append(f"derived edge {ed['id']!r} lacks its proof term")
+        # the stored conclusion must be exactly what the stored term proves
+        try:
+            j = eval_derivation(ed["derivation"], {
+                "facts": {f["id"]: f for f in catalog.get("facts", []) if f.get("evidence")},
+                "reductions": {r["id"]: r for r in catalog.get("importedReductions", [])}})
+        except DerivationError as exc:
+            problems.append(f"derived edge {ed['id']!r} does not typecheck: {exc}")
+            continue
+        if (j["lhs"], j["rhs"], j["relation"]) != (ed["lhs"], ed["rhs"], ed["relation"]):
+            problems.append(f"derived edge {ed['id']!r} does not match its proof term's "
+                            "conclusion")
+        if sorted(set(j["leaves"])) != sorted(ed["leaves"]):
+            problems.append(f"derived edge {ed['id']!r} does not cite every leaf of its "
+                            "proof term")
+    for ed in premises:
+        if ed["id"] not in cited:
+            problems.append(f"computed-closure premise edge {ed['id']!r} is not cited by "
+                            "any derivation — the view shows exactly the cited premises")
+        if ed.get("status") == "computedView":
+            problems.append("a direct premise edge must keep its own status")
+    # the canonical views stay direct-only: no derived edge may leak into them
+    for vname in ("omega-facts", "imported-reductions", "concept-projection"):
+        for ed in fam_views[vname]["edges"]:
+            if ed.get("family") == "computedClosure" or ed.get("status") == "computedView":
+                problems.append(f"canonical view {vname} contains a computed edge; "
+                                "canonical graphs are direct-only")
     # closed label sets per family, and no directional glyph may appear in any graph
     # label: direction is carried by drawn arrowheads only (dir=both / tee), never by
     # label text — the gate that keeps the Stroop bug from returning
     LABELS_BY_FAMILY = {"certifiedOmegaFact": {"⊨ω", "⊭ω"},
                         "importedReduction": {"≤sW", "≤W"},
-                        "ambientFactorization": {"ambient"}}
+                        "ambientFactorization": {"ambient"},
+                        "computedClosure": {"⊨ω", "≤W"}}
     GLYPHS = ("→", "←", "⇒", "⇐", "⇔", "->", "<-", "=>", "<=>")
     for dot_name, dot_text_ in ([("ambient-factorizations", to_dot(catalog))]
                                 + [(vn, view_dot(vn, vw)) for vn, vw in fam_views.items()]):
@@ -825,6 +879,33 @@ reduction: open head (pinned, external)</span>
             "certified counts; records without complete validated trust data are "
             "downgraded to reported.</em></p>\n")
 
+    def computed_section() -> str:
+        v = views.get("computed-closure", {})
+        derived = [e for e in v.get("edges", []) if e.get("family") == "computedClosure"]
+        if not derived:
+            return ""
+        cards = []
+        for d in derived:
+            leaves = "".join(f"<li><code>{e(l)}</code></li>" for l in d["leaves"])
+            cards.append(f"""<details class="card" data-family="computed">
+<summary><strong><code>{e(d['lhs'])}</code> {e(d['label'])} <code>{e(d['rhs'])}</code></strong>
+— <code>{e(d['id'])}</code> <span class="tag">{e(d['status'])}</span></summary>
+<dl>
+<dt>derivation</dt><dd><code>{e(d['derivationText'])}</code></dd>
+<dt>premises cited</dt><dd><ul>{leaves}</ul></dd>
+<dt>premise family</dt><dd>{e(d['premiseFamily'])} ({e(d['relation'])})</dd>
+<dt>note</dt><dd>{e(d['note'])}</dd>
+</dl></details>""")
+        return section(
+            "computed-sec", "Computed closure (view-only)", len(cards), "\n".join(cards),
+            "<p><em>Derived edges, each the conclusion of an explicit typed proof "
+            "<strong>tree</strong> — premise orientation is part of the term, and every "
+            "rule node is typechecked against family-specific rule vocabularies and "
+            "exact endpoint composition. No generic reachability: these derivations are "
+            "hand-declared, never searched. Status <code>computedView</code>: never "
+            "certified, never imported, never a registered fact, and absent from the "
+            "canonical direct-only graphs and every certified count.</em></p>\n")
+
     def backend_section() -> str:
         bes = catalog.get("backendEvidence", [])
         if not bes:
@@ -1028,13 +1109,14 @@ into one.</p></details></div>
 (ω-model) · {len(catalog['ports'])} ports ·
 {len(catalog.get('importedReductions', []))} imported reductions ·
 {len(catalog.get('backendEvidence', []))} backend evidence records ·
+{len([x for x in views.get('computed-closure', {}).get('edges', []) if x.get('family') == 'computedClosure'])} computed edges (view-only) ·
 {len(catalog.get('corpus', {}).get('claims', []))} corpus claims ·
 {len(catalog.get('corpus', {}).get('bridges', []))} missing bridges</p>
 <p class="filters">Filter:
 <input type="text" id="ftext" placeholder="text, ids, theorems…" oninput="applyFilter()">
 <select id="ffam" onchange="applyFilter()"><option value="">all families</option>
 <option>ambient</option><option>certified</option><option>imported</option>
-<option>corpus</option></select>
+<option>backend</option><option>computed</option><option>corpus</option></select>
 <noscript>(filtering needs JavaScript; all content below is fully visible without
 it)</noscript></p>
 <nav class="toc"><strong>Contents:</strong>
@@ -1046,6 +1128,7 @@ it)</noscript></p>
 <a href="#ports-sec">Ports</a> ·
 <a href="#imports-sec">Imported reductions</a> ·
 <a href="#backend-sec">Backend evidence</a> ·
+<a href="#computed-sec">Computed closure</a> ·
 <a href="#corpus-sec">Corpus audits</a> ·
 <a href="#reference">Reference</a></nav>
 {projection_section()}
@@ -1056,6 +1139,7 @@ it)</noscript></p>
 {ports_section()}
 {imports_section()}
 {backend_section()}
+{computed_section()}
 {corpus_section()}
 {reference_section()}
 <footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>
@@ -1088,6 +1172,316 @@ function applyFilter() {{
 </body></html>
 """
 
+
+
+# ---------------------------------------------------------------------------
+# Typed computed closure (view-only)
+#
+# A derivation is a typed PROOF TREE, never a flat premise list: premise
+# orientation is part of the term, and every rule node must compose at the exact
+# endpoint ids. Rule vocabularies are FAMILY-SPECIFIC — a rule is looked up in
+# its family's table, so applying a Weihrauch weakening to an ω fact (or vice
+# versa) fails closed. There is NO generic reachability: the derivations below
+# are an explicit, hand-declared list, and nothing computes a transitive closure.
+# Conclusions carry status `computedView`, never `kernelChecked`/`importedChecked`,
+# they live only under `views/` (the canonical catalog stays direct-only and
+# needs no schema change), and they contribute nothing to any certified count.
+# ---------------------------------------------------------------------------
+
+# Family-specific relation vocabularies. A judgment's relation must be in its
+# family's set, at every node.
+FAMILY_RELATIONS = {
+    "certifiedOmegaFact": {"implication", "equivalence"},
+    "importedReduction": {"strongWeihrauch", "weihrauch"},
+}
+
+# Family-specific rule vocabularies (arity included). Leaves are family-typed too.
+FAMILY_RULES = {
+    "certifiedOmegaFact": {"equivalenceElimForward": 1, "equivalenceElimReverse": 1,
+                           "transitivity": 2},
+    "importedReduction": {"strongToOrdinary": 1, "transitivity": 2},
+}
+LEAF_RULES = {"fact": "certifiedOmegaFact", "reduction": "importedReduction"}
+
+# The declared derivations. Each is a proof term; the conclusion is *computed*,
+# then checked against the declared endpoints — the declaration never overrides
+# what the tree proves.
+COMPUTED_DERIVATIONS = [
+    {
+        "id": "computed.omega.wklImpliesHall",
+        "term": ["transitivity",
+                 ["equivalenceElimForward", ["fact", "wklEfilcOmega"]],
+                 ["fact", "efilcHallOmega"]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "wkl.binaryTree.turingIdealOmega",
+            "rhs": "countableHall.oneSidedInjective.enumeratedCandidates."
+                   "turingIdealOmega"},
+        "note": "WKLω → Hallω: the certified equivalence used forward, then the "
+                "certified EFILCω → Hallω implication. A display derivation only — "
+                "Hall's reversal remains an audited open question, and no fact is "
+                "registered.",
+    },
+    {
+        "id": "computed.weihrauch.hallLeWkl",
+        "term": ["transitivity",
+                 ["strongToOrdinary", ["reduction", "hall_le_efilc.strongWeihrauch"]],
+                 ["reduction", "efilc_le_wkl.weihrauch"]],
+        "expect": {
+            "family": "importedReduction", "relation": "weihrauch",
+            "lhs": "hall.oneSidedRelationEnumerator",
+            "rhs": "wkl.streamCodedTree"},
+        "note": "Hall ≤W WKL: the strong Hall ≤sW EFILC weakened to the ordinary "
+                "notion, then composed with the imported EFILC ≤W WKL. Ordinary "
+                "notion only — the composition never inherits strength.",
+    },
+]
+
+
+class DerivationError(Exception):
+    """A proof term that does not typecheck. Always fatal: a derivation that does
+    not compose is never rendered as a weaker edge."""
+
+
+def _leaf_judgment(kind: str, rid: str, index: dict) -> dict:
+    family = LEAF_RULES[kind]
+    if kind == "fact":
+        f = index["facts"].get(rid)
+        if f is None:
+            raise DerivationError(f"leaf fact {rid!r} is not a certified fact")
+        if f.get("context", {}).get("scope") != "omegaModels":
+            raise DerivationError(f"leaf fact {rid!r} is not at scope omegaModels")
+        relation = f["kind"]
+        lhs = f["lhs"][0].split(":", 1)[-1]
+        rhs = f["rhs"][0].split(":", 1)[-1]
+    else:
+        r = index["reductions"].get(rid)
+        if r is None:
+            raise DerivationError(f"leaf reduction {rid!r} is not an imported record")
+        if r.get("status") != "importedChecked":
+            raise DerivationError(f"leaf reduction {rid!r} is not importedChecked; a "
+                                  "reported record never enters a derivation")
+        relation = r["local"]["notion"]
+        lhs = r["local"]["lhs"].split(":", 1)[-1]
+        rhs = r["local"]["rhs"].split(":", 1)[-1]
+    if relation not in FAMILY_RELATIONS[family]:
+        raise DerivationError(f"leaf {rid!r} has relation {relation!r} outside its "
+                              f"family vocabulary")
+    return {"family": family, "relation": relation, "lhs": lhs, "rhs": rhs,
+            "leaves": [rid]}
+
+
+def eval_derivation(term, index: dict) -> dict:
+    """Evaluate a proof term to its judgment, checking family, rule vocabulary,
+    relation, and EXACT endpoint composition at every node."""
+    if not isinstance(term, list) or not term or not isinstance(term[0], str):
+        raise DerivationError(f"malformed proof term {term!r}")
+    head, args = term[0], term[1:]
+    if head in LEAF_RULES:
+        if len(args) != 1 or not isinstance(args[0], str):
+            raise DerivationError(f"leaf rule {head!r} takes one record id")
+        return _leaf_judgment(head, args[0], index)
+    prems = [eval_derivation(a, index) for a in args]
+    if not prems:
+        raise DerivationError(f"unknown rule {head!r} with no premises")
+    family = prems[0]["family"]
+    for p in prems[1:]:
+        if p["family"] != family:
+            raise DerivationError(f"rule {head!r} mixes families "
+                                  f"({family!r} and {p['family']!r})")
+    rules = FAMILY_RULES[family]
+    if head not in rules:
+        raise DerivationError(f"rule {head!r} is not in the {family!r} vocabulary")
+    if len(prems) != rules[head]:
+        raise DerivationError(f"rule {head!r} expects {rules[head]} premise(s), "
+                              f"got {len(prems)}")
+    leaves = [x for p in prems for x in p["leaves"]]
+    if head == "equivalenceElimForward":
+        p = prems[0]
+        if p["relation"] != "equivalence":
+            raise DerivationError("equivalenceElimForward needs an equivalence")
+        return {**p, "relation": "implication", "leaves": leaves}
+    if head == "equivalenceElimReverse":
+        p = prems[0]
+        if p["relation"] != "equivalence":
+            raise DerivationError("equivalenceElimReverse needs an equivalence")
+        return {"family": family, "relation": "implication",
+                "lhs": p["rhs"], "rhs": p["lhs"], "leaves": leaves}
+    if head == "strongToOrdinary":
+        p = prems[0]
+        if p["relation"] != "strongWeihrauch":
+            raise DerivationError("strongToOrdinary needs a ≤sW premise")
+        return {**p, "relation": "weihrauch", "leaves": leaves}
+    if head == "transitivity":
+        a, b = prems
+        if a["relation"] != b["relation"]:
+            raise DerivationError(f"transitivity needs matching relations, got "
+                                  f"{a['relation']!r} and {b['relation']!r}")
+        if a["relation"] == "equivalence":
+            raise DerivationError("transitivity is stated for implications and "
+                                  "reductions; eliminate the equivalence first")
+        if a["rhs"] != b["lhs"]:
+            raise DerivationError(f"transitivity does not compose: {a['rhs']!r} != "
+                                  f"{b['lhs']!r} (exact endpoints, never concepts)")
+        return {"family": family, "relation": a["relation"],
+                "lhs": a["lhs"], "rhs": b["rhs"], "leaves": leaves}
+    raise DerivationError(f"unimplemented rule {head!r}")
+
+
+def render_term(term) -> str:
+    """The proof term as source text, for display and provenance."""
+    if isinstance(term, str):
+        return term
+    return f"{term[0]}({', '.join(render_term(a) for a in term[1:])})"
+
+
+def build_computed_closure(catalog: dict) -> dict:
+    """The computed-closure view: derived edges from typed proof trees, plus the
+    exact direct premises they cite (so each triangle is legible). Derived edges
+    are `computedView` and dotted; premise edges keep their own family and status."""
+    index = {
+        "facts": {f["id"]: f for f in catalog.get("facts", []) if f.get("evidence")},
+        "reductions": {r["id"]: r for r in catalog.get("importedReductions", [])},
+    }
+    variants = {v["id"].split(":", 1)[-1] for v in catalog.get("statementVariants", [])}
+    omega_variants = {v["id"].split(":", 1)[-1]
+                      for v in catalog.get("statementVariants", [])
+                      if v.get("layer") == "turingIdealOmega"}
+    problems = {q["id"].split(":", 1)[-1] for q in catalog.get("uniformProblems", [])}
+    edges, nodes, seen_ids = [], set(), set()
+    for spec in COMPUTED_DERIVATIONS:
+        if spec["id"] in seen_ids:
+            raise DerivationError(f"duplicate derived edge id {spec['id']!r}")
+        seen_ids.add(spec["id"])
+        j = eval_derivation(spec["term"], index)
+        exp = spec["expect"]
+        if (j["family"], j["relation"], j["lhs"], j["rhs"]) != (
+                exp["family"], exp["relation"], exp["lhs"], exp["rhs"]):
+            raise DerivationError(
+                f"{spec['id']}: the proof term concludes "
+                f"{j['relation']} {j['lhs']} → {j['rhs']} in {j['family']}, but the "
+                f"declaration expects {exp['relation']} {exp['lhs']} → {exp['rhs']} "
+                f"in {exp['family']}")
+        # endpoint kinds, checked against the family's node universe
+        universe = omega_variants if j["family"] == "certifiedOmegaFact" else problems
+        for side in ("lhs", "rhs"):
+            if j[side] not in universe:
+                raise DerivationError(f"{spec['id']}: endpoint {j[side]!r} is not a "
+                                      f"registered node of family {j['family']!r}")
+        label = {"implication": "⊨ω", "weihrauch": "≤W",
+                 "strongWeihrauch": "≤sW"}[j["relation"]]
+        nodes.update([j["lhs"], j["rhs"]])
+        edges.append({
+            "id": spec["id"], "family": "computedClosure", "status": "computedView",
+            "premiseFamily": j["family"], "relation": j["relation"], "label": label,
+            "lhs": j["lhs"], "rhs": j["rhs"],
+            "derivation": spec["term"], "derivationText": render_term(spec["term"]),
+            "leaves": sorted(set(j["leaves"])), "note": spec["note"]})
+    # the cited direct premises, as context edges (never merged, never recomputed)
+    premise_edges = []
+    cited = sorted({leaf for e in edges for leaf in e["leaves"]})
+    for rid in cited:
+        if rid in index["facts"]:
+            f = index["facts"][rid]
+            lhs = f["lhs"][0].split(":", 1)[-1]
+            rhs = f["rhs"][0].split(":", 1)[-1]
+            premise_edges.append({
+                "id": rid, "family": "certifiedOmegaFact", "status": "kernelChecked",
+                "relation": f["kind"], "label": "⊨ω", "lhs": lhs, "rhs": rhs,
+                "bidirectional": f["kind"] == "equivalence"})
+        else:
+            r = index["reductions"][rid]
+            notion = r["local"]["notion"]
+            premise_edges.append({
+                "id": rid, "family": "importedReduction", "status": r["status"],
+                "relation": notion,
+                "label": {"strongWeihrauch": "≤sW", "weihrauch": "≤W"}[notion],
+                "lhs": r["local"]["lhs"].split(":", 1)[-1],
+                "rhs": r["local"]["rhs"].split(":", 1)[-1], "notion": notion})
+        nodes.update([premise_edges[-1]["lhs"], premise_edges[-1]["rhs"]])
+    return {
+        "view": "computed-closure", "family": "computedClosure",
+        "comment": "TYPED COMPUTED CLOSURE, view-only. Each derived edge is the "
+                   "conclusion of an explicit proof TREE (premise orientation is part "
+                   "of the term), typechecked at every node against family-specific "
+                   "rule vocabularies and EXACT endpoint composition. No generic "
+                   "reachability: derivations are hand-declared, never searched. "
+                   "Derived edges are computedView — never certified, never imported, "
+                   "never a registered fact, never in any certified count; the "
+                   "canonical graphs stay direct-only.",
+        "nodes": sorted(nodes), "edges": premise_edges + edges}
+
+
+def selftest_derivations() -> list[str]:
+    """Fail-closed fixtures for the evaluator: malformed terms must raise, never
+    silently weaken. Returns the list of fixtures that wrongly succeeded."""
+    index = {
+        "facts": {
+            "eqv": {"kind": "equivalence", "context": {"scope": "omegaModels"},
+                    "lhs": ["ns:A"], "rhs": ["ns:B"], "evidence": [{}]},
+            "imp": {"kind": "implication", "context": {"scope": "omegaModels"},
+                    "lhs": ["ns:B"], "rhs": ["ns:C"], "evidence": [{}]},
+            "far": {"kind": "implication", "context": {"scope": "omegaModels"},
+                    "lhs": ["ns:X"], "rhs": ["ns:Y"], "evidence": [{}]},
+            "amb": {"kind": "implication", "context": {"scope": "allModels"},
+                    "lhs": ["ns:A"], "rhs": ["ns:B"], "evidence": [{}]},
+        },
+        "reductions": {
+            "sw": {"status": "importedChecked",
+                   "local": {"notion": "strongWeihrauch", "lhs": "ns:P", "rhs": "ns:Q"}},
+            "w": {"status": "importedChecked",
+                  "local": {"notion": "weihrauch", "lhs": "ns:Q", "rhs": "ns:R"}},
+            "rep": {"status": "reported",
+                    "local": {"notion": "weihrauch", "lhs": "ns:Q", "rhs": "ns:R"}},
+        },
+    }
+    must_fail = {
+        "endpoints must compose exactly":
+            ["transitivity", ["fact", "imp"], ["fact", "far"]],
+        "families never mix":
+            ["transitivity", ["fact", "imp"], ["reduction", "w"]],
+        "rule outside its family vocabulary":
+            ["strongToOrdinary", ["fact", "eqv"]],
+        "omega rule outside its family vocabulary":
+            ["equivalenceElimForward", ["reduction", "sw"]],
+        "equivalence must be eliminated before transitivity":
+            ["transitivity", ["fact", "eqv"], ["fact", "imp"]],
+        "strongToOrdinary needs a strong premise":
+            ["strongToOrdinary", ["reduction", "w"]],
+        "reported records never enter derivations":
+            ["transitivity", ["reduction", "sw"], ["reduction", "rep"]],
+        "out-of-scope facts never enter derivations":
+            ["equivalenceElimForward", ["fact", "amb"]],
+        "unknown leaf": ["fact", "nope"],
+        "unknown rule": ["magic", ["fact", "imp"]],
+        "malformed term": ["transitivity", "imp", ["fact", "far"]],
+        "wrong arity": ["transitivity", ["fact", "imp"]],
+    }
+    wrong = []
+    for name, term in must_fail.items():
+        try:
+            eval_derivation(term, index)
+        except DerivationError:
+            continue
+        except Exception:
+            continue
+        wrong.append(name)
+    # and the two shapes that must succeed, with the right orientation
+    try:
+        j = eval_derivation(["transitivity", ["equivalenceElimForward", ["fact", "eqv"]],
+                             ["fact", "imp"]], index)
+        if (j["relation"], j["lhs"], j["rhs"]) != ("implication", "A", "C"):
+            wrong.append("valid ω triangle concluded the wrong judgment")
+    except DerivationError as exc:
+        wrong.append(f"valid ω triangle rejected: {exc}")
+    try:
+        j = eval_derivation(["transitivity", ["strongToOrdinary", ["reduction", "sw"]],
+                             ["reduction", "w"]], index)
+        if (j["relation"], j["lhs"], j["rhs"]) != ("weihrauch", "P", "R"):
+            wrong.append("valid Weihrauch triangle concluded the wrong judgment")
+    except DerivationError as exc:
+        wrong.append(f"valid Weihrauch triangle rejected: {exc}")
+    return wrong
 
 
 def merge_antiparallel(edges: list[dict], src_key: str, tgt_key: str) -> list[dict]:
@@ -1269,12 +1663,14 @@ def build_family_views(catalog: dict) -> dict:
             "nodes": sorted({c["id"].split(":", 1)[-1]
                              for c in catalog.get("concepts", [])}),
             "edges": proj_edges},
+        "computed-closure": build_computed_closure(catalog),
     }
 
 
 STYLE = {"ambientFactorization": 'style=solid',
          "certifiedOmegaFact": 'style=bold',
-         "importedReduction": 'style=dashed'}
+         "importedReduction": 'style=dashed',
+         "computedClosure": 'style=dotted'}
 
 
 def view_dot(name: str, view: dict) -> str:
@@ -1287,6 +1683,12 @@ def view_dot(name: str, view: dict) -> str:
         src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
+        if e.get("family") == "computedClosure":
+            # derived, never certified: dotted with an open head, and the rule name
+            # travels with the edge so the geometry is never the only provenance
+            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")} '
+                         f'[{e["derivationText"]}]", {style}, arrowhead=onormal];')
+            continue
         if e.get("strongEnd") == "head":
             extra += ", arrowhead=normal, arrowtail=onormal"
         elif e.get("strongEnd") == "tail":
@@ -1361,7 +1763,13 @@ def cmd_build(args: argparse.Namespace) -> None:
                    "NONCANONICAL, LOSSY",
                    "only validated display merges with named premises",
                    "Filtering changes visibility only",
-                   "Semantic contexts"):
+                   "Semantic contexts",
+                   # the computed family must always announce that it is view-only and
+                   # hand-declared — never searched, never certified
+                   "No generic reachability: these derivations are "
+                   "hand-declared, never searched",
+                   "absent from the "
+                   "canonical direct-only graphs and every certified count"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
     legend_count = page.count('<div class="legend"')
