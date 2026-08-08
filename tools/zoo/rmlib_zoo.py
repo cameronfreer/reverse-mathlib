@@ -393,8 +393,6 @@ def cmd_check(args: argparse.Namespace) -> None:
                  if ed.get("fact") else
                  direct_imported_edge(next(r for r in catalog.get("importedReductions", [])
                                            if r["id"] == pid)))
-        if ed.get("fact"):
-            canon["status"] = "kernelChecked"
         if ed != canon:
             problems.append(f"computed-closure premise edge {pid!r} is not the canonical "
                             "direct-edge record for that source")
@@ -1279,6 +1277,7 @@ OMEGA_EDGE_LABELS = {"equivalence": "⊨ω", "implication": "⊨ω",
 def direct_omega_edge(f: dict) -> dict:
     """The canonical edge record for one certified ω fact."""
     return {"family": "certifiedOmegaFact", "fact": f["id"], "kind": f["kind"],
+            "status": "kernelChecked",
             "bidirectional": f["kind"] == "equivalence",
             # non-directional labels: the DRAWN arrowheads carry direction (dir=both
             # for an equivalence, tee for a separation); a textual arrow beside an
@@ -1410,7 +1409,7 @@ def eval_derivation(term, index: dict) -> dict:
         p = prems[0]
         if p["relation"] != "equivalence":
             raise DerivationError("equivalenceElimReverse needs an equivalence")
-        return {"family": family, "relation": "implication",
+        return {**p, "relation": "implication",
                 "lhs": p["rhs"], "rhs": p["lhs"], "leaves": leaves}
     if head == "strongToOrdinary":
         p = prems[0]
@@ -1498,7 +1497,6 @@ def build_computed_closure(catalog: dict) -> dict:
         # its own family view — never a skinny duplicate
         if rid in index["facts"]:
             ed = direct_omega_edge(index["facts"][rid])
-            ed["status"] = "kernelChecked"
         else:
             ed = direct_imported_edge(index["reductions"][rid])
         premise_edges.append(ed)
@@ -1527,6 +1525,9 @@ def selftest_derivations() -> list[str]:
             "imp": {"kind": "implication", "context": {"scope": "omegaModels"},
                     "lhs": ["ns:B"], "rhs": ["ns:C"],
                     "evidence": [{"context": "ctx"}]},
+            "impA": {"kind": "implication", "context": {"scope": "omegaModels"},
+                     "lhs": ["ns:A"], "rhs": ["ns:C"],
+                     "evidence": [{"context": "ctx"}]},
             "far": {"kind": "implication", "context": {"scope": "omegaModels"},
                     "lhs": ["ns:X"], "rhs": ["ns:Y"], "evidence": [{"context": "ctx"}]},
             "amb": {"kind": "implication", "context": {"scope": "allModels"},
@@ -1601,6 +1602,12 @@ def selftest_derivations() -> list[str]:
         "ω triangle": (["transitivity",
                         ["equivalenceElimForward", ["fact", "eqv"]], ["fact", "imp"]],
                        ("implication", "A", "C"), frozenset({"ctx"})),
+        # the reverse elimination must PRESERVE the certification contexts: a valid
+        # same-context reverse composition once failed here by dropping them
+        "reverse ω triangle": (["transitivity",
+                                ["equivalenceElimReverse", ["fact", "eqv"]],
+                                ["fact", "impA"]],
+                               ("implication", "B", "C"), frozenset({"ctx"})),
         "Weihrauch triangle": (["transitivity",
                                 ["strongToOrdinary", ["reduction", "sw"]],
                                 ["reduction", "w"]],
