@@ -381,6 +381,31 @@ term. -/
 #rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
   ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
 
+/-! ### 2-regular matching ω route gates (#42 slice 2)
+
+`EFILCω → 2-regular matchingω` must factor through the `bigraphToSystem` /
+`sectionToMatching` route, reuse the FINITE symmetric-Hall covering lemma (proof
+reuse of this repo's finite combinatorics, which itself reuses mathlib's finite
+Hall), and reach neither the infinite Hall theorem, the compactness boundary, nor
+any other compiler — the mate-table architecture certificate. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.bigraphToSystem
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.sectionMatchingFunction
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.exists_matching_covering
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  [ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.sectionTransversalFunction,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system]
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

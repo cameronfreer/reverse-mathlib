@@ -539,7 +539,7 @@ conditions by degree counting, the finite symmetric-Hall covering lemma produces
 one matching covering the first `n` vertices of each side, and that matching *is*
 a consistent mate table — no matching is ever stored in constructed data. -/
 
-private theorem valueTable_getD {f : ℕ → ℕ} {n k : ℕ} (hk : k < n) :
+theorem valueTable_getD {f : ℕ → ℕ} {n k : ℕ} (hk : k < n) :
     (decodeSeq (valueTable f n)).getD k 0 = f k := by
   rw [decodeSeq_valueTable, List.getD_eq_getElem?_getD,
     List.getElem?_eq_getElem (by simpa using hk), Option.getD_some]

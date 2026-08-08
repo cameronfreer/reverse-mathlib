@@ -73,7 +73,12 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.sectionBoundedPathGraph_le_graph,
    -- Bounded Kőnig slice 4: both genuine directions (the converse composes through EFILC)
    ``ReverseMathlib.Omega.boundedKonigAt_of_efilcAt,
-   ``ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt]
+   ``ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt,
+   -- Matching slice 2: fiber graph reduces to enumerator ⊕ enumerator; matching to the
+   -- section; the completed forward direction
+   ``ReverseMathlib.Omega.mateFiberGraph_le_join,
+   ``ReverseMathlib.Omega.sectionMatchingGraph_le_graph,
+   ``ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
