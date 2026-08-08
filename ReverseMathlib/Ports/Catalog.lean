@@ -35,10 +35,10 @@ rm_namespace computableAnalysis "cameronfreer/computable-analysis catalog identi
 
 rm_concept wkl where
   description := "Weak Kőnig's lemma as a conceptual family: binary-tree formulations across \
-    semantic layers (ambient / ω-model / second-order syntax); explicitly bounded \
-    formulations may join once their relationship is fixed. Merely finitely branching \
-    (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under \
-    the rmzoo:WKL alias"
+    semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded \
+    ω-model formulation, joined through the kernel-checked presentation equivalence \
+    boundedKonigWklOmega. Merely finitely branching (full Kőnig) is the ACA-level \
+    principle and belongs to a separate concept, not under the rmzoo:WKL alias"
 
 rm_concept explicitFiniteInverseLimitCompactness where
   description := "Explicit finite inverse-limit compactness as a conceptual family: \

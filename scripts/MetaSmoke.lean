@@ -455,6 +455,12 @@ replacing them with an inline or unrestricted proof. -/
 #rm_assert_proof_depends ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence
   ReverseMathlib.Omega.weakKonigAt_of_efilcAt
 
+#rm_assert_proof_depends ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence
+  ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence
+  ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
+
 #rm_assert_proof_depends ReverseMathlib.Ports.efilc_hall_omega_implication
   ReverseMathlib.Omega.countableHallAt_of_efilcAt
 
@@ -491,7 +497,7 @@ renders its honest verdict. -/
 -- zero syntactic. The Hall claim is an upper implication only: no Hall lower bound or
 -- equivalence exists at any certified scope.
 /--
-info: concepts: 4; variants: 7; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 8; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -567,6 +573,10 @@ info: weakKonigEfilcOmega
   check (cat.interfaceOwner[`ReverseMathlib.Omega.EFILCAt]? ==
       some ⟨`efilc.explicitSequential.enumeratedFibers.turingIdealOmega⟩)
     "EFILCAt is owned by efilc.explicitSequential.enumeratedFibers.turingIdealOmega"
+  check (cat.interfaceOwner[`ReverseMathlib.Omega.BoundedKonigAt]? ==
+      some ⟨`wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega⟩)
+    "BoundedKonigAt is owned by wkl.explicitlyBoundedTree.internalBoundFunction.\
+      turingIdealOmega"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 
@@ -589,9 +599,10 @@ info: concepts (4):
     problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
   reverse-mathlib:rca0Core — The second-order core of RCA₀ at a fixed first-order part: nonemptiness, downward Δ⁰₁ (Turing) closure, and closure under recursive join — the Turing-ideal closure conditions. A base-capability concept: it names what the base theory's ω-models satisfy by definition, so ω-scope separations have an honest typed lhs; it is not a theorem-strength concept and carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
-  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax); explicitly bounded formulations may join once their relationship is fixed. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
+  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded ω-model formulation, joined through the kernel-checked presentation equivalence boundedKonigWklOmega. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     variant reverse-mathlib:wkl.binaryTree.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.WeakKonigAt⟩
+    variant reverse-mathlib:wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.BoundedKonigAt⟩
     problem reverse-mathlib:wkl.streamCodedTree [single]
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
@@ -871,7 +882,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 5; variants: 9; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 10; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1003,7 +1014,9 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (7):
+info: facts (8):
+  boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
+    note: The fourth production ω fact: the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — recorded, no evidence linked
     note: The Hall ω walking slice: an upper implication only — countable Hall's exact classification at ω scope stays open (no lower bound is claimed)
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
@@ -1216,7 +1229,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 5; variants: 11; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 3; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 12; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1468,7 +1481,11 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (12):
+info: facts (13):
+  boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.efilc_hall_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem countableHallAt_of_efilcAt; its route architecture and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1507,7 +1524,7 @@ info: facts (12):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1610,7 +1627,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1707,7 +1724,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1860,7 +1877,7 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
 -- Backend ingestion (production + fixtures) adds no certified fact: the scoreboard is
 -- byte-identical to the pre-ingestion check above.
 /--
-info: concepts: 5; variants: 12; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 6; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
