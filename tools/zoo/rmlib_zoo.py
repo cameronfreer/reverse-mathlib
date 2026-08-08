@@ -324,11 +324,13 @@ def cmd_check(args: argparse.Namespace) -> None:
                          if (e["target"], e["source"]) in
                             {(x["source"], x["target"]) for x in amb_edges}
                          and e["source"] < e["target"])
+    cluster_edges = [e for cl in pv.get("clusters", {}).values() for e in cl["edges"]]
     expected = ((len(amb_edges) - amb_pair_count)
                 + len(ov["edges"]) + len(iv["edges"]))
-    if len(pv["edges"]) != expected:
+    if len(pv["edges"]) + len(cluster_edges) != expected:
         problems.append("concept projection must contain exactly the direct edges "
-                        "(antiparallel pairs merged with both sources) — no derived "
+                        "(antiparallel pairs merged with both sources; intra-concept "
+                        "calibrations inside their concept enclosure) — no derived "
                         "closure beyond the explicit weakening annotation, no bridges, "
                         "no unary claims")
     allowed = {"ambientFactorization", "certifiedOmegaFact", "importedReduction"}
@@ -337,6 +339,41 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"projection edge with forbidden family {ed['family']!r}")
         if not (ed.get("exactLhs") and ed.get("exactRhs") and ed.get("status")):
             problems.append("projection edge missing exact endpoints or status")
+        if ed.get("lhsConcept") and ed.get("lhsConcept") == ed.get("rhsConcept"):
+            problems.append(f"projected concept self-loop survived on "
+                            f"{ed.get('lhsConcept')!r}; an intra-concept calibration "
+                            "renders only inside its concept enclosure")
+    # the enclosure gates: every intra-concept fact exactly once inside its concept
+    # enclosure, internal nodes resolving to exact registered ω variants, the
+    # certificate carried into the accessible details
+    for cname, cl in pv.get("clusters", {}).items():
+        endpoint_variants = set()
+        for ed in cl["edges"]:
+            if ed.get("family") != "certifiedOmegaFact":
+                problems.append(f"cluster {cname!r} contains a "
+                                f"{ed.get('family')!r} edge; only certified ω "
+                                "calibrations have an enclosure rule")
+            if not (ed.get("lhsConcept") == cname == ed.get("rhsConcept")):
+                problems.append(f"cluster {cname!r} contains an edge that does not "
+                                "belong to its concept")
+            for side in ("exactLhs", "exactRhs"):
+                if ed.get(side) not in variants:
+                    problems.append(f"cluster {cname!r} internal endpoint "
+                                    f"{ed.get(side)!r} is not a registered variant")
+                endpoint_variants.add(ed.get(side))
+            if not ed.get("certificates"):
+                problems.append(f"cluster {cname!r} edge {ed.get('source')!r} carries "
+                                "no certificate")
+        if sorted(endpoint_variants) != cl.get("variants", []):
+            problems.append(f"cluster {cname!r} variant list must be exactly the "
+                            "internal edges' endpoints")
+        if len(cl.get("variants", [])) < 2:
+            problems.append(f"cluster {cname!r} must contain at least two variants — "
+                            "a single-variant enclosure is a self-loop in disguise")
+    cluster_srcs = [ed.get("source") for ed in cluster_edges]
+    if len(cluster_srcs) != len(set(cluster_srcs)):
+        problems.append("an intra-concept fact appears more than once across "
+                        "concept enclosures")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
     # tree that typechecks; the evaluator's fail-closed fixtures run here too
     for name in selftest_derivations():
@@ -397,8 +434,12 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"computed-closure premise edge {pid!r} is not the canonical "
                             "direct-edge record for that source")
     # the canonical views stay direct-only: no derived edge may leak into them
+    # (concept enclosures included — an enclosure is display grouping, not closure)
     for vname in ("omega-facts", "imported-reductions", "concept-projection"):
-        for ed in fam_views[vname]["edges"]:
+        vw = fam_views[vname]
+        all_edges = vw["edges"] + [e for cl in vw.get("clusters", {}).values()
+                                   for e in cl["edges"]]
+        for ed in all_edges:
             if ed.get("family") == "computedClosure" or ed.get("status") == "computedView":
                 problems.append(f"canonical view {vname} contains a computed edge; "
                                 "canonical graphs are direct-only")
@@ -417,7 +458,8 @@ def cmd_check(args: argparse.Namespace) -> None:
                 problems.append(f"DOT {dot_name} label {lab!r} contains a directional "
                                 "glyph; direction belongs to drawn arrowheads only")
     for vname, view in fam_views.items():
-        for ed in view["edges"]:
+        for ed in view["edges"] + [e for cl in view.get("clusters", {}).values()
+                                   for e in cl["edges"]]:
             lab = ed.get("label", "")
             allowed = LABELS_BY_FAMILY.get(ed.get("family"))
             if allowed is not None and lab not in allowed:
@@ -435,7 +477,15 @@ def cmd_check(args: argparse.Namespace) -> None:
                 json.dumps(view, sort_keys=True)):
             problems.append(f"view {vname} JSON does not match recomputation")
         dot = (views_dir / vname / "graph.dot").read_text()
-        if dot.count(" -> ") != len(view["edges"]):
+        # a concept enclosure contributes its internal calibration edges and its
+        # variant nodes to the drawing, and removes the concept's own plain node
+        cl_edge_count = sum(len(cl["edges"])
+                            for cl in view.get("clusters", {}).values())
+        cl_variant_count = len({vn for cl in view.get("clusters", {}).values()
+                                for vn in cl["variants"]})
+        drawn_nodes = (len(view["nodes"]) - len(view.get("clusters", {}))
+                       + cl_variant_count)
+        if dot.count(" -> ") != len(view["edges"]) + cl_edge_count:
             problems.append(f"view {vname} DOT/JSON edge counts disagree")
         # every DOT edge endpoint must be a declared node — otherwise Graphviz would
         # invent nodes and the rendered SVG would disagree with the canonical JSON
@@ -449,8 +499,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         svgp = views_dir / vname / "graph.svg"
         if svgp.exists():
             svg = svgp.read_text()
-            if (svg.count('class="node"') != len(view["nodes"])
-                    or svg.count('class="edge"') != len(view["edges"])):
+            if (svg.count('class="node"') != drawn_nodes
+                    or svg.count('class="edge"') != len(view["edges"]) + cl_edge_count):
                 problems.append(f"view {vname} SVG node/edge counts disagree with JSON/DOT")
     ambient_svg = zoo_dir(root) / "ambient-factorizations.svg"
     ag = catalog.get("ambientGraph", {})
@@ -648,6 +698,9 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                 if ed.get(k))
             if ed.get("contexts"):
                 detail += "; contexts: " + ", ".join(ed["contexts"])
+            if ed.get("certificates"):
+                detail += "; certificates: " + ", ".join(
+                    str(c) for c in ed["certificates"] if c)
             if ed.get("derivationText"):
                 detail += (f"; derivation: {ed['derivationText']}"
                            f"; premises cited: {', '.join(ed.get('leaves', []))}")
@@ -715,10 +768,17 @@ reduction: open head (pinned, external)</span>
 
     def projection_section() -> str:
         v = views["concept-projection"]
+        # intra-concept calibrations render inside their concept enclosure; their
+        # accessible details (full variant ids, certificate, source fact) list right
+        # alongside the external projection edges
+        cluster_edges = [e for cl in v.get("clusters", {}).values()
+                         for e in cl["edges"]]
         panel = graph_panel(
-            "Concept projection", "per-family line styles; no transitive closure",
+            "Concept projection", "per-family line styles; no transitive closure; "
+            "concept enclosures hold intra-concept calibrations at variant level",
             v["comment"], len(v["nodes"]),
-            view_edge_items(v), len(v["edges"]),
+            view_edge_items({**v, "edges": v["edges"] + cluster_edges}),
+            len(v["edges"]) + len(cluster_edges),
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
             "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
             open_=True)
@@ -1829,6 +1889,11 @@ def build_family_views(catalog: dict) -> dict:
         c = problems.get(pid, {}).get("concept", "")
         return c.split(":", 1)[-1] if c else ""
     proj_edges = []
+    # intra-concept calibrations: a fact whose endpoints project to the SAME concept
+    # never renders as a concept self-loop (which would read as a tautology). The
+    # concept instead renders as an enclosure containing its exact variant nodes, and
+    # the fact keeps its variant-level endpoints inside it.
+    proj_clusters: dict = {}
     amb_proj = []
     for e in catalog.get("ambientGraph", {}).get("edges", []):
         amb_proj.append({"family": "ambientFactorization",
@@ -1840,13 +1905,21 @@ def build_family_views(catalog: dict) -> dict:
                            "status": "kernelChecked", "scope": "ambientFactorization"})
     proj_edges.extend(merge_antiparallel(amb_proj, "exactLhs", "exactRhs"))
     for e in omega_edges:
-        proj_edges.append({"family": "certifiedOmegaFact", "label": e["label"],
-                           "kind": e["kind"],
-                           "lhsConcept": concept_of_variant(e["lhs"]),
-                           "rhsConcept": concept_of_variant(e["rhs"]),
-                           "exactLhs": e["lhs"], "exactRhs": e["rhs"],
-                           "status": "kernelChecked", "scope": "omegaModels",
-                           "source": e["fact"], "bidirectional": e["bidirectional"]})
+        pe = {"family": "certifiedOmegaFact", "label": e["label"],
+              "kind": e["kind"],
+              "lhsConcept": concept_of_variant(e["lhs"]),
+              "rhsConcept": concept_of_variant(e["rhs"]),
+              "exactLhs": e["lhs"], "exactRhs": e["rhs"],
+              "certificates": e["certificates"],
+              "status": "kernelChecked", "scope": "omegaModels",
+              "source": e["fact"], "bidirectional": e["bidirectional"]}
+        if pe["lhsConcept"] and pe["lhsConcept"] == pe["rhsConcept"]:
+            cl = proj_clusters.setdefault(pe["lhsConcept"],
+                                          {"variants": set(), "edges": []})
+            cl["variants"].update([e["lhs"], e["rhs"]])
+            cl["edges"].append(pe)
+        else:
+            proj_edges.append(pe)
     for e in imp_edges:
         pe = {"family": "importedReduction", "label": e["label"],
               "lhsConcept": concept_of_problem(e["lhs"]),
@@ -1881,9 +1954,15 @@ def build_family_views(catalog: dict) -> dict:
                        "edge keeps family, scope, exact endpoint ids, and status; NO "
                        "TRANSITIVE CLOSURE — only validated display merges with named "
                        "premises (antiparallel pairs; the explicit ≤sW ⇒ ≤W weakening); "
-                       "missing bridges and unary form claims never render as edges",
+                       "missing bridges and unary form claims never render as edges. "
+                       "An intra-concept calibration never renders as a concept "
+                       "self-loop: its concept renders as an enclosure containing the "
+                       "exact variant nodes, with the fact drawn between them",
             "nodes": sorted({c["id"].split(":", 1)[-1]
                              for c in catalog.get("concepts", [])}),
+            "clusters": {c: {"variants": sorted(cl["variants"]),
+                             "edges": cl["edges"]}
+                         for c, cl in sorted(proj_clusters.items())},
             "edges": proj_edges},
         "computed-closure": build_computed_closure(catalog),
     }
@@ -1897,7 +1976,30 @@ STYLE = {"ambientFactorization": 'style=solid',
 
 def view_dot(name: str, view: dict) -> str:
     lines = [f'digraph "{name}" {{', '  rankdir=LR;', '  node [shape=box];']
+    clusters = view.get("clusters", {})
+    anchors = {}
+    if clusters:
+        # compound lets an external concept-level arrow clip at the enclosure
+        # boundary instead of pointing at any particular internal variant
+        lines.append('  compound=true;')
+        for ci, (cname, cl) in enumerate(sorted(clusters.items())):
+            tag = f"cluster_{ci}"
+            anchors[cname] = (cl["variants"][0], tag)
+            lines.append(f'  subgraph "{tag}" {{')
+            lines.append(f'    label="{cname} (concept)"; style=rounded;')
+            for vn in cl["variants"]:
+                lines.append(f'    "{vn}";')
+            for e in cl["edges"]:
+                st = STYLE.get(e.get("family", ""), "style=solid")
+                ex = ", dir=both" if e.get("bidirectional") else ""
+                if e.get("kind") == "nonImplication":
+                    ex += ", arrowhead=tee"
+                lines.append(f'    "{e["exactLhs"]}" -> "{e["exactRhs"]}" '
+                             f'[label="{e.get("label", "")}", {st}{ex}];')
+            lines.append('  }')
     for n in view["nodes"]:
+        if n in clusters:
+            continue
         lines.append(f'  "{n}";')
     for e in view["edges"]:
         fam = e.get("family", view.get("family", ""))
@@ -1905,6 +2007,14 @@ def view_dot(name: str, view: dict) -> str:
         src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
+        if src in anchors:
+            node, tag = anchors[src]
+            extra += f', ltail="{tag}"'
+            src = node
+        if tgt in anchors:
+            node, tag = anchors[tgt]
+            extra += f', lhead="{tag}"'
+            tgt = node
         if e.get("family") == "computedClosure":
             # derived, never certified: dotted, and the rule name travels with the
             # edge so the geometry is never the only provenance. Open head for
