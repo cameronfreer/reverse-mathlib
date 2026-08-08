@@ -663,12 +663,12 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
         return (f'<section data-sec id="{sec_id}"><h2>{title} '
                 f'<span class="scount">({total})</span></h2>\n{note}{inner}</section>')
 
-    def graph_panel(title: str, styling: str, comment: str, nodes_n: int,
+    def graph_panel(title: str, styling: str, comment: str, nodes_n: int | str,
                     edge_items: str, edges_n: int, svg_name: str | None,
                     dot_href: str, json_href: str, open_: bool = False) -> str:
         if svg_name:
             fig = (f'<figure class="graph"><img src="{e(svg_name)}" '
-                   f'alt="{e(title)}: directed graph with {nodes_n} nodes and '
+                   f'alt="{e(title)}: directed graph with {e(str(nodes_n))} nodes and '
                    f'{edges_n} edges"/>'
                    f'<figcaption>Rendered from the canonical DOT; the edge-detail list '
                    f'below is the accessible equivalent.</figcaption></figure>')
@@ -688,8 +688,15 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
     def view_edge_items(view: dict) -> str:
         items = []
         for ed in view["edges"]:
-            src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
-            tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
+            # an enclosed intra-concept calibration reads at VARIANT level — its
+            # accessible headline must never collapse to `concept ⊨ω concept`
+            enclosed = bool(ed.get("lhsConcept")) and \
+                ed.get("lhsConcept") == ed.get("rhsConcept")
+            if enclosed:
+                src, tgt = ed.get("exactLhs"), ed.get("exactRhs")
+            else:
+                src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
+                tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
             detail = "; ".join(
                 f"{k}: {ed[k]}" for k in ("family", "kind", "fact", "record", "source",
                                           "id", "relation", "premiseFamily", "degree",
@@ -711,9 +718,6 @@ and line style, not color alone)</summary><ul>{edge_items}</ul></details>
                            "arrowhead — and shown here at the ordinary notion by the "
                            "explicit weakening ≤sW ⇒ ≤W; the open arrowhead direction "
                            "is certified ordinary only")
-            certs = ", ".join(ed.get("certificates", []))
-            if certs:
-                detail += f"; certificates: {certs}"
             # the label already encodes the connector (⊨ω →, ≤sW, ⇔, …); fall back to a
             # bare arrow only when a view supplies none
             conn = ed.get("label") or ("⇔" if ed.get("bidirectional") else "→")
@@ -773,10 +777,15 @@ reduction: open head (pinned, external)</span>
         # alongside the external projection edges
         cluster_edges = [e for cl in v.get("clusters", {}).values()
                          for e in cl["edges"]]
+        # an enclosure replaces its concept's plain node with the variant nodes it
+        # contains, so the drawn-node count differs from the concept count
+        displayed = (len(v["nodes"]) - len(v.get("clusters", {}))
+                     + len({vn for cl in v.get("clusters", {}).values()
+                            for vn in cl["variants"]}))
         panel = graph_panel(
             "Concept projection", "per-family line styles; no transitive closure; "
             "concept enclosures hold intra-concept calibrations at variant level",
-            v["comment"], len(v["nodes"]),
+            v["comment"], f"{len(v['nodes'])} concepts, {displayed} displayed",
             view_edge_items({**v, "edges": v["edges"] + cluster_edges}),
             len(v["edges"]) + len(cluster_edges),
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
@@ -2124,6 +2133,23 @@ def cmd_build(args: argparse.Namespace) -> None:
         for marker in ("model-class separation", "⊭ω"):
             if marker not in page:
                 sys.exit(f"rmlib-zoo build: separation marker missing: {marker!r}")
+    # rendered-HTML enclosure guard: an intra-concept calibration's accessible headline
+    # must read at VARIANT level — the tautological `concept RELATION concept` line must
+    # never regress into the page, and the exact variant-level line must be present
+    for cname, cl in family_views["concept-projection"].get("clusters", {}).items():
+        for ed in cl["edges"]:
+            lab = html.escape(ed.get("label", ""))
+            loop_line = (f"<code>{html.escape(cname)}</code> {lab} "
+                         f"<code>{html.escape(cname)}</code>")
+            if loop_line in page:
+                sys.exit(f"rmlib-zoo build: accessible edge list renders the "
+                         f"tautological {cname!r} self-loop headline")
+            exact_line = (f"<code>{html.escape(ed['exactLhs'])}</code> {lab} "
+                          f"<code>{html.escape(ed['exactRhs'])}</code>")
+            if exact_line not in page:
+                sys.exit(f"rmlib-zoo build: enclosed calibration "
+                         f"{ed.get('source')!r} missing its variant-level "
+                         "accessible headline")
     if catalog.get("corpus", {}).get("claims"):
         # rendered-page golden markers: the corpus section must frame absence and
         # missing bridges honestly, in the canonical order the JSON fixes
