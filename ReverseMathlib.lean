@@ -26,5 +26,6 @@ import ReverseMathlib.Omega.BoundedEquivalence
 import ReverseMathlib.Omega.InverseSystem
 import ReverseMathlib.Omega.Bridge
 import ReverseMathlib.Omega.Hall
+import ReverseMathlib.Omega.Bigraph
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree

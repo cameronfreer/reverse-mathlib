@@ -273,7 +273,8 @@ silently acquire an explicit selection route. -/
 #eval show CoreM Unit from do
   let env ← getEnv
   for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt,
-      ``ReverseMathlib.Omega.CountableHallAt, ``ReverseMathlib.Omega.BoundedKonigAt] do
+      ``ReverseMathlib.Omega.CountableHallAt, ``ReverseMathlib.Omega.BoundedKonigAt,
+      ``ReverseMathlib.Omega.TwoRegularPerfectMatchingAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
     check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
