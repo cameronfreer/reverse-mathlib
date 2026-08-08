@@ -21,6 +21,7 @@ import ReverseMathlib.Omega.RadixCoding
 import ReverseMathlib.Omega.Graph
 import ReverseMathlib.Omega.Tree
 import ReverseMathlib.Omega.BoundedTree
+import ReverseMathlib.Omega.BoundedTreeToSystem
 import ReverseMathlib.Omega.InverseSystem
 import ReverseMathlib.Omega.Bridge
 import ReverseMathlib.Omega.Hall

@@ -67,7 +67,10 @@ def headlineDecls : List Name :=
    -- Tranche 4: the Kleene tree — recursive membership, the diagonal, the countermodel
    ``ReverseMathlib.Omega.recursiveSet_kleeneTree,
    ``ReverseMathlib.Omega.not_isBinaryPathThrough_of_recursiveSet,
-   ``ReverseMathlib.Omega.not_weakKonigAt_recursivePart]
+   ``ReverseMathlib.Omega.not_weakKonigAt_recursivePart,
+   -- Bounded Kőnig slice 3: fiber graph reduces to tree ⊕ bound; path to the section
+   ``ReverseMathlib.Omega.boundedFiberGraph_le_join,
+   ``ReverseMathlib.Omega.sectionBoundedPathGraph_le_graph]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
