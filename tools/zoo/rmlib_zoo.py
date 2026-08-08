@@ -408,7 +408,7 @@ def cmd_check(args: argparse.Namespace) -> None:
     LABELS_BY_FAMILY = {"certifiedOmegaFact": {"⊨ω", "⊭ω"},
                         "importedReduction": {"≤sW", "≤W"},
                         "ambientFactorization": {"ambient"},
-                        "computedClosure": {"⊨ω", "≤W"}}
+                        "computedClosure": {"⊨ω", "⊭ω", "≤W"}}
     GLYPHS = ("→", "←", "⇒", "⇐", "⇔", "->", "<-", "=>", "<=>")
     for dot_name, dot_text_ in ([("ambient-factorizations", to_dot(catalog))]
                                 + [(vn, view_dot(vn, vw)) for vn, vw in fam_views.items()]):
@@ -1216,14 +1216,17 @@ function applyFilter() {{
 # Family-specific relation vocabularies. A judgment's relation must be in its
 # family's set, at every node.
 FAMILY_RELATIONS = {
-    "certifiedOmegaFact": {"implication", "equivalence"},
+    "certifiedOmegaFact": {"implication", "equivalence", "nonImplication"},
     "importedReduction": {"strongWeihrauch", "weihrauch"},
 }
 
 # Family-specific rule vocabularies (arity included). Leaves are family-typed too.
+# countermodelPullback is the ONLY rule that touches separations: from Base ⊭ P and
+# Q → P, conclude Base ⊭ Q (the countermodel transports along the implication's
+# contrapositive). Transitivity NEVER applies to separations.
 FAMILY_RULES = {
     "certifiedOmegaFact": {"equivalenceElimForward": 1, "equivalenceElimReverse": 1,
-                           "transitivity": 2},
+                           "transitivity": 2, "countermodelPullback": 2},
     "importedReduction": {"strongToOrdinary": 1, "transitivity": 2},
 }
 LEAF_RULES = {"fact": "certifiedOmegaFact", "reduction": "importedReduction"}
@@ -1261,6 +1264,53 @@ COMPUTED_DERIVATIONS = [
         "note": "Hall ≤W WKL: the strong Hall ≤sW EFILC weakened to the ordinary "
                 "notion, then composed with the imported EFILC ≤W WKL. Ordinary "
                 "notion only — the composition never inherits strength.",
+    },
+    {
+        "id": "computed.omega.boundedKonigImpliesHall",
+        "term": ["transitivity",
+                 ["equivalenceElimForward", ["fact", "boundedKonigWklOmega"]],
+                 ["transitivity",
+                  ["equivalenceElimForward", ["fact", "wklEfilcOmega"]],
+                  ["fact", "efilcHallOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega",
+            "rhs": "countableHall.oneSidedInjective.enumeratedCandidates."
+                   "turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "bounded-Kőnigω → Hallω: the certified bounded-Kőnig ⇔ WKL "
+                "equivalence used forward, then the WKLω → Hallω chain. A display "
+                "derivation only — no fact is registered.",
+    },
+    {
+        "id": "computed.omega.recCoreNotBoundedKonig",
+        "term": ["countermodelPullback",
+                 ["fact", "rca0CoreWklOmega"],
+                 ["equivalenceElimForward", ["fact", "boundedKonigWklOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "nonImplication",
+            "lhs": "rca0Core.turingIdealClosure.turingIdealOmega",
+            "rhs": "wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "RCA₀-core ⊭ω bounded-Kőnigω: the certified REC countermodel for "
+                "binary WKL transported along bounded-Kőnig → WKL (the countermodel "
+                "refutes the source of any implication into the refuted target). A "
+                "display derivation only — no fact is registered.",
+    },
+    {
+        "id": "computed.omega.recCoreNotEfilc",
+        "term": ["countermodelPullback",
+                 ["fact", "rca0CoreWklOmega"],
+                 ["equivalenceElimReverse", ["fact", "wklEfilcOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "nonImplication",
+            "lhs": "rca0Core.turingIdealClosure.turingIdealOmega",
+            "rhs": "efilc.explicitSequential.enumeratedFibers.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "RCA₀-core ⊭ω EFILCω: the certified REC countermodel for binary WKL "
+                "transported along EFILC → WKL (the reverse elimination of the "
+                "certified equivalence). A display derivation only — no fact is "
+                "registered.",
     },
 ]
 
@@ -1416,6 +1466,24 @@ def eval_derivation(term, index: dict) -> dict:
         if p["relation"] != "strongWeihrauch":
             raise DerivationError("strongToOrdinary needs a ≤sW premise")
         return {**p, "relation": "weihrauch", "leaves": leaves}
+    if head == "countermodelPullback":
+        sep, imp = prems
+        if sep["relation"] != "nonImplication":
+            raise DerivationError("countermodelPullback needs a separation (Base ⊭ P) "
+                                  "as its first premise")
+        if imp["relation"] != "implication":
+            raise DerivationError("countermodelPullback needs an implication (Q → P) "
+                                  "as its second premise; eliminate an equivalence "
+                                  "first")
+        if imp["rhs"] != sep["rhs"]:
+            raise DerivationError(f"countermodelPullback does not compose: the "
+                                  f"implication targets {imp['rhs']!r} but the "
+                                  f"separation refutes {sep['rhs']!r} (exact "
+                                  "endpoints, never concepts)")
+        ctxs = _compose_contexts(sep, imp)
+        return {"family": family, "relation": "nonImplication",
+                "lhs": sep["lhs"], "rhs": imp["lhs"], "contexts": ctxs,
+                "leaves": leaves}
     if head == "transitivity":
         a, b = prems
         if a["relation"] != b["relation"]:
@@ -1424,6 +1492,9 @@ def eval_derivation(term, index: dict) -> dict:
         if a["relation"] == "equivalence":
             raise DerivationError("transitivity is stated for implications and "
                                   "reductions; eliminate the equivalence first")
+        if a["relation"] == "nonImplication":
+            raise DerivationError("transitivity never applies to separations; the "
+                                  "only separation rule is countermodelPullback")
         if a["rhs"] != b["lhs"]:
             raise DerivationError(f"transitivity does not compose: {a['rhs']!r} != "
                                   f"{b['lhs']!r} (exact endpoints, never concepts)")
@@ -1478,7 +1549,7 @@ def build_computed_closure(catalog: dict) -> dict:
             if j[side] not in universe:
                 raise DerivationError(f"{spec['id']}: endpoint {j[side]!r} is not a "
                                       f"registered node of family {j['family']!r}")
-        label = {"implication": "⊨ω", "weihrauch": "≤W",
+        label = {"implication": "⊨ω", "nonImplication": "⊭ω", "weihrauch": "≤W",
                  "strongWeihrauch": "≤sW"}[j["relation"]]
         nodes.update([j["lhs"], j["rhs"]])
         edges.append({
@@ -1540,6 +1611,18 @@ def selftest_derivations() -> list[str]:
                          "evidence": [{"context": "otherCtx"}]},
             "noctx": {"kind": "implication", "context": {"scope": "omegaModels"},
                       "lhs": ["ns:B"], "rhs": ["ns:C"], "evidence": [{}]},
+            "sep": {"kind": "nonImplication", "context": {"scope": "omegaModels"},
+                    "lhs": ["ns:B0"], "rhs": ["ns:P"],
+                    "evidence": [{"context": "ctx"}]},
+            "sep2": {"kind": "nonImplication", "context": {"scope": "omegaModels"},
+                     "lhs": ["ns:P"], "rhs": ["ns:R"],
+                     "evidence": [{"context": "ctx"}]},
+            "impQP": {"kind": "implication", "context": {"scope": "omegaModels"},
+                      "lhs": ["ns:Q"], "rhs": ["ns:P"],
+                      "evidence": [{"context": "ctx"}]},
+            "impQP_other": {"kind": "implication", "context": {"scope": "omegaModels"},
+                            "lhs": ["ns:Q"], "rhs": ["ns:P"],
+                            "evidence": [{"context": "otherCtx"}]},
         },
         "reductions": {
             "sw": {"status": "importedChecked", "degree": "exact",
@@ -1583,6 +1666,18 @@ def selftest_derivations() -> list[str]:
         "non-exact degree never composes":
             ["transitivity", ["strongToOrdinary", ["reduction", "sw"]],
              ["reduction", "repr"]],
+        "transitivity never applies to separations":
+            ["transitivity", ["fact", "sep"], ["fact", "sep2"]],
+        "pullback needs a separation first premise":
+            ["countermodelPullback", ["fact", "impA"], ["fact", "impQP"]],
+        "pullback needs an implication second premise, never a raw equivalence":
+            ["countermodelPullback", ["fact", "sep"], ["fact", "eqv"]],
+        "pullback endpoints must match exactly":
+            ["countermodelPullback", ["fact", "sep"], ["fact", "imp"]],
+        "pullback never crosses contexts":
+            ["countermodelPullback", ["fact", "sep"], ["fact", "impQP_other"]],
+        "pullback is family-typed, never a reduction rule":
+            ["countermodelPullback", ["reduction", "sw"], ["reduction", "w"]],
     }
     wrong = []
     for name, term in must_fail.items():
@@ -1612,6 +1707,11 @@ def selftest_derivations() -> list[str]:
                                 ["strongToOrdinary", ["reduction", "sw"]],
                                 ["reduction", "w"]],
                                ("weihrauch", "P", "R"), None),
+        # the countermodel transports along the implication's contrapositive and the
+        # conclusion keeps the certification contexts
+        "countermodel pullback": (["countermodelPullback", ["fact", "sep"],
+                                   ["fact", "impQP"]],
+                                  ("nonImplication", "B0", "Q"), frozenset({"ctx"})),
     }
     for name, (term, want, want_ctx) in must_pass.items():
         try:
@@ -1805,10 +1905,13 @@ def view_dot(name: str, view: dict) -> str:
         tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
         extra = ", dir=both" if e.get("bidirectional") else ""
         if e.get("family") == "computedClosure":
-            # derived, never certified: dotted with an open head, and the rule name
-            # travels with the edge so the geometry is never the only provenance
+            # derived, never certified: dotted, and the rule name travels with the
+            # edge so the geometry is never the only provenance. Open head for
+            # derived implications/reductions; the tee marks a derived separation's
+            # blocked direction, exactly as on direct separation edges.
+            hd = "tee" if e.get("relation") == "nonImplication" else "onormal"
             lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")} '
-                         f'[{e["derivationText"]}]", {style}, arrowhead=onormal];')
+                         f'[{e["derivationText"]}]", {style}, arrowhead={hd}];')
             continue
         if e.get("strongEnd") == "head":
             extra += ", arrowhead=normal, arrowtail=onormal"
