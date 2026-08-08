@@ -406,6 +406,20 @@ any other compiler — the mate-table architecture certificate. -/
    Finset.all_card_le_biUnion_card_iff_exists_injective,
    nonempty_sections_of_finite_inverse_system]
 
+-- The finite lemma must genuinely reuse mathlib's FINITE Hall theorem — proof
+-- reuse, not reinvention: rewriting it away from that theorem must fail this gate.
+#rm_assert_proof_depends ReverseMathlib.Omega.exists_matching_covering
+  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+-- The mate compiler's fine dependency, frozen as a proof-closure fact beyond its
+-- type: the join reduction reads the two enumerator graphs only — neither the
+-- bigraph structure nor any finite matching machinery may enter the computation.
+#rm_assert_not_proof_depends ReverseMathlib.Omega.mateFiberGraph_le_join
+  [ReverseMathlib.Omega.InternalTwoRegularBigraph,
+   ReverseMathlib.Omega.exists_matching_covering,
+   ReverseMathlib.Omega.hall_of_degree_le_two,
+   ReverseMathlib.Omega.IsMatchingSet]
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`
