@@ -27,5 +27,6 @@ import ReverseMathlib.Omega.InverseSystem
 import ReverseMathlib.Omega.Bridge
 import ReverseMathlib.Omega.Hall
 import ReverseMathlib.Omega.Bigraph
+import ReverseMathlib.Omega.FiniteMatching
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
