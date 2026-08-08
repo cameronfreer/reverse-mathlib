@@ -916,7 +916,8 @@ reduction: open head (pinned, external)</span>
 </dl></details>""")
         panel = graph_panel(
             "Computed closure (view-only)",
-            "dotted edges with open heads; derived, never certified",
+            "dotted edges — open heads for derived implications/reductions, tees "
+            "for derived separations; derived, never certified",
             v["comment"], len(v["nodes"]), view_edge_items(v), len(v["edges"]),
             "computed-closure.svg" if "computed-closure" in view_svgs else None,
             "views/computed-closure/graph.dot", "views/computed-closure/graph.json")
@@ -1320,7 +1321,8 @@ COMPUTED_DERIVATIONS = [
 # premise never becomes a skinny duplicate missing its provenance).
 OMEGA_EDGE_LABELS = {"equivalence": "⊨ω", "implication": "⊨ω",
                      # a certified separation: countermodel-witnessed, never an
-                     # implication arrow and never part of any closure
+                     # implication arrow; it enters closure only through the
+                     # countermodelPullback rule, never through transitivity
                      "nonImplication": "⊭ω"}
 
 
@@ -1690,7 +1692,6 @@ def selftest_derivations() -> list[str]:
                          f"{exc})")
             continue
         wrong.append(name)
-    # and the two shapes that must succeed, with the right orientation
     # the shapes that must SUCCEED, with the right orientation and contexts; an
     # unexpected exception here is reported, never allowed to crash the gate
     must_pass = {
