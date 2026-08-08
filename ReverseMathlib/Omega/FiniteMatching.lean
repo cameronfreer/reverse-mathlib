@@ -332,6 +332,17 @@ private theorem tight_case {N : ℕ}
     · obtain ⟨a, ha⟩ := hM'covB b (mem_sdiff.mpr ⟨hb, hbNS⟩)
       exact ⟨a, mem_union_right _ ha⟩
 
+/-- The right-side counting corollary, through the swapped edge set. -/
+theorem hall_of_degree_le_two_right {E : Finset (ℕ × ℕ)} {B₀ : Finset ℕ}
+    (hdeg2 : ∀ b ∈ B₀, (leftNbrs E b).card = 2)
+    (hleft : ∀ a, (rightNbrs E a).card ≤ 2) :
+    ∀ S ⊆ B₀, S.card ≤ (S.biUnion (leftNbrs E)).card := by
+  intro S hS
+  have h := hall_of_degree_le_two (E := E.image Prod.swap) (A₀ := B₀)
+    (fun b hb => by rw [rightNbrs_swap]; exact hdeg2 b hb)
+    (fun a => by rw [leftNbrs_swap]; exact hleft a) S hS
+  rwa [Finset.biUnion_congr rfl fun t _ => rightNbrs_swap E t] at h
+
 /-- **The finite symmetric-Hall covering lemma** (Shafer's Lemma 6.1.5): a finite
 bipartite graph with Hall's condition on all subsets of the distinguished left set
 `A₀` and on all subsets of the distinguished right set `B₀` has one matching
