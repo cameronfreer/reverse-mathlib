@@ -30,5 +30,6 @@ import ReverseMathlib.Omega.Bigraph
 import ReverseMathlib.Omega.FiniteMatching
 import ReverseMathlib.Omega.BigraphToSystem
 import ReverseMathlib.Omega.BigraphEquivalence
+import ReverseMathlib.Omega.RangeSeparation
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
