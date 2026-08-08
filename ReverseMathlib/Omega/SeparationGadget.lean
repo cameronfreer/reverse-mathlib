@@ -99,9 +99,84 @@ theorem yChain_injective {j n i j' n' i' : ℕ} (hj : j < 4) (hj' : j' < 4)
   obtain ⟨hnn, hii⟩ := Nat.pair_eq_pair.mp hp.1
   exact ⟨hp.2, hnn, hii⟩
 
-/-- The source's `yʲₙ,ᵢ` for arbitrary `i` in **source indexing**, defined where
-the source defines it (`j < 2`, any `i`; or any `j < 4`, `i ≥ 1`): the `i = 0`
-values are the specials, and `i ≥ 1` values are chain codes at shifted index. -/
+/-! ### Coverage: the codings are onto ℕ on each side
+
+Together with the discrimination and injectivity lemmas above, these make "no
+junk vertices" a **checked** property: the row enumerators eliminate through
+`xCases`/`yCases`, never through modular-arithmetic inference at the use site. -/
+
+/-- **Left coverage**: every natural is a left vertex code, in exactly one
+family (exclusivity is `xPlain_ne_xChain`; witness uniqueness is
+`xPlain_injective` / `xChain_injective`). -/
+theorem xCases (v : ℕ) : (∃ n, v = xPlain n) ∨ ∃ j n i, j < 4 ∧ v = xChain j n i := by
+  rcases Nat.even_or_odd v with ⟨m, hm⟩ | ⟨m, hm⟩
+  · exact Or.inl ⟨m, by simp [xPlain]; omega⟩
+  · refine Or.inr ⟨m % 4, (Nat.unpair (m / 4)).1, (Nat.unpair (m / 4)).2, by omega, ?_⟩
+    have hpair : Nat.pair (Nat.unpair (m / 4)).1 (Nat.unpair (m / 4)).2 = m / 4 :=
+      Nat.pair_unpair (m / 4)
+    simp only [xChain, hpair]
+    omega
+
+/-- **Right coverage**: every natural is a right vertex code, in exactly one
+family (exclusivity is the `_ne_` lemmas; witness uniqueness is the injectivity
+lemmas). -/
+theorem yCases (v : ℕ) : (∃ n, v = yPlain n) ∨
+    (∃ b n, b < 2 ∧ v = ySpec b n) ∨ ∃ j n i, j < 4 ∧ v = yChain j n i := by
+  rcases Nat.even_or_odd v with ⟨m, hm⟩ | ⟨m, hm⟩
+  · exact Or.inl ⟨m, by simp [yPlain]; omega⟩
+  · by_cases h4 : v % 4 = 1
+    · refine Or.inr (Or.inl ⟨(v / 4) % 2, (v / 4) / 2, by omega, ?_⟩)
+      simp only [ySpec]
+      omega
+    · have h4' : v % 4 = 3 := by omega
+      refine Or.inr (Or.inr ⟨(v / 4) % 4, (Nat.unpair ((v / 4) / 4)).1,
+        (Nat.unpair ((v / 4) / 4)).2, by omega, ?_⟩)
+      have hpair : Nat.pair (Nat.unpair ((v / 4) / 4)).1
+          (Nat.unpair ((v / 4) / 4)).2 = (v / 4) / 4 := Nat.pair_unpair ((v / 4) / 4)
+      simp only [yChain, hpair]
+      omega
+
+/-! ### Round-trip decoders -/
+
+/-- Decode an odd left code to its `(j, n, i)`. -/
+def xDecode (v : ℕ) : ℕ × ℕ × ℕ :=
+  ((v / 2) % 4, (Nat.unpair ((v / 2) / 4)).1, (Nat.unpair ((v / 2) / 4)).2)
+
+theorem xDecode_xChain {j n i : ℕ} (hj : j < 4) :
+    xDecode (xChain j n i) = (j, n, i) := by
+  simp only [xDecode, xChain]
+  have h1 : (8 * Nat.pair n i + 2 * j + 1) / 2 = 4 * Nat.pair n i + j := by omega
+  rw [h1]
+  have h2 : (4 * Nat.pair n i + j) % 4 = j := by omega
+  have h3 : (4 * Nat.pair n i + j) / 4 = Nat.pair n i := by omega
+  rw [h2, h3, Nat.unpair_pair]
+
+/-- Decode a `≡ 1 (mod 4)` right code to its `(b, n)`. -/
+def ySpecDecode (v : ℕ) : ℕ × ℕ := ((v / 4) % 2, (v / 4) / 2)
+
+theorem ySpecDecode_ySpec {b n : ℕ} (hb : b < 2) :
+    ySpecDecode (ySpec b n) = (b, n) := by
+  simp only [ySpecDecode, ySpec, Prod.mk.injEq]
+  constructor <;> omega
+
+/-- Decode a `≡ 3 (mod 4)` right code to its `(j, n, i)`. -/
+def yChainDecode (v : ℕ) : ℕ × ℕ × ℕ :=
+  ((v / 4) % 4, (Nat.unpair ((v / 4) / 4)).1, (Nat.unpair ((v / 4) / 4)).2)
+
+theorem yChainDecode_yChain {j n i : ℕ} (hj : j < 4) :
+    yChainDecode (yChain j n i) = (j, n, i) := by
+  simp only [yChainDecode, yChain]
+  have h1 : (16 * Nat.pair n i + 4 * j + 3) / 4 = 4 * Nat.pair n i + j := by omega
+  rw [h1]
+  have h2 : (4 * Nat.pair n i + j) % 4 = j := by omega
+  have h3 : (4 * Nat.pair n i + j) / 4 = Nat.pair n i := by omega
+  rw [h2, h3, Nat.unpair_pair]
+
+/-- The source's `yʲₙ,ᵢ` for arbitrary `i` in **source indexing**. DOMAIN
+DISCIPLINE: the source defines this only for `j < 2` (any `i`) or `i ≥ 1` (any
+`j < 4`) — an out-of-domain call like `yAt 2 n 0` would ALIAS a valid special
+code (`ySpec 2 n = ySpec 0 (n + 1)`), so every use site must satisfy
+`j < 2 ∨ 1 ≤ i`, and `yAt_injective` carries that hypothesis explicitly. -/
 def yAt (j n i : ℕ) : ℕ :=
   if i = 0 then ySpec j n else yChain j n (i - 1)
 
@@ -109,6 +184,27 @@ theorem yAt_zero (j n : ℕ) : yAt j n 0 = ySpec j n := rfl
 
 theorem yAt_succ (j n i : ℕ) : yAt j n (i + 1) = yChain j n i := by
   simp [yAt]
+
+/-- Injectivity of `yAt` **on the source domain** — the checked form of the
+domain discipline. -/
+theorem yAt_injective {j n i j' n' i' : ℕ} (hd : j < 2 ∨ 1 ≤ i)
+    (hd' : j' < 2 ∨ 1 ≤ i') (hj : j < 4) (hj' : j' < 4)
+    (h : yAt j n i = yAt j' n' i') : j = j' ∧ n = n' ∧ i = i' := by
+  rcases Nat.eq_zero_or_pos i with rfl | hi <;>
+    rcases Nat.eq_zero_or_pos i' with rfl | hi'
+  · rw [yAt_zero, yAt_zero] at h
+    obtain ⟨hb, hn⟩ := ySpec_injective (by omega) (by omega) h
+    exact ⟨hb, hn, rfl⟩
+  · rw [yAt_zero] at h
+    rw [show i' = (i' - 1) + 1 by omega, yAt_succ] at h
+    exact absurd h (ySpec_ne_yChain _ _ _ _ _)
+  · rw [yAt_zero] at h
+    rw [show i = (i - 1) + 1 by omega, yAt_succ] at h
+    exact absurd h.symm (ySpec_ne_yChain _ _ _ _ _)
+  · rw [show i = (i - 1) + 1 by omega, yAt_succ] at h
+    rw [show i' = (i' - 1) + 1 by omega, yAt_succ] at h
+    obtain ⟨hjj, hnn, hii⟩ := yChain_injective hj hj' h
+    exact ⟨hjj, hnn, by omega⟩
 
 end SeparationGadget
 
