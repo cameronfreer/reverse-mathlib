@@ -340,6 +340,46 @@ correspondence of `SystemToTree` rather than a parallel argument. -/
 #rm_assert_proof_depends ReverseMathlib.Omega.pathSectionFunction_isSection
   ReverseMathlib.Omega.CoherentEncoding.exists_tuple
 
+/-! ### Bounded-Kőnig ω route gates (#39 slice 4)
+
+`EFILCω → bounded-Kőnigω` must factor through the `boundedTreeToSystem` /
+`sectionToBoundedPath` route and reach none of the binary-direction compilers — neither
+the binary tree compiler nor the system-to-tree machinery. The specialization
+`bounded-Kőnigω → WKLω` must be pure packaging: the constant bound plus the bit-`1`
+extraction, no compiler at all. The composed `WKLω → bounded-Kőnigω` must ride the frozen
+`efilcAt_of_weakKonigAt` and the new forward direction — route visible in the proof
+term. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
+  ReverseMathlib.Omega.boundedTreeToSystem
+
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
+  ReverseMathlib.Omega.sectionBoundedPathFunction
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
+  [ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.sectionPathInternal,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.CoherentEncoding]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt
+  ReverseMathlib.Omega.constBoundFunction
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt
+  ReverseMathlib.Omega.pathOneSet_le_graph
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt
+  [ReverseMathlib.Omega.boundedTreeToSystem,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.boundedLevelList]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
+  ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
+  ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

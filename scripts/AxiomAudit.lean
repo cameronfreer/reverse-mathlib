@@ -70,7 +70,10 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.not_weakKonigAt_recursivePart,
    -- Bounded Kőnig slice 3: fiber graph reduces to tree ⊕ bound; path to the section
    ``ReverseMathlib.Omega.boundedFiberGraph_le_join,
-   ``ReverseMathlib.Omega.sectionBoundedPathGraph_le_graph]
+   ``ReverseMathlib.Omega.sectionBoundedPathGraph_le_graph,
+   -- Bounded Kőnig slice 4: both genuine directions (the converse composes through EFILC)
+   ``ReverseMathlib.Omega.boundedKonigAt_of_efilcAt,
+   ``ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
