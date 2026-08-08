@@ -153,7 +153,7 @@ implication only) the second; both are reported as `⊨ω`, never as `⊢`.
 
 | Result | Status |
 | --- | --- |
-| `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))`, `… → (EFILCω(Ω) → Hallω(Ω))`, and `∃ Ω, IsTuringIdeal Ω ∧ ¬WKLω(Ω)` (REC, the Kleene tree) | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 3 / all-model: 0 / syntactic: 0) |
+| `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))`, `… → (EFILCω(Ω) → Hallω(Ω))`, `… → (bounded-Kőnigω(Ω) ↔ WKLω(Ω))` (the explicitly bounded presentation: the bound is supplied data), and `∃ Ω, IsTuringIdeal Ω ∧ ¬WKLω(Ω)` (REC, the Kleene tree) | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 4 / all-model: 0 / syntactic: 0) |
 | Reading these as `RCA₀ ⊨ω WKL ↔ EFILC`, `RCA₀ + WKL ⊨ω Hall` | Mathematically standard, **literature-backed** ([Sim09] VIII.1); backend object-syntax adequacy pending |
 | `RCA₀ ⊢ WKL ↔ EFILC` (and `RCA₀ + WKL ⊢ Hall`) in checked object syntax | **Not established**; scopes are never promoted |
 

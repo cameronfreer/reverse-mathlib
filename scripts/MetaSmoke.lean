@@ -492,10 +492,11 @@ renders its honest verdict. -/
 
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
--- The certified-facts scoreboard: exactly TWO unique certified ω-model facts — the
--- WKLω ⇔ EFILCω equivalence and the EFILCω → Hallω upper implication — zero all-model,
--- zero syntactic. The Hall claim is an upper implication only: no Hall lower bound or
--- equivalence exists at any certified scope.
+-- The certified-facts scoreboard: exactly FOUR unique certified ω-model facts — the
+-- WKLω ⇔ EFILCω equivalence, the EFILCω → Hallω upper implication, the
+-- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, and the RCA₀-core ⊭ω WKL
+-- separation — zero all-model, zero syntactic. The Hall claim is an upper implication
+-- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
 info: concepts: 4; variants: 8; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
 -/
