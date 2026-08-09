@@ -1146,6 +1146,182 @@ theorem rightRow_eq_pure (F G : Set ℕ) (v : ℕ) :
     have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
     rcases hj4 with rfl | rfl | rfl | rfl <;> simp [Nat.unpair_pair]
 
+/-! ### Primitive recursiveness of the pure rows -/
+
+private theorem primrec_seqPair : Primrec₂ fun a b => seqCode [a, b] :=
+  (primrec_seqCode.comp
+    (Primrec₂.comp (f := fun (x : ℕ) (l : List ℕ) => x :: l) Primrec.list_cons
+      Primrec.fst
+      (Primrec₂.comp (f := fun (x : ℕ) (l : List ℕ) => x :: l) Primrec.list_cons
+        Primrec.snd (.const [])))).to₂
+
+private theorem primrec_xPlain : Primrec xPlain :=
+  (Primrec.nat_mul.comp (.const 2) Primrec.id).of_eq fun _ => rfl
+
+private theorem primrec_yPlain : Primrec yPlain :=
+  (Primrec.nat_mul.comp (.const 2) Primrec.id).of_eq fun _ => rfl
+
+private theorem primrec_xChainT :
+    Primrec fun t : ℕ × ℕ × ℕ => xChain t.1 t.2.1 t.2.2 :=
+  (Primrec.nat_add.comp
+    (Primrec.nat_add.comp
+      (Primrec.nat_mul.comp (.const 8)
+        (Primrec₂.natPair.comp (Primrec.fst.comp Primrec.snd)
+          (Primrec.snd.comp Primrec.snd)))
+      (Primrec.nat_mul.comp (.const 2) Primrec.fst))
+    (.const 1)).of_eq fun _ => rfl
+
+private theorem primrec_ySpecT : Primrec fun t : ℕ × ℕ => ySpec t.1 t.2 :=
+  (Primrec.nat_add.comp
+    (Primrec.nat_add.comp (Primrec.nat_mul.comp (.const 8) Primrec.snd)
+      (Primrec.nat_mul.comp (.const 4) Primrec.fst))
+    (.const 1)).of_eq fun _ => rfl
+
+private theorem primrec_yChainT :
+    Primrec fun t : ℕ × ℕ × ℕ => yChain t.1 t.2.1 t.2.2 :=
+  (Primrec.nat_add.comp
+    (Primrec.nat_add.comp
+      (Primrec.nat_mul.comp (.const 16)
+        (Primrec₂.natPair.comp (Primrec.fst.comp Primrec.snd)
+          (Primrec.snd.comp Primrec.snd)))
+      (Primrec.nat_mul.comp (.const 4) Primrec.fst))
+    (.const 3)).of_eq fun _ => rfl
+
+private theorem primrec_yAtT :
+    Primrec fun t : ℕ × ℕ × ℕ => yAt t.1 t.2.1 t.2.2 := by
+  have h : Primrec fun t : ℕ × ℕ × ℕ =>
+      if t.2.2 = 0 then ySpec t.1 t.2.1
+        else yChain t.1 t.2.1 (t.2.2 - 1) :=
+    Primrec.ite (Primrec.eq.comp (Primrec.snd.comp Primrec.snd) (.const 0))
+      (primrec_ySpecT.comp (Primrec.pair Primrec.fst (Primrec.fst.comp Primrec.snd)))
+      (primrec_yChainT.comp (Primrec.pair Primrec.fst
+        (Primrec.pair (Primrec.fst.comp Primrec.snd)
+          (Primrec.nat_sub.comp (Primrec.snd.comp Primrec.snd) (.const 1)))))
+  exact h.of_eq fun _ => rfl
+
+private theorem primrec_leftRowPureCode :
+    Primrec₂ fun v c => seqCode (leftRowPure v c) := by
+  have hv : Primrec fun p : ℕ × ℕ => p.1 := Primrec.fst
+  have hcl : Primrec fun p : ℕ × ℕ => p.2 := Primrec.snd
+  have hj : Primrec fun p : ℕ × ℕ => (xDecode p.1).1 :=
+    Primrec.nat_mod.comp (Primrec.nat_div.comp hv (.const 2)) (.const 4)
+  have hn : Primrec fun p : ℕ × ℕ => (xDecode p.1).2.1 :=
+    Primrec.fst.comp (Primrec.unpair.comp
+      (Primrec.nat_div.comp (Primrec.nat_div.comp hv (.const 2)) (.const 4)))
+  have hi : Primrec fun p : ℕ × ℕ => (xDecode p.1).2.2 :=
+    Primrec.snd.comp (Primrec.unpair.comp
+      (Primrec.nat_div.comp (Primrec.nat_div.comp hv (.const 2)) (.const 4)))
+  have hyChain : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      yChain j (xDecode p.1).2.1 (xDecode p.1).2.2 := fun j =>
+    primrec_yChainT.comp (Primrec.pair (.const j) (Primrec.pair hn hi))
+  have hyAt : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      yAt j (xDecode p.1).2.1 (xDecode p.1).2.2 := fun j =>
+    primrec_yAtT.comp (Primrec.pair (.const j) (Primrec.pair hn hi))
+  have hyChainPred : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      yChain j (xDecode p.1).2.1 ((xDecode p.1).2.2 - 1) := fun j =>
+    primrec_yChainT.comp (Primrec.pair (.const j)
+      (Primrec.pair hn (Primrec.nat_sub.comp hi (.const 1))))
+  have hfirst23 : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      if (xDecode p.1).2.2 = 0 then yPlain (xDecode p.1).2.1
+        else yChain j (xDecode p.1).2.1 ((xDecode p.1).2.2 - 1) := fun j =>
+    Primrec.ite (Primrec.eq.comp hi (.const 0)) (primrec_yPlain.comp hn)
+      (hyChainPred j)
+  have hc2 : PrimrecPred fun p : ℕ × ℕ => p.2 = 2 :=
+    Primrec.eq.comp hcl (.const 2)
+  have hc0 : PrimrecPred fun p : ℕ × ℕ => p.2 = 0 :=
+    Primrec.eq.comp hcl (.const 0)
+  have hbody : Primrec fun p : ℕ × ℕ =>
+      seqCode (leftRowPure p.1 p.2) := by
+    refine (Primrec.ite (Primrec.eq.comp
+      (Primrec.nat_mod.comp hv (.const 2)) (.const 0))
+      (primrec_seqPair.comp
+        (primrec_ySpecT.comp (Primrec.pair (.const 0)
+          (Primrec.nat_div.comp hv (.const 2))))
+        (primrec_ySpecT.comp (Primrec.pair (.const 1)
+          (Primrec.nat_div.comp hv (.const 2)))))
+      (Primrec.ite (Primrec.eq.comp hj (.const 0))
+        (primrec_seqPair.comp (hyChain 0)
+          (Primrec.ite hc2 (hyAt 0) (hyChain 2)))
+        (Primrec.ite (Primrec.eq.comp hj (.const 1))
+          (primrec_seqPair.comp (hyChain 1)
+            (Primrec.ite hc2 (hyAt 1) (hyChain 3)))
+          (Primrec.ite (Primrec.eq.comp hj (.const 2))
+            (primrec_seqPair.comp (hfirst23 2)
+              (Primrec.ite hc2 (hyChain 2)
+                (Primrec.ite hc0 (hyAt 0) (hyAt 1))))
+            (primrec_seqPair.comp (hfirst23 3)
+              (Primrec.ite hc2 (hyChain 3)
+                (Primrec.ite hc0 (hyAt 1) (hyAt 0)))))))).of_eq fun p => ?_
+    dsimp only [leftRowPure]
+    split_ifs <;> rfl
+  exact hbody.to₂
+
+private theorem primrec_rightRowPureCode :
+    Primrec₂ fun v c => seqCode (rightRowPure v c) := by
+  have hv : Primrec fun p : ℕ × ℕ => p.1 := Primrec.fst
+  have hcl : Primrec fun p : ℕ × ℕ => p.2 := Primrec.snd
+  have hb : Primrec fun p : ℕ × ℕ => (ySpecDecode p.1).1 :=
+    Primrec.nat_mod.comp (Primrec.nat_div.comp hv (.const 4)) (.const 2)
+  have hbn : Primrec fun p : ℕ × ℕ => (ySpecDecode p.1).2 :=
+    Primrec.nat_div.comp (Primrec.nat_div.comp hv (.const 4)) (.const 2)
+  have hj : Primrec fun p : ℕ × ℕ => (yChainDecode p.1).1 :=
+    Primrec.nat_mod.comp (Primrec.nat_div.comp hv (.const 4)) (.const 4)
+  have hn : Primrec fun p : ℕ × ℕ => (yChainDecode p.1).2.1 :=
+    Primrec.fst.comp (Primrec.unpair.comp
+      (Primrec.nat_div.comp (Primrec.nat_div.comp hv (.const 4)) (.const 4)))
+  have hi0 : Primrec fun p : ℕ × ℕ => (yChainDecode p.1).2.2 :=
+    Primrec.snd.comp (Primrec.unpair.comp
+      (Primrec.nat_div.comp (Primrec.nat_div.comp hv (.const 4)) (.const 4)))
+  have hxChainSpec : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      xChain j (ySpecDecode p.1).2 0 := fun j =>
+    primrec_xChainT.comp (Primrec.pair (.const j) (Primrec.pair hbn (.const 0)))
+  have hxChainAt : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      xChain j (yChainDecode p.1).2.1 (yChainDecode p.1).2.2 := fun j =>
+    primrec_xChainT.comp (Primrec.pair (.const j) (Primrec.pair hn hi0))
+  have hxChainSucc : ∀ j : ℕ, Primrec fun p : ℕ × ℕ =>
+      xChain j (yChainDecode p.1).2.1 ((yChainDecode p.1).2.2 + 1) := fun j =>
+    primrec_xChainT.comp (Primrec.pair (.const j)
+      (Primrec.pair hn (Primrec.succ.comp hi0)))
+  have hc2 : PrimrecPred fun p : ℕ × ℕ => p.2 = 2 :=
+    Primrec.eq.comp hcl (.const 2)
+  have hc0 : PrimrecPred fun p : ℕ × ℕ => p.2 = 0 :=
+    Primrec.eq.comp hcl (.const 0)
+  have hbody : Primrec fun p : ℕ × ℕ =>
+      seqCode (rightRowPure p.1 p.2) := by
+    refine (Primrec.ite (Primrec.eq.comp
+      (Primrec.nat_mod.comp hv (.const 2)) (.const 0))
+      (primrec_seqPair.comp
+        (primrec_xChainT.comp (Primrec.pair (.const 2)
+          (Primrec.pair (Primrec.nat_div.comp hv (.const 2)) (.const 0))))
+        (primrec_xChainT.comp (Primrec.pair (.const 3)
+          (Primrec.pair (Primrec.nat_div.comp hv (.const 2)) (.const 0)))))
+      (Primrec.ite (Primrec.eq.comp
+        (Primrec.nat_mod.comp hv (.const 4)) (.const 1))
+        (Primrec.ite (Primrec.eq.comp hb (.const 0))
+          (primrec_seqPair.comp (primrec_xPlain.comp hbn)
+            (Primrec.ite hc2 (hxChainSpec 0)
+              (Primrec.ite hc0 (hxChainSpec 2) (hxChainSpec 3))))
+          (primrec_seqPair.comp (primrec_xPlain.comp hbn)
+            (Primrec.ite hc2 (hxChainSpec 1)
+              (Primrec.ite hc0 (hxChainSpec 3) (hxChainSpec 2)))))
+        (Primrec.ite (Primrec.eq.comp hj (.const 0))
+          (primrec_seqPair.comp (hxChainAt 0)
+            (Primrec.ite hc2 (hxChainSucc 0)
+              (Primrec.ite hc0 (hxChainSucc 2) (hxChainSucc 3))))
+          (Primrec.ite (Primrec.eq.comp hj (.const 1))
+            (primrec_seqPair.comp (hxChainAt 1)
+              (Primrec.ite hc2 (hxChainSucc 1)
+                (Primrec.ite hc0 (hxChainSucc 3) (hxChainSucc 2))))
+            (Primrec.ite (Primrec.eq.comp hj (.const 2))
+              (primrec_seqPair.comp (hxChainSucc 2)
+                (Primrec.ite hc2 (hxChainAt 2) (hxChainAt 0)))
+              (primrec_seqPair.comp (hxChainSucc 3)
+                (Primrec.ite hc2 (hxChainAt 3)
+                  (hxChainAt 1)))))))).of_eq fun p => ?_
+    dsimp only [rightRowPure]
+    split_ifs <;> rfl
+  exact hbody.to₂
+
 end SeparationGadget
 
 end ReverseMathlib.Omega
