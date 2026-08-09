@@ -495,6 +495,249 @@ theorem rightRow_nodup (F G : Set ℕ) (v : ℕ) : (rightRow F G v).Nodup := by
       split_ifs <;> refine nodup_pair fun h => ?_ <;>
         (obtain ⟨h1, -, h3⟩ := xChain_injective (by omega) (by omega) h; omega)
 
+/-! ### Positional introduction helpers for the eighteen edge families -/
+
+namespace GadgetAdj
+
+variable {F G : Set ℕ}
+
+theorem d1 (n : ℕ) : GadgetAdj F G (xPlain n) (ySpec 0 n) :=
+  Or.inl ⟨n, rfl, rfl⟩
+
+theorem d2 (n : ℕ) : GadgetAdj F G (xPlain n) (ySpec 1 n) :=
+  Or.inr (Or.inl ⟨n, rfl, rfl⟩)
+
+theorem d3 (n : ℕ) : GadgetAdj F G (xChain 2 n 0) (yPlain n) :=
+  Or.inr (Or.inr (Or.inl ⟨n, rfl, rfl⟩))
+
+theorem d4 (n : ℕ) : GadgetAdj F G (xChain 3 n 0) (yPlain n) :=
+  Or.inr (Or.inr (Or.inr (Or.inl ⟨n, rfl, rfl⟩)))
+
+theorem d5 (n i : ℕ) : GadgetAdj F G (xChain 0 n i) (yChain 0 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl⟩))))
+
+theorem d6 (n i : ℕ) : GadgetAdj F G (xChain 1 n i) (yChain 1 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl⟩)))))
+
+theorem d7 (n i : ℕ) (hc : Neither F G n i) : GadgetAdj F G (xChain 0 n i) (yAt 0 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc⟩))))))
+
+theorem d8 (n i : ℕ) (hc : Neither F G n i) : GadgetAdj F G (xChain 1 n i) (yAt 1 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc⟩)))))))
+
+theorem d9 (n i : ℕ) : GadgetAdj F G (xChain 2 n (i + 1)) (yChain 2 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl⟩))))))))
+
+theorem d10 (n i : ℕ) : GadgetAdj F G (xChain 3 n (i + 1)) (yChain 3 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl,
+    rfl⟩)))))))))
+
+theorem d11 (n i : ℕ) (hc : Neither F G n i) : GadgetAdj F G (xChain 2 n i) (yChain 2 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i,
+    rfl, rfl, hc⟩))))))))))
+
+theorem d12 (n i : ℕ) (hc : Neither F G n i) : GadgetAdj F G (xChain 3 n i) (yChain 3 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl
+    ⟨n, i, rfl, rfl, hc⟩)))))))))))
+
+theorem d13 (n i : ℕ) (hc : FHits F n i) : GadgetAdj F G (xChain 2 n i) (yAt 0 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inl ⟨n, i, rfl, rfl, hc⟩))))))))))))
+
+theorem d14 (n i : ℕ) (hc : FHits F n i) : GadgetAdj F G (xChain 3 n i) (yAt 1 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc⟩)))))))))))))
+
+theorem d15 (n i : ℕ) (hc : FHits G n i) (hnc : ¬FHits F n i) :
+    GadgetAdj F G (xChain 2 n i) (yAt 1 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc, hnc⟩))))))))))))))
+
+theorem d16 (n i : ℕ) (hc : FHits G n i) (hnc : ¬FHits F n i) :
+    GadgetAdj F G (xChain 3 n i) (yAt 0 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc, hnc⟩)))))))))))))))
+
+theorem d17 (n i : ℕ) (hc : ¬Neither F G n i) : GadgetAdj F G (xChain 0 n i) (yChain 2 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inl ⟨n, i, rfl, rfl, hc⟩))))))))))))))))
+
+theorem d18 (n i : ℕ) (hc : ¬Neither F G n i) : GadgetAdj F G (xChain 1 n i) (yChain 3 n i) :=
+  Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr
+    (Or.inr (Or.inr (Or.inr (Or.inr (Or.inr (⟨n, i, rfl, rfl, hc⟩)))))))))))))))))
+
+end GadgetAdj
+
+/-! ### The edge relation through the rows -/
+
+private theorem mem_pair' {a x y : ℕ} : a ∈ [x, y] ↔ a = x ∨ a = y := by
+  simp
+
+/-- **Adjacency through the left row** (review pin): `GadgetAdj` is exactly
+membership in the finite two-entry left row, so adjacency decidability and the
+edge-set reduction inherit the row computation — no search through the eighteen
+disjuncts ever enters a reduction. -/
+theorem gadgetAdj_iff_mem_leftRow (F G : Set ℕ) (a b : ℕ) :
+    GadgetAdj F G a b ↔ b ∈ leftRow F G a := by
+  classical
+  constructor
+  · rintro (⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ |
+      ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl, hc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc, hnc⟩ | ⟨n, i, rfl, rfl, hc, hnc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩)
+    · rw [leftRow_xPlain]
+      simp
+    · rw [leftRow_xPlain]
+      simp
+    · rw [leftRow_xChain F G 2 n 0 (by omega)]
+      simp
+    · rw [leftRow_xChain F G 3 n 0 (by omega)]
+      simp
+    · rw [leftRow_xChain F G 0 n i (by omega)]
+      simp
+    · rw [leftRow_xChain F G 1 n i (by omega)]
+      simp
+    · rw [leftRow_xChain F G 0 n i (by omega)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 1 n i (by omega)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 2 n (i + 1) (by omega)]
+      simp
+    · rw [leftRow_xChain F G 3 n (i + 1) (by omega)]
+      simp
+    · rw [leftRow_xChain F G 2 n i (by omega)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 3 n i (by omega)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 2 n i (by omega)]
+      simp only [show hitClass F G n i = 0 from hitClass_eq_zero_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 3 n i (by omega)]
+      simp only [show hitClass F G n i = 0 from hitClass_eq_zero_iff.mpr hc, reduceIte]
+      simp
+    · rw [leftRow_xChain F G 2 n i (by omega)]
+      simp only [show hitClass F G n i = 1 from hitClass_eq_one_iff.mpr ⟨hc, hnc⟩,
+        reduceIte]
+      simp
+    · rw [leftRow_xChain F G 3 n i (by omega)]
+      simp only [show hitClass F G n i = 1 from hitClass_eq_one_iff.mpr ⟨hc, hnc⟩]
+      simp
+    · rw [leftRow_xChain F G 0 n i (by omega)]
+      rcases hitClass_cases F G n i with h | h | h
+      · simp only [h, reduceIte]
+        simp
+      · simp only [h, reduceIte]
+        simp
+      · exact absurd (hitClass_eq_two_iff.mp h) hc
+    · rw [leftRow_xChain F G 1 n i (by omega)]
+      rcases hitClass_cases F G n i with h | h | h
+      · simp only [h, reduceIte]
+        simp
+      · simp only [h, reduceIte]
+        simp
+      · exact absurd (hitClass_eq_two_iff.mp h) hc
+  · intro hb
+    rcases xCases a with ⟨n, rfl⟩ | ⟨j, n, i, hj, rfl⟩
+    · rw [leftRow_xPlain] at hb
+      rcases mem_pair'.mp hb with rfl | rfl
+      · exact GadgetAdj.d1 n
+      · exact GadgetAdj.d2 n
+    · rw [leftRow_xChain F G j n i hj] at hb
+      have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
+      rcases hj4 with rfl | rfl | rfl | rfl
+      · rw [if_pos (show (0:ℕ) = 0 from rfl)] at hb
+        split_ifs at hb with h2
+        · rcases mem_pair'.mp hb with rfl | rfl
+          · exact GadgetAdj.d5 n i
+          · exact GadgetAdj.d7 n i (hitClass_eq_two_iff.mp h2)
+        · rcases mem_pair'.mp hb with rfl | rfl
+          · exact GadgetAdj.d5 n i
+          · exact GadgetAdj.d17 n i fun hN => h2 (hitClass_eq_two_iff.mpr hN)
+      · rw [if_neg (show ¬(1:ℕ) = 0 by omega), if_pos (show (1:ℕ) = 1 from rfl)] at hb
+        split_ifs at hb with h2
+        · rcases mem_pair'.mp hb with rfl | rfl
+          · exact GadgetAdj.d6 n i
+          · exact GadgetAdj.d8 n i (hitClass_eq_two_iff.mp h2)
+        · rcases mem_pair'.mp hb with rfl | rfl
+          · exact GadgetAdj.d6 n i
+          · exact GadgetAdj.d18 n i fun hN => h2 (hitClass_eq_two_iff.mpr hN)
+      · rw [if_neg (show ¬(2:ℕ) = 0 by omega), if_neg (show ¬(2:ℕ) = 1 by omega),
+          if_pos (show (2:ℕ) = 2 from rfl)] at hb
+        rcases Nat.eq_zero_or_pos i with rfl | hi
+        · rw [if_pos (show (0:ℕ) = 0 from rfl)] at hb
+          split_ifs at hb with h2 h0
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d3 n
+            · exact GadgetAdj.d11 n 0 (hitClass_eq_two_iff.mp h2)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d3 n
+            · exact GadgetAdj.d13 n 0 (hitClass_eq_zero_iff.mp h0)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d3 n
+            · have h1 : hitClass F G n 0 = 1 := by
+                have := hitClass_lt_three F G n 0
+                omega
+              obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+              exact GadgetAdj.d15 n 0 hcG hncF
+        · rw [if_neg (show ¬i = 0 by omega)] at hb
+          obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+          rw [Nat.add_sub_cancel] at hb
+          split_ifs at hb with h2 h0
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d9 n k
+            · exact GadgetAdj.d11 n (k + 1) (hitClass_eq_two_iff.mp h2)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d9 n k
+            · exact GadgetAdj.d13 n (k + 1) (hitClass_eq_zero_iff.mp h0)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d9 n k
+            · have h1 : hitClass F G n (k + 1) = 1 := by
+                have := hitClass_lt_three F G n (k + 1)
+                omega
+              obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+              exact GadgetAdj.d15 n (k + 1) hcG hncF
+      · rw [if_neg (show ¬(3:ℕ) = 0 by omega), if_neg (show ¬(3:ℕ) = 1 by omega),
+          if_neg (show ¬(3:ℕ) = 2 by omega)] at hb
+        rcases Nat.eq_zero_or_pos i with rfl | hi
+        · rw [if_pos (show (0:ℕ) = 0 from rfl)] at hb
+          split_ifs at hb with h2 h0
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d4 n
+            · exact GadgetAdj.d12 n 0 (hitClass_eq_two_iff.mp h2)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d4 n
+            · exact GadgetAdj.d14 n 0 (hitClass_eq_zero_iff.mp h0)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d4 n
+            · have h1 : hitClass F G n 0 = 1 := by
+                have := hitClass_lt_three F G n 0
+                omega
+              obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+              exact GadgetAdj.d16 n 0 hcG hncF
+        · rw [if_neg (show ¬i = 0 by omega)] at hb
+          obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+          rw [Nat.add_sub_cancel] at hb
+          split_ifs at hb with h2 h0
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d10 n k
+            · exact GadgetAdj.d12 n (k + 1) (hitClass_eq_two_iff.mp h2)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d10 n k
+            · exact GadgetAdj.d14 n (k + 1) (hitClass_eq_zero_iff.mp h0)
+          · rcases mem_pair'.mp hb with rfl | rfl
+            · exact GadgetAdj.d10 n k
+            · have h1 : hitClass F G n (k + 1) = 1 := by
+                have := hitClass_lt_three F G n (k + 1)
+                omega
+              obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+              exact GadgetAdj.d16 n (k + 1) hcG hncF
+
 end SeparationGadget
 
 end ReverseMathlib.Omega
