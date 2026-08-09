@@ -253,6 +253,12 @@ theorem hitClass_lt_three (F G : Set ℕ) (n i : ℕ) : hitClass F G n i < 3 := 
   simp only [hitClass]
   split_ifs <;> omega
 
+/-- The uniform three-case split every row proof uses. -/
+theorem hitClass_cases (F G : Set ℕ) (n i : ℕ) :
+    hitClass F G n i = 0 ∨ hitClass F G n i = 1 ∨ hitClass F G n i = 2 := by
+  have := hitClass_lt_three F G n i
+  omega
+
 /-- The source's edge set `E` (Shafer, text pp. 156–157), one disjunct per edge
 family, on coded vertices. -/
 def GadgetAdj (F G : Set ℕ) (a b : ℕ) : Prop :=
@@ -426,6 +432,68 @@ theorem rightRow_yChain (F G : Set ℕ) (j n i0 : ℕ) (hj : j < 4) :
   classical
   obtain ⟨hm2, hm4⟩ := yChain_mod j n i0
   simp only [rightRow, if_neg hm2, if_neg hm4, yChainDecode_yChain hj]
+
+/-! ### Row nodup: each row's two entries are distinct -/
+
+private theorem nodup_pair {A B : ℕ} (hAB : A ≠ B) : List.Nodup [A, B] := by
+  simp [List.nodup_cons, hAB]
+
+theorem leftRow_nodup (F G : Set ℕ) (v : ℕ) : (leftRow F G v).Nodup := by
+  classical
+  rcases xCases v with ⟨n, rfl⟩ | ⟨j, n, i, hj, rfl⟩
+  · rw [leftRow_xPlain]
+    refine nodup_pair fun h => ?_
+    obtain ⟨hb, -⟩ := ySpec_injective (by omega) (by omega) h
+    omega
+  · rw [leftRow_xChain F G j n i hj]
+    have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
+    rcases Nat.eq_zero_or_pos i with rfl | hi
+    · rcases hj4 with rfl | rfl | rfl | rfl <;>
+        simp only [reduceIte, yAt_zero] <;> split_ifs <;>
+        refine nodup_pair fun h => ?_ <;>
+        first
+          | (exfalso; omega)
+          | (obtain ⟨h1, -, h3⟩ := yChain_injective (by omega) (by omega) h; omega)
+          | (exact ySpec_ne_yChain _ _ _ _ _ h.symm)
+          | (exact yPlain_ne_yChain _ _ _ _ h)
+          | (exact yPlain_ne_ySpec _ _ _ h)
+    · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+      rcases hj4 with rfl | rfl | rfl | rfl <;>
+        simp only [reduceIte, yAt_succ, Nat.add_sub_cancel] <;> split_ifs <;>
+        refine nodup_pair fun h => ?_ <;>
+        first
+          | (exfalso; omega)
+          | (obtain ⟨h1, -, h3⟩ := yChain_injective (by omega) (by omega) h; omega)
+
+theorem rightRow_nodup (F G : Set ℕ) (v : ℕ) : (rightRow F G v).Nodup := by
+  classical
+  rcases yCases v with ⟨n, rfl⟩ | ⟨b, n, hb, rfl⟩ | ⟨j, n, i0, hj, rfl⟩
+  · rw [rightRow_yPlain]
+    refine nodup_pair fun h => ?_
+    obtain ⟨h1, -, -⟩ := xChain_injective (by omega) (by omega) h
+    omega
+  · rw [rightRow_ySpec F G b n hb]
+    have hb2 : b = 0 ∨ b = 1 := by omega
+    rcases hb2 with rfl | rfl
+    · rw [if_pos rfl]
+      split_ifs <;> exact nodup_pair fun h => xPlain_ne_xChain _ _ _ _ h
+    · rw [if_neg (by omega)]
+      split_ifs <;> exact nodup_pair fun h => xPlain_ne_xChain _ _ _ _ h
+  · rw [rightRow_yChain F G j n i0 hj]
+    have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
+    rcases hj4 with rfl | rfl | rfl | rfl
+    · rw [if_pos rfl]
+      split_ifs <;> refine nodup_pair fun h => ?_ <;>
+        (obtain ⟨h1, -, h3⟩ := xChain_injective (by omega) (by omega) h; omega)
+    · rw [if_neg (by omega), if_pos rfl]
+      split_ifs <;> refine nodup_pair fun h => ?_ <;>
+        (obtain ⟨h1, -, h3⟩ := xChain_injective (by omega) (by omega) h; omega)
+    · rw [if_neg (by omega), if_neg (by omega), if_pos rfl]
+      split_ifs <;> refine nodup_pair fun h => ?_ <;>
+        (obtain ⟨h1, -, h3⟩ := xChain_injective (by omega) (by omega) h; omega)
+    · rw [if_neg (by omega), if_neg (by omega), if_neg (by omega)]
+      split_ifs <;> refine nodup_pair fun h => ?_ <;>
+        (obtain ⟨h1, -, h3⟩ := xChain_injective (by omega) (by omega) h; omega)
 
 end SeparationGadget
 
