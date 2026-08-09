@@ -206,6 +206,122 @@ theorem yAt_injective {j n i j' n' i' : ℕ} (hd : j < 2 ∨ 1 ≤ i)
     obtain ⟨hjj, hnn, hii⟩ := yChain_injective hj hj' h
     exact ⟨hjj, hnn, by omega⟩
 
+/-! ### The edge relation and the executable rows
+
+`GadgetAdj` is the **one** edge relation — the source's `E`, one disjunct per
+edge family, with `f`-precedence added to the two overlap-sensitive families so
+structural coherence holds without assuming disjointness (under disjoint ranges
+the precedence is vacuous, matching the source exactly). The executable rows
+branch on parity/residue and the round-trip decoders only — the coverage
+theorems are for proofs, never for computing row data. -/
+
+/-- The condition `f(i) = n`, as the single graph query `Nat.pair i n ∈ F`. -/
+def FHits (F : Set ℕ) (n i : ℕ) : Prop := Nat.pair i n ∈ F
+
+/-- Neither injection hits `n` at index `i`. -/
+def Neither (F G : Set ℕ) (n i : ℕ) : Prop := ¬FHits F n i ∧ ¬FHits G n i
+
+/-- The source's edge set `E` (Shafer, text pp. 156–157), one disjunct per edge
+family, on coded vertices. -/
+def GadgetAdj (F G : Set ℕ) (a b : ℕ) : Prop :=
+  (∃ n, a = xPlain n ∧ b = ySpec 0 n) ∨
+  (∃ n, a = xPlain n ∧ b = ySpec 1 n) ∨
+  (∃ n, a = xChain 2 n 0 ∧ b = yPlain n) ∨
+  (∃ n, a = xChain 3 n 0 ∧ b = yPlain n) ∨
+  (∃ n i, a = xChain 0 n i ∧ b = yChain 0 n i) ∨
+  (∃ n i, a = xChain 1 n i ∧ b = yChain 1 n i) ∨
+  (∃ n i, a = xChain 0 n i ∧ b = yAt 0 n i ∧ Neither F G n i) ∨
+  (∃ n i, a = xChain 1 n i ∧ b = yAt 1 n i ∧ Neither F G n i) ∨
+  (∃ n i, a = xChain 2 n (i + 1) ∧ b = yChain 2 n i) ∨
+  (∃ n i, a = xChain 3 n (i + 1) ∧ b = yChain 3 n i) ∨
+  (∃ n i, a = xChain 2 n i ∧ b = yChain 2 n i ∧ Neither F G n i) ∨
+  (∃ n i, a = xChain 3 n i ∧ b = yChain 3 n i ∧ Neither F G n i) ∨
+  (∃ n i, a = xChain 2 n i ∧ b = yAt 0 n i ∧ FHits F n i) ∨
+  (∃ n i, a = xChain 3 n i ∧ b = yAt 1 n i ∧ FHits F n i) ∨
+  (∃ n i, a = xChain 2 n i ∧ b = yAt 1 n i ∧ FHits G n i ∧ ¬FHits F n i) ∨
+  (∃ n i, a = xChain 3 n i ∧ b = yAt 0 n i ∧ FHits G n i ∧ ¬FHits F n i) ∨
+  (∃ n i, a = xChain 0 n i ∧ b = yChain 2 n i ∧ ¬Neither F G n i) ∨
+  (∃ n i, a = xChain 1 n i ∧ b = yChain 3 n i ∧ ¬Neither F G n i)
+
+open Classical in
+/-- The left neighbor row: the two right-neighbors of left code `v`, per the
+source's adjacency bullets, branching on parity and `xDecode` only. Classical
+`decide` on the two condition queries is deliberate — layer-2 computability
+relative to the two graphs is a separate theorem. -/
+noncomputable def leftRow (F G : Set ℕ) (v : ℕ) : List ℕ :=
+  if v % 2 = 0 then
+    [ySpec 0 (v / 2), ySpec 1 (v / 2)]
+  else
+    let j := (xDecode v).1
+    let n := (xDecode v).2.1
+    let i := (xDecode v).2.2
+    if j = 0 then
+      [yChain 0 n i,
+        if Neither F G n i then yAt 0 n i else yChain 2 n i]
+    else if j = 1 then
+      [yChain 1 n i,
+        if Neither F G n i then yAt 1 n i else yChain 3 n i]
+    else if j = 2 then
+      [if i = 0 then yPlain n else yChain 2 n (i - 1),
+        if Neither F G n i then yChain 2 n i
+          else if FHits F n i then yAt 0 n i else yAt 1 n i]
+    else
+      [if i = 0 then yPlain n else yChain 3 n (i - 1),
+        if Neither F G n i then yChain 3 n i
+          else if FHits F n i then yAt 1 n i else yAt 0 n i]
+
+open Classical in
+/-- The right neighbor row: the two left-neighbors of right code `v`, branching
+on parity/residue and the decoders only. For a chain vertex `yʲₙ,ᵢ₀₊₁` the
+source's `j ∈ {0,1}` bullets condition at index `i₀ + 1` and the `j ∈ {2,3}`
+bullets at index `i₀`. -/
+noncomputable def rightRow (F G : Set ℕ) (v : ℕ) : List ℕ :=
+  if v % 2 = 0 then
+    [xChain 2 (v / 2) 0, xChain 3 (v / 2) 0]
+  else if v % 4 = 1 then
+    let b := (ySpecDecode v).1
+    let n := (ySpecDecode v).2
+    if b = 0 then
+      [xPlain n,
+        if Neither F G n 0 then xChain 0 n 0
+          else if FHits F n 0 then xChain 2 n 0 else xChain 3 n 0]
+    else
+      [xPlain n,
+        if Neither F G n 0 then xChain 1 n 0
+          else if FHits F n 0 then xChain 3 n 0 else xChain 2 n 0]
+  else
+    let j := (yChainDecode v).1
+    let n := (yChainDecode v).2.1
+    let i0 := (yChainDecode v).2.2
+    if j = 0 then
+      [xChain 0 n i0,
+        if Neither F G n (i0 + 1) then xChain 0 n (i0 + 1)
+          else if FHits F n (i0 + 1) then xChain 2 n (i0 + 1)
+          else xChain 3 n (i0 + 1)]
+    else if j = 1 then
+      [xChain 1 n i0,
+        if Neither F G n (i0 + 1) then xChain 1 n (i0 + 1)
+          else if FHits F n (i0 + 1) then xChain 3 n (i0 + 1)
+          else xChain 2 n (i0 + 1)]
+    else if j = 2 then
+      [xChain 2 n (i0 + 1),
+        if Neither F G n i0 then xChain 2 n i0 else xChain 0 n i0]
+    else
+      [xChain 3 n (i0 + 1),
+        if Neither F G n i0 then xChain 3 n i0 else xChain 1 n i0]
+
+@[simp]
+theorem leftRow_length (F G : Set ℕ) (v : ℕ) : (leftRow F G v).length = 2 := by
+  classical
+  simp only [leftRow, apply_ite List.length, List.length_cons, List.length_nil,
+    ite_self]
+
+@[simp]
+theorem rightRow_length (F G : Set ℕ) (v : ℕ) : (rightRow F G v).length = 2 := by
+  classical
+  simp only [rightRow, apply_ite List.length, List.length_cons, List.length_nil,
+    ite_self]
+
 end SeparationGadget
 
 end ReverseMathlib.Omega
