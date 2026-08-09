@@ -1006,6 +1006,146 @@ theorem mem_rightRow_iff_mem_gadgetEdges {F G : Set ℕ} {a b : ℕ} :
   rw [mem_gadgetEdges_iff]
   exact (gadgetAdj_iff_mem_rightRow F G a b).symm
 
+/-! ### Layer 2: relative computability
+
+The computational theorems are generic in arbitrary `F, G` and reach only
+`hitClass`, the executable rows, and `gadgetEdges` — never the eighteen-family
+relation or the semantic characterizations (fine-dependency gate in
+`scripts/MetaSmoke.lean`). A row evaluation makes finitely many bounded oracle
+queries: two per `hitClass` evaluation (one negative query to each graph), at
+the source-indexed query point. -/
+
+/-- **The classifier is one oracle computation**, proved once and composed into
+everything downstream: two queries against the join — the `F` bit at the even
+code, the `G` bit at the odd code — then a pure conditional. -/
+theorem hitClass_recursiveIn (F G : Set ℕ) :
+    Nat.RecursiveIn {charFn (joinSet F G)}
+      (fun q => Part.some (hitClass F G q.unpair.1 q.unpair.2)) := by
+  classical
+  have hqF : Nat.Partrec fun q => Part.some (2 * Nat.pair q.unpair.2 q.unpair.1) := by
+    have : Primrec fun q : ℕ => 2 * Nat.pair q.unpair.2 q.unpair.1 :=
+      Primrec.nat_mul.comp (.const 2) (Primrec₂.natPair.comp
+        (Primrec.snd.comp Primrec.unpair) (Primrec.fst.comp Primrec.unpair))
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hqG : Nat.Partrec fun q =>
+      Part.some (2 * Nat.pair q.unpair.2 q.unpair.1 + 1) := by
+    have : Primrec fun q : ℕ => 2 * Nat.pair q.unpair.2 q.unpair.1 + 1 :=
+      Primrec.succ.comp (Primrec.nat_mul.comp (.const 2) (Primrec₂.natPair.comp
+        (Primrec.snd.comp Primrec.unpair) (Primrec.fst.comp Primrec.unpair)))
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp this)).of_eq fun _ => rfl
+  have hF := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn (joinSet F G)}) _ rfl) hqF
+  have hG := recursiveIn_comp_partrec
+    (Nat.RecursiveIn.oracle (O := {charFn (joinSet F G)}) _ rfl) hqG
+  have hpair := hF.pair hG
+  have hpost : Nat.Partrec fun m => Part.some
+      (if m.unpair.1 = 1 then 0 else if m.unpair.2 = 1 then 1 else 2) := by
+    have hval : Primrec fun m : ℕ =>
+        if m.unpair.1 = 1 then 0 else if m.unpair.2 = 1 then 1 else 2 :=
+      Primrec.ite (Primrec.eq.comp (Primrec.fst.comp Primrec.unpair) (.const 1))
+        (.const 0)
+        (Primrec.ite (Primrec.eq.comp (Primrec.snd.comp Primrec.unpair) (.const 1))
+          (.const 1) (.const 2))
+    exact (Nat.Partrec.of_primrec (Primrec.nat_iff.mp hval)).of_eq fun _ => rfl
+  refine (hpost.recursiveIn.comp hpair).of_eq fun q => ?_
+  simp only [charFn, Seq.seq, Part.map_eq_map, Part.bind_eq_bind, Part.bind_some,
+    Part.map_some, Nat.unpair_pair]
+  by_cases hF' : Nat.pair q.unpair.2 q.unpair.1 ∈ F <;>
+    by_cases hG' : Nat.pair q.unpair.2 q.unpair.1 ∈ G <;>
+    simp [hitClass, FHits, two_mul_mem_joinSet, two_mul_add_one_mem_joinSet,
+      hF', hG']
+
+/-! ### Pure row assemblers: the class as data -/
+
+/-- The left row with the classifier value supplied as data — pure, no sets. -/
+def leftRowPure (v c : ℕ) : List ℕ :=
+  if v % 2 = 0 then
+    [ySpec 0 (v / 2), ySpec 1 (v / 2)]
+  else
+    let j := (xDecode v).1
+    let n := (xDecode v).2.1
+    let i := (xDecode v).2.2
+    if j = 0 then
+      [yChain 0 n i, if c = 2 then yAt 0 n i else yChain 2 n i]
+    else if j = 1 then
+      [yChain 1 n i, if c = 2 then yAt 1 n i else yChain 3 n i]
+    else if j = 2 then
+      [if i = 0 then yPlain n else yChain 2 n (i - 1),
+        if c = 2 then yChain 2 n i else if c = 0 then yAt 0 n i else yAt 1 n i]
+    else
+      [if i = 0 then yPlain n else yChain 3 n (i - 1),
+        if c = 2 then yChain 3 n i else if c = 0 then yAt 1 n i else yAt 0 n i]
+
+/-- The left row's query point: the decoded `(n, i)` (unused on even codes). -/
+def leftQuery (v : ℕ) : ℕ := Nat.pair (xDecode v).2.1 (xDecode v).2.2
+
+theorem leftRow_eq_pure (F G : Set ℕ) (v : ℕ) :
+    leftRow F G v = leftRowPure v
+      (hitClass F G (leftQuery v).unpair.1 (leftQuery v).unpair.2) := by
+  classical
+  rw [leftRow, leftRowPure, leftQuery, Nat.unpair_pair]
+
+/-- The right row with the classifier value supplied as data — pure, no sets. -/
+def rightRowPure (v c : ℕ) : List ℕ :=
+  if v % 2 = 0 then
+    [xChain 2 (v / 2) 0, xChain 3 (v / 2) 0]
+  else if v % 4 = 1 then
+    let b := (ySpecDecode v).1
+    let n := (ySpecDecode v).2
+    if b = 0 then
+      [xPlain n, if c = 2 then xChain 0 n 0
+        else if c = 0 then xChain 2 n 0 else xChain 3 n 0]
+    else
+      [xPlain n, if c = 2 then xChain 1 n 0
+        else if c = 0 then xChain 3 n 0 else xChain 2 n 0]
+  else
+    let j := (yChainDecode v).1
+    let n := (yChainDecode v).2.1
+    let i0 := (yChainDecode v).2.2
+    if j = 0 then
+      [xChain 0 n i0, if c = 2 then xChain 0 n (i0 + 1)
+        else if c = 0 then xChain 2 n (i0 + 1) else xChain 3 n (i0 + 1)]
+    else if j = 1 then
+      [xChain 1 n i0, if c = 2 then xChain 1 n (i0 + 1)
+        else if c = 0 then xChain 3 n (i0 + 1) else xChain 2 n (i0 + 1)]
+    else if j = 2 then
+      [xChain 2 n (i0 + 1), if c = 2 then xChain 2 n i0 else xChain 0 n i0]
+    else
+      [xChain 3 n (i0 + 1), if c = 2 then xChain 3 n i0 else xChain 1 n i0]
+
+/-- The right row's query point, per the source's condition-index asymmetry:
+index `0` for the specials, `i0 + 1` for chain `j ∈ {0, 1}`, `i0` for chain
+`j ∈ {2, 3}` (unused on even codes). -/
+def rightQuery (v : ℕ) : ℕ :=
+  if v % 2 = 0 then 0
+  else if v % 4 = 1 then Nat.pair (ySpecDecode v).2 0
+  else
+    let j := (yChainDecode v).1
+    let n := (yChainDecode v).2.1
+    let i0 := (yChainDecode v).2.2
+    if j = 0 then Nat.pair n (i0 + 1)
+    else if j = 1 then Nat.pair n (i0 + 1)
+    else if j = 2 then Nat.pair n i0
+    else Nat.pair n i0
+
+theorem rightRow_eq_pure (F G : Set ℕ) (v : ℕ) :
+    rightRow F G v = rightRowPure v
+      (hitClass F G (rightQuery v).unpair.1 (rightQuery v).unpair.2) := by
+  classical
+  rcases yCases v with ⟨n, rfl⟩ | ⟨b, n, hb, rfl⟩ | ⟨j, n, i0, hj, rfl⟩
+  · have h2 : yPlain n % 2 = 0 := by
+      simp only [yPlain]
+      omega
+    rw [rightRow, rightRowPure, if_pos h2, if_pos h2]
+  · obtain ⟨hm2, hm4⟩ := ySpec_mod b n
+    rw [rightRow, rightRowPure, rightQuery, if_neg hm2, if_neg hm2, if_neg hm2,
+      if_pos hm4, if_pos hm4, if_pos hm4, Nat.unpair_pair]
+  · obtain ⟨hm2, hm4⟩ := yChain_mod j n i0
+    rw [rightRow, rightRowPure, rightQuery, if_neg hm2, if_neg hm2, if_neg hm2,
+      if_neg hm4, if_neg hm4, if_neg hm4, yChainDecode_yChain hj]
+    have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
+    rcases hj4 with rfl | rfl | rfl | rfl <;> simp [Nat.unpair_pair]
+
 end SeparationGadget
 
 end ReverseMathlib.Omega
