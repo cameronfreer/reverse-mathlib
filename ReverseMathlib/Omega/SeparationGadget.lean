@@ -215,11 +215,43 @@ the precedence is vacuous, matching the source exactly). The executable rows
 branch on parity/residue and the round-trip decoders only — the coverage
 theorems are for proofs, never for computing row data. -/
 
-/-- The condition `f(i) = n`, as the single graph query `Nat.pair i n ∈ F`. -/
+/-- The condition `f(i) = n`, as one graph query `Nat.pair i n ∈ F`. -/
 def FHits (F : Set ℕ) (n i : ℕ) : Prop := Nat.pair i n ∈ F
 
-/-- Neither injection hits `n` at index `i`. -/
+/-- Neither injection hits `n` at index `i` — two finite queries, one negative
+query to each graph: bounded and local, though not literally a single query. -/
 def Neither (F G : Set ℕ) (n i : ℕ) : Prop := ¬FHits F n i ∧ ¬FHits G n i
+
+open Classical in
+/-- The shared three-way condition classifier at `(n, i)`: `0` = `f` hits, `1` =
+`g`-only hits, `2` = neither — two finite queries, mirroring the rows' `f`-first
+precedence mechanically so the reductions and coherence proofs split on one
+value. -/
+noncomputable def hitClass (F G : Set ℕ) (n i : ℕ) : ℕ :=
+  if FHits F n i then 0 else if FHits G n i then 1 else 2
+
+theorem hitClass_eq_zero_iff {F G : Set ℕ} {n i : ℕ} :
+    hitClass F G n i = 0 ↔ FHits F n i := by
+  classical
+  simp only [hitClass]
+  split_ifs <;> simp_all
+
+theorem hitClass_eq_one_iff {F G : Set ℕ} {n i : ℕ} :
+    hitClass F G n i = 1 ↔ FHits G n i ∧ ¬FHits F n i := by
+  classical
+  simp only [hitClass]
+  split_ifs <;> simp_all
+
+theorem hitClass_eq_two_iff {F G : Set ℕ} {n i : ℕ} :
+    hitClass F G n i = 2 ↔ Neither F G n i := by
+  classical
+  simp only [hitClass, Neither]
+  split_ifs <;> simp_all
+
+theorem hitClass_lt_three (F G : Set ℕ) (n i : ℕ) : hitClass F G n i < 3 := by
+  classical
+  simp only [hitClass]
+  split_ifs <;> omega
 
 /-- The source's edge set `E` (Shafer, text pp. 156–157), one disjunct per edge
 family, on coded vertices. -/
@@ -257,18 +289,18 @@ noncomputable def leftRow (F G : Set ℕ) (v : ℕ) : List ℕ :=
     let i := (xDecode v).2.2
     if j = 0 then
       [yChain 0 n i,
-        if Neither F G n i then yAt 0 n i else yChain 2 n i]
+        if hitClass F G n i = 2 then yAt 0 n i else yChain 2 n i]
     else if j = 1 then
       [yChain 1 n i,
-        if Neither F G n i then yAt 1 n i else yChain 3 n i]
+        if hitClass F G n i = 2 then yAt 1 n i else yChain 3 n i]
     else if j = 2 then
       [if i = 0 then yPlain n else yChain 2 n (i - 1),
-        if Neither F G n i then yChain 2 n i
-          else if FHits F n i then yAt 0 n i else yAt 1 n i]
+        if hitClass F G n i = 2 then yChain 2 n i
+          else if hitClass F G n i = 0 then yAt 0 n i else yAt 1 n i]
     else
       [if i = 0 then yPlain n else yChain 3 n (i - 1),
-        if Neither F G n i then yChain 3 n i
-          else if FHits F n i then yAt 1 n i else yAt 0 n i]
+        if hitClass F G n i = 2 then yChain 3 n i
+          else if hitClass F G n i = 0 then yAt 1 n i else yAt 0 n i]
 
 open Classical in
 /-- The right neighbor row: the two left-neighbors of right code `v`, branching
@@ -283,32 +315,32 @@ noncomputable def rightRow (F G : Set ℕ) (v : ℕ) : List ℕ :=
     let n := (ySpecDecode v).2
     if b = 0 then
       [xPlain n,
-        if Neither F G n 0 then xChain 0 n 0
-          else if FHits F n 0 then xChain 2 n 0 else xChain 3 n 0]
+        if hitClass F G n 0 = 2 then xChain 0 n 0
+          else if hitClass F G n 0 = 0 then xChain 2 n 0 else xChain 3 n 0]
     else
       [xPlain n,
-        if Neither F G n 0 then xChain 1 n 0
-          else if FHits F n 0 then xChain 3 n 0 else xChain 2 n 0]
+        if hitClass F G n 0 = 2 then xChain 1 n 0
+          else if hitClass F G n 0 = 0 then xChain 3 n 0 else xChain 2 n 0]
   else
     let j := (yChainDecode v).1
     let n := (yChainDecode v).2.1
     let i0 := (yChainDecode v).2.2
     if j = 0 then
       [xChain 0 n i0,
-        if Neither F G n (i0 + 1) then xChain 0 n (i0 + 1)
-          else if FHits F n (i0 + 1) then xChain 2 n (i0 + 1)
+        if hitClass F G n (i0 + 1) = 2 then xChain 0 n (i0 + 1)
+          else if hitClass F G n (i0 + 1) = 0 then xChain 2 n (i0 + 1)
           else xChain 3 n (i0 + 1)]
     else if j = 1 then
       [xChain 1 n i0,
-        if Neither F G n (i0 + 1) then xChain 1 n (i0 + 1)
-          else if FHits F n (i0 + 1) then xChain 3 n (i0 + 1)
+        if hitClass F G n (i0 + 1) = 2 then xChain 1 n (i0 + 1)
+          else if hitClass F G n (i0 + 1) = 0 then xChain 3 n (i0 + 1)
           else xChain 2 n (i0 + 1)]
     else if j = 2 then
       [xChain 2 n (i0 + 1),
-        if Neither F G n i0 then xChain 2 n i0 else xChain 0 n i0]
+        if hitClass F G n i0 = 2 then xChain 2 n i0 else xChain 0 n i0]
     else
       [xChain 3 n (i0 + 1),
-        if Neither F G n i0 then xChain 3 n i0 else xChain 1 n i0]
+        if hitClass F G n i0 = 2 then xChain 3 n i0 else xChain 1 n i0]
 
 @[simp]
 theorem leftRow_length (F G : Set ℕ) (v : ℕ) : (leftRow F G v).length = 2 := by
@@ -321,6 +353,79 @@ theorem rightRow_length (F G : Set ℕ) (v : ℕ) : (rightRow F G v).length = 2 
   classical
   simp only [rightRow, apply_ite List.length, List.length_cons, List.length_nil,
     ite_self]
+
+/-! ### Row equations, per vertex family -/
+
+private theorem xChain_mod2 (j n i : ℕ) : ¬xChain j n i % 2 = 0 := by
+  simp only [xChain]
+  omega
+
+private theorem ySpec_mod (b n : ℕ) :
+    ¬ySpec b n % 2 = 0 ∧ ySpec b n % 4 = 1 := by
+  simp only [ySpec]
+  omega
+
+private theorem yChain_mod (j n i : ℕ) :
+    ¬yChain j n i % 2 = 0 ∧ ¬yChain j n i % 4 = 1 := by
+  simp only [yChain]
+  omega
+
+theorem leftRow_xPlain (F G : Set ℕ) (n : ℕ) :
+    leftRow F G (xPlain n) = [ySpec 0 n, ySpec 1 n] := by
+  have h2 : 2 * n % 2 = 0 := by omega
+  have h3 : 2 * n / 2 = n := by omega
+  simp only [leftRow, xPlain, if_pos h2, h3]
+
+theorem leftRow_xChain (F G : Set ℕ) (j n i : ℕ) (hj : j < 4) :
+    leftRow F G (xChain j n i) =
+      if j = 0 then [yChain 0 n i,
+        if hitClass F G n i = 2 then yAt 0 n i else yChain 2 n i]
+      else if j = 1 then [yChain 1 n i,
+        if hitClass F G n i = 2 then yAt 1 n i else yChain 3 n i]
+      else if j = 2 then [if i = 0 then yPlain n else yChain 2 n (i - 1),
+        if hitClass F G n i = 2 then yChain 2 n i
+          else if hitClass F G n i = 0 then yAt 0 n i else yAt 1 n i]
+      else [if i = 0 then yPlain n else yChain 3 n (i - 1),
+        if hitClass F G n i = 2 then yChain 3 n i
+          else if hitClass F G n i = 0 then yAt 1 n i else yAt 0 n i] := by
+  classical
+  simp only [leftRow, if_neg (xChain_mod2 j n i), xDecode_xChain hj]
+
+theorem rightRow_yPlain (F G : Set ℕ) (n : ℕ) :
+    rightRow F G (yPlain n) = [xChain 2 n 0, xChain 3 n 0] := by
+  have h2 : 2 * n % 2 = 0 := by omega
+  have h3 : 2 * n / 2 = n := by omega
+  simp only [rightRow, yPlain, if_pos h2, h3]
+
+theorem rightRow_ySpec (F G : Set ℕ) (b n : ℕ) (hb : b < 2) :
+    rightRow F G (ySpec b n) =
+      if b = 0 then [xPlain n,
+        if hitClass F G n 0 = 2 then xChain 0 n 0
+          else if hitClass F G n 0 = 0 then xChain 2 n 0 else xChain 3 n 0]
+      else [xPlain n,
+        if hitClass F G n 0 = 2 then xChain 1 n 0
+          else if hitClass F G n 0 = 0 then xChain 3 n 0 else xChain 2 n 0] := by
+  classical
+  obtain ⟨hm2, hm4⟩ := ySpec_mod b n
+  simp only [rightRow, if_neg hm2, if_pos hm4, ySpecDecode_ySpec hb]
+
+theorem rightRow_yChain (F G : Set ℕ) (j n i0 : ℕ) (hj : j < 4) :
+    rightRow F G (yChain j n i0) =
+      if j = 0 then [xChain 0 n i0,
+        if hitClass F G n (i0 + 1) = 2 then xChain 0 n (i0 + 1)
+          else if hitClass F G n (i0 + 1) = 0 then xChain 2 n (i0 + 1)
+          else xChain 3 n (i0 + 1)]
+      else if j = 1 then [xChain 1 n i0,
+        if hitClass F G n (i0 + 1) = 2 then xChain 1 n (i0 + 1)
+          else if hitClass F G n (i0 + 1) = 0 then xChain 3 n (i0 + 1)
+          else xChain 2 n (i0 + 1)]
+      else if j = 2 then [xChain 2 n (i0 + 1),
+        if hitClass F G n i0 = 2 then xChain 2 n i0 else xChain 0 n i0]
+      else [xChain 3 n (i0 + 1),
+        if hitClass F G n i0 = 2 then xChain 3 n i0 else xChain 1 n i0] := by
+  classical
+  obtain ⟨hm2, hm4⟩ := yChain_mod j n i0
+  simp only [rightRow, if_neg hm2, if_neg hm4, yChainDecode_yChain hj]
 
 end SeparationGadget
 
