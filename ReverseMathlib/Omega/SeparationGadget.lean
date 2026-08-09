@@ -738,6 +738,274 @@ theorem gadgetAdj_iff_mem_leftRow (F G : Set ℕ) (a b : ℕ) :
               obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
               exact GadgetAdj.d16 n (k + 1) hcG hncF
 
+/-! ### The edge set, definitionally row-based -/
+
+open Classical in
+/-- The gadget's edge set, **definitionally row-based** (review pin): membership
+IS the finite two-entry left-row computation, so "no existential search" is
+visible in the construction itself, not merely recoverable from a proof
+rewrite. `mem_gadgetEdges_iff` is its semantic characterization against the
+eighteen-family relation. -/
+noncomputable def gadgetEdges (F G : Set ℕ) : Set ℕ :=
+  {p | p.unpair.2 ∈ leftRow F G p.unpair.1}
+
+theorem mem_gadgetEdges_iff {F G : Set ℕ} {a b : ℕ} :
+    Nat.pair a b ∈ gadgetEdges F G ↔ GadgetAdj F G a b := by
+  classical
+  simp only [gadgetEdges, Set.mem_setOf_eq, Nat.unpair_pair]
+  exact (gadgetAdj_iff_mem_leftRow F G a b).symm
+
+/-- **Adjacency through the right row**: the mirror characterization, which
+establishes the two rows' coherence against the same row-defined edge set. -/
+theorem gadgetAdj_iff_mem_rightRow (F G : Set ℕ) (a b : ℕ) :
+    GadgetAdj F G a b ↔ a ∈ rightRow F G b := by
+  classical
+  constructor
+  · rintro (⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ | ⟨n, rfl, rfl⟩ |
+      ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl, hc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl⟩ | ⟨n, i, rfl, rfl⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc, hnc⟩ | ⟨n, i, rfl, rfl, hc, hnc⟩ |
+      ⟨n, i, rfl, rfl, hc⟩ | ⟨n, i, rfl, rfl, hc⟩)
+    · rw [rightRow_ySpec F G 0 n (by omega), if_pos (show (0:ℕ) = 0 from rfl)]
+      simp
+    · rw [rightRow_ySpec F G 1 n (by omega), if_neg (show ¬(1:ℕ) = 0 by omega)]
+      simp
+    · rw [rightRow_yPlain]
+      simp
+    · rw [rightRow_yPlain]
+      simp
+    · rw [rightRow_yChain F G 0 n i (by omega), if_pos (show (0:ℕ) = 0 from rfl)]
+      simp
+    · rw [rightRow_yChain F G 1 n i (by omega),
+        if_neg (show ¬(1:ℕ) = 0 by omega), if_pos (show (1:ℕ) = 1 from rfl)]
+      simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 0 n (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n 0 = 2 from hitClass_eq_two_iff.mpr hc,
+          reduceIte]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 0 n k (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 2 from hitClass_eq_two_iff.mpr hc,
+          reduceIte]
+        simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 1 n (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega)]
+        simp only [show hitClass F G n 0 = 2 from hitClass_eq_two_iff.mpr hc,
+          reduceIte]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 1 n k (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega), if_pos (show (1:ℕ) = 1 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 2 from hitClass_eq_two_iff.mpr hc,
+          reduceIte]
+        simp
+    · rw [rightRow_yChain F G 2 n i (by omega),
+        if_neg (show ¬(2:ℕ) = 0 by omega), if_neg (show ¬(2:ℕ) = 1 by omega),
+        if_pos (show (2:ℕ) = 2 from rfl)]
+      simp
+    · rw [rightRow_yChain F G 3 n i (by omega),
+        if_neg (show ¬(3:ℕ) = 0 by omega), if_neg (show ¬(3:ℕ) = 1 by omega),
+        if_neg (show ¬(3:ℕ) = 2 by omega)]
+      simp
+    · rw [rightRow_yChain F G 2 n i (by omega),
+        if_neg (show ¬(2:ℕ) = 0 by omega), if_neg (show ¬(2:ℕ) = 1 by omega),
+        if_pos (show (2:ℕ) = 2 from rfl)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc,
+        reduceIte]
+      simp
+    · rw [rightRow_yChain F G 3 n i (by omega),
+        if_neg (show ¬(3:ℕ) = 0 by omega), if_neg (show ¬(3:ℕ) = 1 by omega),
+        if_neg (show ¬(3:ℕ) = 2 by omega)]
+      simp only [show hitClass F G n i = 2 from hitClass_eq_two_iff.mpr hc,
+        reduceIte]
+      simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 0 n (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n 0 = 0 from hitClass_eq_zero_iff.mpr hc,
+          reduceIte]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 0 n k (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 0 from hitClass_eq_zero_iff.mpr hc,
+          reduceIte]
+        simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 1 n (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega)]
+        simp only [show hitClass F G n 0 = 0 from hitClass_eq_zero_iff.mpr hc,
+          reduceIte]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 1 n k (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega), if_pos (show (1:ℕ) = 1 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 0 from hitClass_eq_zero_iff.mpr hc,
+          reduceIte]
+        simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 1 n (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega)]
+        simp only [show hitClass F G n 0 = 1 from hitClass_eq_one_iff.mpr ⟨hc, hnc⟩]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 1 n k (by omega),
+          if_neg (show ¬(1:ℕ) = 0 by omega), if_pos (show (1:ℕ) = 1 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 1 from
+          hitClass_eq_one_iff.mpr ⟨hc, hnc⟩]
+        simp
+    · rcases Nat.eq_zero_or_pos i with rfl | hi
+      · rw [yAt_zero, rightRow_ySpec F G 0 n (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n 0 = 1 from hitClass_eq_one_iff.mpr ⟨hc, hnc⟩]
+        simp
+      · obtain ⟨k, rfl⟩ : ∃ k, i = k + 1 := ⟨i - 1, by omega⟩
+        rw [yAt_succ, rightRow_yChain F G 0 n k (by omega),
+          if_pos (show (0:ℕ) = 0 from rfl)]
+        simp only [show hitClass F G n (k + 1) = 1 from
+          hitClass_eq_one_iff.mpr ⟨hc, hnc⟩]
+        simp
+    · rw [rightRow_yChain F G 2 n i (by omega),
+        if_neg (show ¬(2:ℕ) = 0 by omega), if_neg (show ¬(2:ℕ) = 1 by omega),
+        if_pos (show (2:ℕ) = 2 from rfl)]
+      rcases hitClass_cases F G n i with h | h | h
+      · simp only [h]
+        simp
+      · simp only [h]
+        simp
+      · exact absurd (hitClass_eq_two_iff.mp h) hc
+    · rw [rightRow_yChain F G 3 n i (by omega),
+        if_neg (show ¬(3:ℕ) = 0 by omega), if_neg (show ¬(3:ℕ) = 1 by omega),
+        if_neg (show ¬(3:ℕ) = 2 by omega)]
+      rcases hitClass_cases F G n i with h | h | h
+      · simp only [h]
+        simp
+      · simp only [h]
+        simp
+      · exact absurd (hitClass_eq_two_iff.mp h) hc
+  · intro ha
+    rcases yCases b with ⟨n, rfl⟩ | ⟨c, n, hc2, rfl⟩ | ⟨j, n, i0, hj, rfl⟩
+    · rw [rightRow_yPlain] at ha
+      rcases mem_pair'.mp ha with rfl | rfl
+      · exact GadgetAdj.d3 n
+      · exact GadgetAdj.d4 n
+    · rw [rightRow_ySpec F G c n hc2] at ha
+      have hc02 : c = 0 ∨ c = 1 := by omega
+      rcases hc02 with rfl | rfl
+      · rw [if_pos (show (0:ℕ) = 0 from rfl)] at ha
+        split_ifs at ha with h2 h0
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d1 n
+          · have := GadgetAdj.d7 (F := F) (G := G) n 0
+              (hitClass_eq_two_iff.mp h2)
+            rwa [yAt_zero] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d1 n
+          · have := GadgetAdj.d13 (F := F) (G := G) n 0
+              (hitClass_eq_zero_iff.mp h0)
+            rwa [yAt_zero] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d1 n
+          · have h1 : hitClass F G n 0 = 1 := by
+              have := hitClass_lt_three F G n 0
+              omega
+            obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+            have := GadgetAdj.d16 (F := F) (G := G) n 0 hcG hncF
+            rwa [yAt_zero] at this
+      · rw [if_neg (show ¬(1:ℕ) = 0 by omega)] at ha
+        split_ifs at ha with h2 h0
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d2 n
+          · have := GadgetAdj.d8 (F := F) (G := G) n 0
+              (hitClass_eq_two_iff.mp h2)
+            rwa [yAt_zero] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d2 n
+          · have := GadgetAdj.d14 (F := F) (G := G) n 0
+              (hitClass_eq_zero_iff.mp h0)
+            rwa [yAt_zero] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d2 n
+          · have h1 : hitClass F G n 0 = 1 := by
+              have := hitClass_lt_three F G n 0
+              omega
+            obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+            have := GadgetAdj.d15 (F := F) (G := G) n 0 hcG hncF
+            rwa [yAt_zero] at this
+    · rw [rightRow_yChain F G j n i0 hj] at ha
+      have hj4 : j = 0 ∨ j = 1 ∨ j = 2 ∨ j = 3 := by omega
+      rcases hj4 with rfl | rfl | rfl | rfl
+      · rw [if_pos (show (0:ℕ) = 0 from rfl)] at ha
+        split_ifs at ha with h2 h0
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d5 n i0
+          · have := GadgetAdj.d7 (F := F) (G := G) n (i0 + 1)
+              (hitClass_eq_two_iff.mp h2)
+            rwa [yAt_succ] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d5 n i0
+          · have := GadgetAdj.d13 (F := F) (G := G) n (i0 + 1)
+              (hitClass_eq_zero_iff.mp h0)
+            rwa [yAt_succ] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d5 n i0
+          · have h1 : hitClass F G n (i0 + 1) = 1 := by
+              have := hitClass_lt_three F G n (i0 + 1)
+              omega
+            obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+            have := GadgetAdj.d16 (F := F) (G := G) n (i0 + 1) hcG hncF
+            rwa [yAt_succ] at this
+      · rw [if_neg (show ¬(1:ℕ) = 0 by omega),
+          if_pos (show (1:ℕ) = 1 from rfl)] at ha
+        split_ifs at ha with h2 h0
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d6 n i0
+          · have := GadgetAdj.d8 (F := F) (G := G) n (i0 + 1)
+              (hitClass_eq_two_iff.mp h2)
+            rwa [yAt_succ] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d6 n i0
+          · have := GadgetAdj.d14 (F := F) (G := G) n (i0 + 1)
+              (hitClass_eq_zero_iff.mp h0)
+            rwa [yAt_succ] at this
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d6 n i0
+          · have h1 : hitClass F G n (i0 + 1) = 1 := by
+              have := hitClass_lt_three F G n (i0 + 1)
+              omega
+            obtain ⟨hcG, hncF⟩ := hitClass_eq_one_iff.mp h1
+            have := GadgetAdj.d15 (F := F) (G := G) n (i0 + 1) hcG hncF
+            rwa [yAt_succ] at this
+      · rw [if_neg (show ¬(2:ℕ) = 0 by omega), if_neg (show ¬(2:ℕ) = 1 by omega),
+          if_pos (show (2:ℕ) = 2 from rfl)] at ha
+        split_ifs at ha with h2
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d9 n i0
+          · exact GadgetAdj.d11 n i0 (hitClass_eq_two_iff.mp h2)
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d9 n i0
+          · exact GadgetAdj.d17 n i0 fun hN => h2 (hitClass_eq_two_iff.mpr hN)
+      · rw [if_neg (show ¬(3:ℕ) = 0 by omega), if_neg (show ¬(3:ℕ) = 1 by omega),
+          if_neg (show ¬(3:ℕ) = 2 by omega)] at ha
+        split_ifs at ha with h2
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d10 n i0
+          · exact GadgetAdj.d12 n i0 (hitClass_eq_two_iff.mp h2)
+        · rcases mem_pair'.mp ha with rfl | rfl
+          · exact GadgetAdj.d10 n i0
+          · exact GadgetAdj.d18 n i0 fun hN => h2 (hitClass_eq_two_iff.mpr hN)
+
+/-- The two rows cohere against the same row-defined edge set. -/
+theorem mem_rightRow_iff_mem_gadgetEdges {F G : Set ℕ} {a b : ℕ} :
+    a ∈ rightRow F G b ↔ Nat.pair a b ∈ gadgetEdges F G := by
+  rw [mem_gadgetEdges_iff]
+  exact (gadgetAdj_iff_mem_rightRow F G a b).symm
+
 end SeparationGadget
 
 end ReverseMathlib.Omega
