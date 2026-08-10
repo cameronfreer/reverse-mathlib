@@ -421,6 +421,41 @@ any other compiler — the mate-table architecture certificate. -/
    ReverseMathlib.Omega.hall_of_degree_le_two,
    ReverseMathlib.Omega.IsMatchingSet]
 
+/-! ### Separation-gadget fine-dependency gates (#42 slice 4)
+
+The three computational theorems reach `hitClass`, the executable rows, and the
+row-defined edge set — never the eighteen-family relation, its introduction
+helpers, or the semantic characterizations. The three-way separation as checked
+architecture: computation = finite queries and row encodings; correctness = the
+source relation; packaging = ideal closure plus the proved mem_iff fields. -/
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

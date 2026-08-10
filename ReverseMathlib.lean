@@ -32,5 +32,6 @@ import ReverseMathlib.Omega.BigraphToSystem
 import ReverseMathlib.Omega.BigraphEquivalence
 import ReverseMathlib.Omega.RangeSeparation
 import ReverseMathlib.Omega.SeparationGadget
+import ReverseMathlib.Omega.SeparationGadgetReduction
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
