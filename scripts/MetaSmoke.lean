@@ -541,6 +541,26 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
    ReverseMathlib.Omega.SeparationGadget.hitClass,
    ReverseMathlib.Omega.InternalTwoRegularBigraph]
 
+-- The reversal's first leg rides the gadget and the forced chains only: away
+-- from EFILC, Hall, the forward matching compiler, and the WKL/tree machinery.
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.gadgetBigraph
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.gadgetSeparator
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.upward_chain
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.matching_separates
+  [ReverseMathlib.Omega.bigraphToSystem,
+   ReverseMathlib.Omega.sectionMatchingFunction,
+   ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.EFILCAt,
+   ReverseMathlib.Omega.WeakKonigAt]
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

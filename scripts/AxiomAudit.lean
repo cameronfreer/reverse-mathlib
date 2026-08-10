@@ -78,7 +78,14 @@ def headlineDecls : List Name :=
    -- section; the completed forward direction
    ``ReverseMathlib.Omega.mateFiberGraph_le_join,
    ``ReverseMathlib.Omega.sectionMatchingGraph_le_graph,
-   ``ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt]
+   ``ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt,
+   -- Matching slice 4: the gadget's three data reductions, the four-query separator,
+   -- and the reversal's first leg (matching ⇒ disjoint-range separation)
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.separatorSet_le_graph,
+   ``ReverseMathlib.Omega.matching_separates]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

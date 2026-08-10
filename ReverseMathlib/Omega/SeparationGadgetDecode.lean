@@ -258,8 +258,92 @@ theorem downward_chain {j2 m n : ℕ}
     obtain ⟨-, -, hik⟩ := xChain_injective (by omega) (by omega) hEq
     omega
 
+/-! ### The two truth-table cases and the reversal headline -/
+
+/-- **The `f` case**: an `f`-hit lands in the separator — base dichotomy, the
+matching lane's turn at class `0`, descent to the terminal, and the matching
+disjunct of `separatorSet`. -/
+theorem separator_mem_of_f (hM : (gadgetBigraph h f g).IsPerfectMatching M)
+    (hfi : f.IsInjective) (hdisj : DisjointRanges f g)
+    {m n : ℕ} (hm : f.MapsTo m n) : n ∈ separatorSet M.graph.1 := by
+  have hcls : ∀ i, i ≠ m → hitClass f.graph.1 g.graph.1 n i = 2 := fun i hi => by
+    rw [class_of_f hfi hdisj hm i, if_neg hi]
+  have hclsm : hitClass f.graph.1 g.graph.1 n m = 0 := by
+    rw [class_of_f hfi hdisj hm m, if_pos rfl]
+  obtain ⟨w, hw, hwrow⟩ := matched_left hM (xPlain n)
+  rw [leftRow_xPlain] at hwrow
+  rcases mem_pair''.mp hwrow with rfl | rfl
+  · have hrow : leftRow f.graph.1 g.graph.1 (xChain 2 n m)
+        = [if m = 0 then yPlain n else yChain 2 n (m - 1), yAt 0 n m] := by
+      rw [leftRow_xChain _ _ 2 n m (by omega)]
+      simp [hclsm]
+    have hturn := turn_chain hM (by omega) (Or.inl rfl) hrow hcls hw
+    exact Or.inl ⟨hw, downward_chain hM (Or.inl rfl) hcls m le_rfl hturn⟩
+  · have hrow : leftRow f.graph.1 g.graph.1 (xChain 3 n m)
+        = [if m = 0 then yPlain n else yChain 3 n (m - 1), yAt 1 n m] := by
+      rw [leftRow_xChain _ _ 3 n m (by omega)]
+      simp [hclsm]
+    have hturn := turn_chain hM (by omega) (Or.inr rfl) hrow hcls hw
+    exact Or.inr ⟨hw, downward_chain hM (Or.inr rfl) hcls m le_rfl hturn⟩
+
+/-- **The `g` case**: a `g`-hit stays out of the separator — the class-`1` turn
+sends the OPPOSITE descending lane onto `yₙ`, and both `separatorSet` disjuncts
+then fail (one by matching injectivity on `yₙ`, the other by functionality at
+`xₙ`). -/
+theorem separator_notMem_of_g (hM : (gadgetBigraph h f g).IsPerfectMatching M)
+    (hgi : g.IsInjective) (hdisj : DisjointRanges f g)
+    {m n : ℕ} (hm : g.MapsTo m n) : n ∉ separatorSet M.graph.1 := by
+  have hcls : ∀ i, i ≠ m → hitClass f.graph.1 g.graph.1 n i = 2 := fun i hi => by
+    rw [class_of_g hgi hdisj hm i, if_neg hi]
+  have hclsm : hitClass f.graph.1 g.graph.1 n m = 1 := by
+    rw [class_of_g hgi hdisj hm m, if_pos rfl]
+  obtain ⟨w, hw, hwrow⟩ := matched_left hM (xPlain n)
+  rw [leftRow_xPlain] at hwrow
+  rcases mem_pair''.mp hwrow with rfl | rfl
+  · -- base lane 0: the class-1 turn rides lane 3 onto yₙ
+    have hrow : leftRow f.graph.1 g.graph.1 (xChain 3 n m)
+        = [if m = 0 then yPlain n else yChain 3 n (m - 1), yAt 0 n m] := by
+      rw [leftRow_xChain _ _ 3 n m (by omega)]
+      simp [hclsm]
+    have hterm := downward_chain hM (Or.inr rfl) hcls m le_rfl
+      (turn_chain hM (by omega) (Or.inr rfl) hrow hcls hw)
+    rintro (⟨-, h2⟩ | ⟨h1, -⟩)
+    · have hEq := hM.2.1 (xChain 2 n 0) (xChain 3 n 0) (yPlain n) h2 hterm
+      obtain ⟨hj, -, -⟩ := xChain_injective (by omega) (by omega) hEq
+      omega
+    · have hEq := M.singleValued (xPlain n) _ _ h1 hw
+      obtain ⟨hb, -⟩ := ySpec_injective (by omega) (by omega) hEq
+      omega
+  · -- base lane 1: the class-1 turn rides lane 2 onto yₙ
+    have hrow : leftRow f.graph.1 g.graph.1 (xChain 2 n m)
+        = [if m = 0 then yPlain n else yChain 2 n (m - 1), yAt 1 n m] := by
+      rw [leftRow_xChain _ _ 2 n m (by omega)]
+      simp [hclsm]
+    have hterm := downward_chain hM (Or.inl rfl) hcls m le_rfl
+      (turn_chain hM (by omega) (Or.inl rfl) hrow hcls hw)
+    rintro (⟨h1, -⟩ | ⟨-, h2⟩)
+    · have hEq := M.singleValued (xPlain n) _ _ h1 hw
+      obtain ⟨hb, -⟩ := ySpec_injective (by omega) (by omega) hEq
+      omega
+    · have hEq := hM.2.1 (xChain 3 n 0) (xChain 2 n 0) (yPlain n) h2 hterm
+      obtain ⟨hj, -, -⟩ := xChain_injective (by omega) (by omega) hEq
+      omega
+
 end ForcedChains
 
 end SeparationGadget
+
+open SeparationGadget in
+/-- **The reversal's first leg** (Shafer Thm 6.1.2 (v) ⇒ separation): over a
+Turing ideal, 2-regular perfect matching yields disjoint-range separation —
+instantiate the capability at the gadget, decode the separator, and run the two
+forced-chain cases. -/
+theorem matching_separates {Ω : OmegaPart} (h : IsTuringIdeal Ω)
+    (hmatch : TwoRegularPerfectMatchingAt Ω) : DisjointRangeSeparationAt Ω := by
+  intro f g hfi hgi hdisj
+  obtain ⟨M, hM⟩ := hmatch (gadgetBigraph h f g)
+  exact ⟨gadgetSeparator h M,
+    fun m v hmv => separator_mem_of_f hM hfi hdisj hmv,
+    fun m v hmv => separator_notMem_of_g hM hgi hdisj hmv⟩
 
 end ReverseMathlib.Omega
