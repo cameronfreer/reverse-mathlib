@@ -552,6 +552,18 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
 #rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
   ReverseMathlib.Omega.SeparationGadget.upward_chain
 
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.turn_chain
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.downward_chain
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.separator_mem_of_f
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.separator_notMem_of_g
+
 #rm_assert_not_proof_depends ReverseMathlib.Omega.matching_separates
   [ReverseMathlib.Omega.bigraphToSystem,
    ReverseMathlib.Omega.sectionMatchingFunction,
