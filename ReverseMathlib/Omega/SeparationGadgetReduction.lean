@@ -539,6 +539,71 @@ theorem gadgetEdges_le_join (F G : Set ℕ) :
   · rw [if_neg (fun h1 => h (hmem.mpr (Or.inl h1))),
       if_neg (fun h1 => h (hmem.mpr (Or.inr h1))), if_neg h]
 
+/-! ### Layer 3: the internal bigraph instance -/
+
+/-- Membership normal form for the left enumerator graph. -/
+theorem mem_gadgetLeftGraph_iff {F G : Set ℕ} {v c : ℕ} :
+    Nat.pair v c ∈ gadgetLeftGraph F G ↔ c = seqCode (leftRow F G v) := by
+  rw [gadgetLeftGraph, Set.mem_setOf_eq, Nat.unpair_pair]
+
+/-- Membership normal form for the right enumerator graph. -/
+theorem mem_gadgetRightGraph_iff {F G : Set ℕ} {v c : ℕ} :
+    Nat.pair v c ∈ gadgetRightGraph F G ↔ c = seqCode (rightRow F G v) := by
+  rw [gadgetRightGraph, Set.mem_setOf_eq, Nat.unpair_pair]
+
+/-- Row-membership normal form for the edge set. -/
+theorem mem_gadgetEdges_row {F G : Set ℕ} {n y : ℕ} :
+    Nat.pair n y ∈ gadgetEdges F G ↔ y ∈ leftRow F G n := by
+  rw [gadgetEdges, Set.mem_setOf_eq, Nat.unpair_pair]
+
 end SeparationGadget
+
+open SeparationGadget in
+/-- **Layer 3: the gadget as an internal 2-regular bigraph.** Everything is
+internal by ideal closure under the join of the two injection graphs plus the
+three layer-2 reductions; the checked fields come from the structural layer —
+`left_mem_iff` is definitional against the row-based edge set, and
+`right_mem_iff` is exactly the reserved semantic coherence
+`mem_rightRow_iff_mem_gadgetEdges`. The injections' properties (injectivity,
+disjoint ranges) are NOT consumed here: the graph is a bigraph for arbitrary
+internal `f, g`. -/
+def gadgetBigraph {Ω : OmegaPart} (h : IsTuringIdeal Ω)
+    (f g : InternalFunction Ω) : InternalTwoRegularBigraph Ω where
+  edges := ⟨gadgetEdges f.graph.1 g.graph.1,
+    h.mem_of_reducible (h.join f.graph.2 g.graph.2) (gadgetEdges_le_join _ _)⟩
+  leftEnum :=
+    { graph := ⟨gadgetLeftGraph f.graph.1 g.graph.1,
+        h.mem_of_reducible (h.join f.graph.2 g.graph.2)
+          (gadgetLeftGraph_le_join _ _)⟩
+      total := fun v => ⟨seqCode (leftRow f.graph.1 g.graph.1 v),
+        mem_gadgetLeftGraph_iff.mpr rfl⟩
+      singleValued := fun v y y' hy hy' => by
+        rw [mem_gadgetLeftGraph_iff.mp hy, mem_gadgetLeftGraph_iff.mp hy'] }
+  rightEnum :=
+    { graph := ⟨gadgetRightGraph f.graph.1 g.graph.1,
+        h.mem_of_reducible (h.join f.graph.2 g.graph.2)
+          (gadgetRightGraph_le_join _ _)⟩
+      total := fun v => ⟨seqCode (rightRow f.graph.1 g.graph.1 v),
+        mem_gadgetRightGraph_iff.mpr rfl⟩
+      singleValued := fun v y y' hy hy' => by
+        rw [mem_gadgetRightGraph_iff.mp hy, mem_gadgetRightGraph_iff.mp hy'] }
+  leftEnum_nodup := fun v c hc => by
+    rw [mem_gadgetLeftGraph_iff.mp hc, decodeSeq_seqCode]
+    exact leftRow_nodup _ _ v
+  rightEnum_nodup := fun v c hc => by
+    rw [mem_gadgetRightGraph_iff.mp hc, decodeSeq_seqCode]
+    exact rightRow_nodup _ _ v
+  left_mem_iff := fun n c y hc => by
+    rw [mem_gadgetLeftGraph_iff.mp hc, decodeSeq_seqCode]
+    exact mem_gadgetEdges_row.symm
+  right_mem_iff := fun y c n hc => by
+    rw [mem_gadgetRightGraph_iff.mp hc, decodeSeq_seqCode]
+    exact mem_rightRow_iff_mem_gadgetEdges
+  left_two_regular := fun v c hc => by
+    rw [mem_gadgetLeftGraph_iff.mp hc, decodeSeq_seqCode]
+    exact leftRow_length _ _ v
+  right_two_regular := fun v c hc => by
+    rw [mem_gadgetRightGraph_iff.mp hc, decodeSeq_seqCode]
+    exact rightRow_length _ _ v
 
 end ReverseMathlib.Omega
