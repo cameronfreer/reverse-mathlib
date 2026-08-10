@@ -162,6 +162,102 @@ theorem class_of_g (hgi : g.IsInjective) (hdisj : DisjointRanges f g)
     exact hitClass_eq_two_iff.mpr
       ⟨fun hF => hdisj i m n hF hm, fun hG => him (hgi i m n hG hm)⟩
 
+/-! ### The three chain lemmas
+
+All parameterized by the class profile (`2` away from `m`), so the `f` and `g`
+cases become short truth-table arguments at the end. -/
+
+/-- Row shape for a spec-lane chain vertex away from the hit index. -/
+private theorem lane_row {b n i : ℕ} (hb : b < 2)
+    (hcls : hitClass f.graph.1 g.graph.1 n i = 2) :
+    leftRow f.graph.1 g.graph.1 (xChain b n i) = [yChain b n i, yAt b n i] := by
+  rcases (by omega : b = 0 ∨ b = 1) with rfl | rfl <;>
+    rw [leftRow_xChain _ _ _ n i (by omega)] <;>
+    simp [hcls]
+
+/-- Row shape for a descending-lane chain vertex away from the hit index. -/
+private theorem desc_row {j2 n i : ℕ} (hj2 : j2 = 2 ∨ j2 = 3)
+    (hcls : hitClass f.graph.1 g.graph.1 n i = 2) :
+    leftRow f.graph.1 g.graph.1 (xChain j2 n i) =
+      [if i = 0 then yPlain n else yChain j2 n (i - 1), yChain j2 n i] := by
+  rcases hj2 with rfl | rfl <;>
+    rw [leftRow_xChain _ _ _ n i (by omega)] <;>
+    simp [hcls]
+
+/-- **Upward chain**: from the base spec match, the lane-`b` chain matches climb
+to just below the hit index. -/
+theorem upward_chain {b m n : ℕ}
+    (hM : (gadgetBigraph h f g).IsPerfectMatching M) (hb : b < 2)
+    (hcls : ∀ i, i ≠ m → hitClass f.graph.1 g.graph.1 n i = 2)
+    (hbase : M.MapsTo (xPlain n) (ySpec b n)) :
+    ∀ i, i < m → M.MapsTo (xChain b n i) (yChain b n i) := by
+  intro i
+  induction i with
+  | zero =>
+    intro h0
+    have hocc : M.MapsTo (xPlain n) (yAt b n 0) := by
+      rw [yAt_zero]
+      exact hbase
+    exact forced_left_snd hM (lane_row hb (hcls 0 (by omega))) hocc
+      (xPlain_ne_xChain n b n 0)
+  | succ k ih =>
+    intro hk
+    have hocc : M.MapsTo (xChain b n k) (yAt b n (k + 1)) := by
+      rw [yAt_succ]
+      exact ih (by omega)
+    refine forced_left_snd hM (lane_row hb (hcls (k + 1) (by omega))) hocc ?_
+    intro hEq
+    obtain ⟨-, -, hik⟩ := xChain_injective (by omega) (by omega) hEq
+    omega
+
+/-- **The turn**: the descending-lane vertex at the hit index has the occupied
+spec-lane entry as its second neighbor, so it is forced onto the descending
+entry (or straight onto `yₙ` when the hit is at index zero). -/
+theorem turn_chain {b j2 m n : ℕ}
+    (hM : (gadgetBigraph h f g).IsPerfectMatching M)
+    (hb : b < 2) (hj2 : j2 = 2 ∨ j2 = 3)
+    (hrow : leftRow f.graph.1 g.graph.1 (xChain j2 n m) =
+      [if m = 0 then yPlain n else yChain j2 n (m - 1), yAt b n m])
+    (hcls : ∀ i, i ≠ m → hitClass f.graph.1 g.graph.1 n i = 2)
+    (hbase : M.MapsTo (xPlain n) (ySpec b n)) :
+    M.MapsTo (xChain j2 n m) (if m = 0 then yPlain n else yChain j2 n (m - 1)) := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · have hocc : M.MapsTo (xPlain n) (yAt b n 0) := by
+      rw [yAt_zero]
+      exact hbase
+    exact forced_left_snd hM hrow hocc (xPlain_ne_xChain n j2 n 0)
+  · have hocc : M.MapsTo (xChain b n (m - 1)) (yAt b n m) := by
+      rw [show m = (m - 1) + 1 by omega, yAt_succ]
+      exact upward_chain hM hb hcls hbase (m - 1) (by omega)
+    refine forced_left_snd hM hrow hocc ?_
+    intro hEq
+    obtain ⟨hbj, -, -⟩ := xChain_injective (by omega) (by omega) hEq
+    omega
+
+/-- **Downward chain**: a descending-lane match at any height forces the
+terminal match `(x^{j₂}ₙ,₀, yₙ)` at height zero. -/
+theorem downward_chain {j2 m n : ℕ}
+    (hM : (gadgetBigraph h f g).IsPerfectMatching M)
+    (hj2 : j2 = 2 ∨ j2 = 3)
+    (hcls : ∀ i, i ≠ m → hitClass f.graph.1 g.graph.1 n i = 2) :
+    ∀ k, k ≤ m →
+      M.MapsTo (xChain j2 n k) (if k = 0 then yPlain n else yChain j2 n (k - 1)) →
+      M.MapsTo (xChain j2 n 0) (yPlain n) := by
+  intro k
+  induction k with
+  | zero =>
+    intro _ hstep
+    simpa using hstep
+  | succ k' ih =>
+    intro hk hstep
+    rw [if_neg (by omega), Nat.add_sub_cancel] at hstep
+    refine ih (by omega) ?_
+    have hrow := desc_row (n := n) (i := k') hj2 (hcls k' (by omega))
+    refine forced_left_snd hM hrow hstep ?_
+    intro hEq
+    obtain ⟨-, -, hik⟩ := xChain_injective (by omega) (by omega) hEq
+    omega
+
 end ForcedChains
 
 end SeparationGadget
