@@ -424,14 +424,55 @@ any other compiler — the mate-table architecture certificate. -/
 /-! ### Separation-gadget fine-dependency gates (#42 slice 4)
 
 The three computational theorems reach `hitClass`, the executable rows, and the
-row-defined edge set — never the eighteen-family relation, its introduction
-helpers, or the semantic characterizations. The three-way separation as checked
+row-defined edge set — never the eighteen-family relation, ANY of its eighteen
+introduction helpers, or the four semantic characterizations. Positive pins
+certify the spine each computation actually rides: one classifier invocation
+plus the matching bridge equation. The three-way separation as checked
 architecture: computation = finite queries and row encodings; correctness = the
 source relation; packaging = ideal closure plus the proved mem_iff fields. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.leftRow_eq_pure
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.rightRow_eq_pure
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.leftRow_eq_pure
+
+-- `gadgetEdges` is the reduction's SUBJECT — it lives in the statement closure,
+-- so the total-closure assertion is the correct form for this pin.
+#rm_assert_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.gadgetEdges
 
 #rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
   [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
@@ -441,6 +482,22 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
 #rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
   [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
@@ -450,6 +507,22 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
 #rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
   [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
    ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
    ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
