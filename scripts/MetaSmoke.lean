@@ -529,6 +529,18 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
    ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
    ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
 
+-- The separator reduction reads the matching graph alone: neither the gadget
+-- structure, nor the adjacency machinery, nor either input function's data may
+-- enter — the injections appear only in the forced-chain correctness.
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.separatorSet_le_graph
+  [ReverseMathlib.Omega.gadgetBigraph,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.gadgetEdges,
+   ReverseMathlib.Omega.SeparationGadget.leftRow,
+   ReverseMathlib.Omega.SeparationGadget.rightRow,
+   ReverseMathlib.Omega.SeparationGadget.hitClass,
+   ReverseMathlib.Omega.InternalTwoRegularBigraph]
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

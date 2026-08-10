@@ -171,13 +171,13 @@ private theorem primrec_seqPair : Primrec₂ fun a b => seqCode [a, b] :=
       (Primrec₂.comp (f := fun (x : ℕ) (l : List ℕ) => x :: l) Primrec.list_cons
         Primrec.snd (.const [])))).to₂
 
-private theorem primrec_xPlain : Primrec xPlain :=
+theorem primrec_xPlain : Primrec xPlain :=
   (Primrec.nat_mul.comp (.const 2) Primrec.id).of_eq fun _ => rfl
 
-private theorem primrec_yPlain : Primrec yPlain :=
+theorem primrec_yPlain : Primrec yPlain :=
   (Primrec.nat_mul.comp (.const 2) Primrec.id).of_eq fun _ => rfl
 
-private theorem primrec_xChainT :
+theorem primrec_xChainT :
     Primrec fun t : ℕ × ℕ × ℕ => xChain t.1 t.2.1 t.2.2 :=
   (Primrec.nat_add.comp
     (Primrec.nat_add.comp
@@ -187,7 +187,7 @@ private theorem primrec_xChainT :
       (Primrec.nat_mul.comp (.const 2) Primrec.fst))
     (.const 1)).of_eq fun _ => rfl
 
-private theorem primrec_ySpecT : Primrec fun t : ℕ × ℕ => ySpec t.1 t.2 :=
+theorem primrec_ySpecT : Primrec fun t : ℕ × ℕ => ySpec t.1 t.2 :=
   (Primrec.nat_add.comp
     (Primrec.nat_add.comp (Primrec.nat_mul.comp (.const 8) Primrec.snd)
       (Primrec.nat_mul.comp (.const 4) Primrec.fst))
