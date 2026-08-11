@@ -273,7 +273,9 @@ silently acquire an explicit selection route. -/
 #eval show CoreM Unit from do
   let env ← getEnv
   for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt,
-      ``ReverseMathlib.Omega.CountableHallAt, ``ReverseMathlib.Omega.BoundedKonigAt] do
+      ``ReverseMathlib.Omega.CountableHallAt, ``ReverseMathlib.Omega.BoundedKonigAt,
+      ``ReverseMathlib.Omega.TwoRegularPerfectMatchingAt,
+      ``ReverseMathlib.Omega.DisjointRangeSeparationAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
     check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
@@ -380,6 +382,350 @@ term. -/
 #rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
   ReverseMathlib.Omega.boundedKonigAt_of_efilcAt
 
+/-! ### 2-regular matching ω route gates (#42 slice 2)
+
+`EFILCω → 2-regular matchingω` must factor through the `bigraphToSystem` /
+`sectionToMatching` route, reuse the FINITE symmetric-Hall covering lemma (proof
+reuse of this repo's finite combinatorics, which itself reuses mathlib's finite
+Hall), and reach neither the infinite Hall theorem, the compactness boundary, nor
+any other compiler — the mate-table architecture certificate. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.bigraphToSystem
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.sectionMatchingFunction
+
+#rm_assert_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  ReverseMathlib.Omega.exists_matching_covering
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+  [ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.sectionTransversalFunction,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   Finset.all_card_le_biUnion_card_iff_exists_injective,
+   nonempty_sections_of_finite_inverse_system]
+
+-- The finite lemma must genuinely reuse mathlib's FINITE Hall theorem — proof
+-- reuse, not reinvention: rewriting it away from that theorem must fail this gate.
+#rm_assert_proof_depends ReverseMathlib.Omega.exists_matching_covering
+  Finset.all_card_le_biUnion_card_iff_existsInjective'
+
+-- The mate compiler's fine dependency, frozen as a proof-closure fact beyond its
+-- type: the join reduction reads the two enumerator graphs only — neither the
+-- bigraph structure nor any finite matching machinery may enter the computation.
+#rm_assert_not_proof_depends ReverseMathlib.Omega.mateFiberGraph_le_join
+  [ReverseMathlib.Omega.InternalTwoRegularBigraph,
+   ReverseMathlib.Omega.exists_matching_covering,
+   ReverseMathlib.Omega.hall_of_degree_le_two,
+   ReverseMathlib.Omega.IsMatchingSet]
+
+/-! ### Separation-gadget fine-dependency gates (#42 slice 4)
+
+The three computational theorems reach `hitClass`, the executable rows, and the
+row-defined edge set — never the eighteen-family relation, ANY of its eighteen
+introduction helpers, or the four semantic characterizations. Positive pins
+certify the spine each computation actually rides: one classifier invocation
+plus the matching bridge equation. The three-way separation as checked
+architecture: computation = finite queries and row encodings; correctness = the
+source relation; packaging = ideal closure plus the proved mem_iff fields. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.leftRow_eq_pure
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  ReverseMathlib.Omega.SeparationGadget.rightRow_eq_pure
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.hitClass_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.leftRow_eq_pure
+
+-- `gadgetEdges` is the reduction's SUBJECT — it lives in the statement closure,
+-- so the total-closure assertion is the correct form for this pin.
+#rm_assert_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  ReverseMathlib.Omega.SeparationGadget.gadgetEdges
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join
+  [ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d1,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d2,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d3,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d4,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d5,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d6,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d7,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d8,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d9,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d10,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d11,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d12,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d13,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d14,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d15,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d16,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d17,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj.d18,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_leftRow,
+   ReverseMathlib.Omega.SeparationGadget.gadgetAdj_iff_mem_rightRow,
+   ReverseMathlib.Omega.SeparationGadget.mem_gadgetEdges_iff,
+   ReverseMathlib.Omega.SeparationGadget.mem_rightRow_iff_mem_gadgetEdges]
+
+-- The separator reduction reads the matching graph alone: neither the gadget
+-- structure, nor the adjacency machinery, nor either input function's data may
+-- enter — the injections appear only in the forced-chain correctness.
+#rm_assert_not_proof_depends ReverseMathlib.Omega.SeparationGadget.separatorSet_le_graph
+  [ReverseMathlib.Omega.gadgetBigraph,
+   ReverseMathlib.Omega.SeparationGadget.GadgetAdj,
+   ReverseMathlib.Omega.SeparationGadget.gadgetEdges,
+   ReverseMathlib.Omega.SeparationGadget.leftRow,
+   ReverseMathlib.Omega.SeparationGadget.rightRow,
+   ReverseMathlib.Omega.SeparationGadget.hitClass,
+   ReverseMathlib.Omega.InternalTwoRegularBigraph]
+
+-- The reversal's first leg rides the gadget and the forced chains only: away
+-- from EFILC, Hall, the forward matching compiler, and the WKL/tree machinery.
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.gadgetBigraph
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.gadgetSeparator
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.upward_chain
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.turn_chain
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.downward_chain
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.separator_mem_of_f
+
+#rm_assert_proof_depends ReverseMathlib.Omega.matching_separates
+  ReverseMathlib.Omega.SeparationGadget.separator_notMem_of_g
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.matching_separates
+  [ReverseMathlib.Omega.bigraphToSystem,
+   ReverseMathlib.Omega.sectionMatchingFunction,
+   ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.EFILCAt,
+   ReverseMathlib.Omega.WeakKonigAt]
+
+/-! ### Separation → WKL route gates (#42 slice 5)
+
+An independent calibration: the direction rides the injection compiler (whose
+only reused oracle engine is the finite level transcript), the decoder, and the
+forced-event correctness — never matching, EFILC, Hall, bounded König, or any
+existing WKL bridge. The decoder's reduction reads the separator alone. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.treeSepF
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.treeSepG
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.prefixCode_aliveForever
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.event_of_dying_child
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.prefixCode
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree
+  [ReverseMathlib.Omega.treeFiberGraph_le_tree,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree
+  [ReverseMathlib.Omega.treeFiberGraph_le_tree,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep
+  [ReverseMathlib.Omega.TreeSeparation.fGraph,
+   ReverseMathlib.Omega.TreeSeparation.gGraph,
+   ReverseMathlib.Omega.TreeSeparation.fval,
+   ReverseMathlib.Omega.TreeSeparation.gval,
+   ReverseMathlib.Omega.TreeSeparation.evtFirst,
+   ReverseMathlib.Omega.TreeSeparation.hasExt,
+   ReverseMathlib.Omega.DisjointRangeSeparationAt]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  [ReverseMathlib.Omega.gadgetBigraph,
+   ReverseMathlib.Omega.matching_separates,
+   ReverseMathlib.Omega.bigraphToSystem,
+   ReverseMathlib.Omega.sectionMatchingFunction,
+   ReverseMathlib.Omega.TwoRegularPerfectMatchingAt,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.sectionPathInternal,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.boundedTreeToSystem,
+   ReverseMathlib.Omega.BoundedKonigAt,
+   ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.CountableHallAt,
+   ReverseMathlib.Omega.treeFiberGraph_le_tree]
+
+/-! ### Side-convention fixture (#42 slice 5)
+
+The all-zeros tree: at the root the right child dies at stage `1`, so the event
+is `rightDead` (survivor `0`) and never `leftDead` — an accidental side reversal
+in the compiler or decoder convention fails these fixtures. -/
+
+section SideConventionFixture
+
+open ReverseMathlib.Omega ReverseMathlib.Omega.TreeSeparation
+
+private def allZeroTree : Set ℕ := {c | ∃ n, c = seqCode (List.replicate n 0)}
+
+private theorem allZero_bl10 : bitListOfIndex 1 0 = [0] := by
+  rw [bitListOfIndex_eq_div_mod]
+  simp
+
+private theorem allZero_bl11 : bitListOfIndex 1 1 = [1] := by
+  rw [bitListOfIndex_eq_div_mod]
+  simp
+
+private theorem allZero_alive0 : aliveAt allZeroTree (seqCode []) 0 1 := by
+  refine ⟨0, by omega, ?_, ?_⟩
+  · exact ⟨1, by rw [allZero_bl10]; simp⟩
+  · rw [allZero_bl10, childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    simp
+
+private theorem allZero_notAlive1 : ¬aliveAt allZeroTree (seqCode []) 1 1 := by
+  rintro ⟨i, hi, hmem, htake⟩
+  have hchild : decodeSeq (childCode (seqCode []) 1) = [1] := by
+    rw [childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    rfl
+  rw [hchild] at htake
+  simp only [List.length_singleton] at htake
+  rcases (by omega : i = 0 ∨ i = 1) with rfl | rfl
+  · rw [allZero_bl10] at htake
+    simp at htake
+  · rw [allZero_bl11] at hmem
+    obtain ⟨n, hn⟩ := hmem
+    have := seqCode_injective hn
+    rcases n with - | n
+    · simp at this
+    · have h0 : (1 : ℕ) ∈ List.replicate (n + 1) (0 : ℕ) := by
+        rw [← this]
+        simp
+      have := List.eq_of_mem_replicate h0
+      omega
+
+private theorem allZero_evtFirst : evtFirst allZeroTree (seqCode []) 1 := by
+  refine ⟨Or.inl ⟨allZero_alive0, allZero_notAlive1⟩, fun s' hs' => ?_⟩
+  obtain rfl : s' = 0 := by omega
+  have hlen : ∀ b : ℕ, (decodeSeq (childCode (seqCode []) b)).length = 1 := by
+    intro b
+    rw [childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    simp
+  rintro (⟨ha, -⟩ | ⟨ha, -⟩) <;>
+    exact not_hasExt_of_lt (by rw [hlen]; omega) ha
+
+-- the compiler-side convention, concretely: the all-zeros root event is
+-- rightDead, not leftDead
+example : rightDead allZeroTree (seqCode []) 1 :=
+  ⟨allZero_evtFirst, allZero_alive0⟩
+
+example : ¬leftDead allZeroTree (seqCode []) 1 := fun hld =>
+  allZero_notAlive1 hld.2
+
+-- the decoder-side convention, concretely: root tag absent from the separator
+-- gives first bit 0; present gives first bit 1
+example : prefixCode (∅ : Set ℕ) 1 = seqCode [0] := by
+  classical
+  rw [prefixCode, prefixCode, if_neg (Set.notMem_empty _), decodeSeq_seqCode]
+  rfl
+
+example : prefixCode (Set.univ : Set ℕ) 1 = seqCode [1] := by
+  classical
+  rw [prefixCode, prefixCode, if_pos (Set.mem_univ _), decodeSeq_seqCode]
+  rfl
+
+end SideConventionFixture
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`
@@ -461,6 +807,18 @@ replacing them with an inline or unrestricted proof. -/
 #rm_assert_proof_depends ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence
   ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
 
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.matching_separates
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+
 #rm_assert_proof_depends ReverseMathlib.Ports.efilc_hall_omega_implication
   ReverseMathlib.Omega.countableHallAt_of_efilcAt
 
@@ -492,13 +850,15 @@ renders its honest verdict. -/
 
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
--- The certified-facts scoreboard: exactly FOUR unique certified ω-model facts — the
+-- The certified-facts scoreboard: exactly FIVE unique certified ω-model facts — the
 -- WKLω ⇔ EFILCω equivalence, the EFILCω → Hallω upper implication, the
--- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, and the RCA₀-core ⊭ω WKL
+-- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, the
+-- WKLω ⇔ 2-regular perfect matchingω equivalence (the first involving the
+-- countableHall family), and the RCA₀-core ⊭ω WKL
 -- separation — zero all-model, zero syntactic. The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 4; variants: 8; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 9; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -578,6 +938,10 @@ info: weakKonigEfilcOmega
       some ⟨`wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega⟩)
     "BoundedKonigAt is owned by wkl.explicitlyBoundedTree.internalBoundFunction.\
       turingIdealOmega"
+  check (cat.interfaceOwner[`ReverseMathlib.Omega.TwoRegularPerfectMatchingAt]? ==
+      some ⟨`countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega⟩)
+    "TwoRegularPerfectMatchingAt is owned by countableHall.\
+      twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 
@@ -591,6 +955,7 @@ info: concepts (4):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
+    variant reverse-mathlib:countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.TwoRegularPerfectMatchingAt⟩
     problem reverse-mathlib:hall.oneSidedRelationEnumerator [single]
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
@@ -883,7 +1248,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 5; variants: 10; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 11; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1015,7 +1380,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (8):
+info: facts (9):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The fourth production ω fact: the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — recorded, no evidence linked
@@ -1029,6 +1394,8 @@ info: facts (8):
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
     note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
+  wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
+    note: The fifth production ω fact and the first certified equivalence involving the countableHall family: the enumerated-neighborhood 2-regular perfect-matching variant and the binary-tree WKL variant are equivalent at the Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst thesis Thms 2.3 and 3.3 — proof-carrying transcription at this exact internal presentation; the perfectMatchingToOneSidedOmega presentation bridge stays MISSING (this variant sits on the perfect-matching side and does not discharge it), and the one-sided Hall exact lower bound stays open
 base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
 reducibility notions (3): fixWeihrauch, strongWeihrauch, weihrauch
@@ -1230,7 +1597,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 5; variants: 12; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1482,7 +1849,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (13):
+info: facts (14):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1517,6 +1884,10 @@ info: facts (13):
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
       realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+  wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the four named route theorems: matching_separates then weakKonigAt_of_disjointRangeSeparationAt (the reversal, through the bridge-local unregistered disjoint-range separation interface), and efilcAt_of_weakKonigAt then twoRegularPerfectMatchingAt_of_efilcAt (the forward, through the frozen EFILC bridge); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
 -/
 #guard_msgs in
 #revmath_facts
@@ -1525,7 +1896,7 @@ info: facts (13):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1628,7 +1999,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1725,7 +2096,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1878,7 +2249,7 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
 -- Backend ingestion (production + fixtures) adds no certified fact: the scoreboard is
 -- byte-identical to the pre-ingestion check above.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats

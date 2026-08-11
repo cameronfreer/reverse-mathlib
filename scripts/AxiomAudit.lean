@@ -73,7 +73,25 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.sectionBoundedPathGraph_le_graph,
    -- Bounded Kőnig slice 4: both genuine directions (the converse composes through EFILC)
    ``ReverseMathlib.Omega.boundedKonigAt_of_efilcAt,
-   ``ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt]
+   ``ReverseMathlib.Omega.weakKonigAt_of_boundedKonigAt,
+   -- Matching slice 2: fiber graph reduces to enumerator ⊕ enumerator; matching to the
+   -- section; the completed forward direction
+   ``ReverseMathlib.Omega.mateFiberGraph_le_join,
+   ``ReverseMathlib.Omega.sectionMatchingGraph_le_graph,
+   ``ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt,
+   -- Matching slice 4: the gadget's three data reductions, the four-query separator,
+   -- and the reversal's first leg (matching ⇒ disjoint-range separation)
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetEdges_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join,
+   ``ReverseMathlib.Omega.SeparationGadget.separatorSet_le_graph,
+   ``ReverseMathlib.Omega.matching_separates,
+   -- Matching slice 5: the tree-to-injections reductions, the path decoder, and the
+   -- reversal's second leg (separation ⇒ WKL)
+   ``ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree,
+   ``ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree,
+   ``ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep,
+   ``ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

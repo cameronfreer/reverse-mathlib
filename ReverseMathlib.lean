@@ -26,5 +26,15 @@ import ReverseMathlib.Omega.BoundedEquivalence
 import ReverseMathlib.Omega.InverseSystem
 import ReverseMathlib.Omega.Bridge
 import ReverseMathlib.Omega.Hall
+import ReverseMathlib.Omega.Bigraph
+import ReverseMathlib.Omega.FiniteMatching
+import ReverseMathlib.Omega.BigraphToSystem
+import ReverseMathlib.Omega.BigraphEquivalence
+import ReverseMathlib.Omega.RangeSeparation
+import ReverseMathlib.Omega.SeparationGadget
+import ReverseMathlib.Omega.SeparationGadgetReduction
+import ReverseMathlib.Omega.SeparationGadgetDecode
+import ReverseMathlib.Omega.TreeSeparationCompile
+import ReverseMathlib.Omega.SeparationToPath
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree

@@ -21,6 +21,7 @@ import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.RecWkl
 import ReverseMathlib.Ports.Omega.WklEfilc
 import ReverseMathlib.Ports.Omega.BoundedKonig
+import ReverseMathlib.Ports.Omega.TwoRegularMatching
 import ReverseMathlib.Ports.Mathlib.Hall
 import ReverseMathlib.Ports.Mathlib.Konig
 
