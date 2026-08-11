@@ -1382,6 +1382,43 @@ COMPUTED_DERIVATIONS = [
                 "certified equivalence). A display derivation only — no fact is "
                 "registered.",
     },
+    {
+        "id": "computed.omega.matchingImpliesHall",
+        "term": ["transitivity",
+                 ["equivalenceElimForward", ["fact", "wklTwoRegularMatchingOmega"]],
+                 ["transitivity",
+                  ["equivalenceElimForward", ["fact", "wklEfilcOmega"]],
+                  ["fact", "efilcHallOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "countableHall.twoRegularPerfectMatching."
+                   "enumeratedNeighborhoods.turingIdealOmega",
+            "rhs": "countableHall.oneSidedInjective.enumeratedCandidates."
+                   "turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "2-regular matchingω → one-sided Hallω: the certified matching ⇔ WKL "
+                "equivalence used forward, then the WKLω → Hallω chain. An "
+                "intra-concept display derivation between the two countableHall "
+                "presentations — NOT a presentation bridge: the recorded "
+                "perfectMatchingToOneSidedOmega bridge (an exact correspondence, not "
+                "a one-way ω implication) stays MISSING, and no fact is registered.",
+    },
+    {
+        "id": "computed.omega.recCoreNotMatching",
+        "term": ["countermodelPullback",
+                 ["fact", "rca0CoreWklOmega"],
+                 ["equivalenceElimForward", ["fact", "wklTwoRegularMatchingOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "nonImplication",
+            "lhs": "rca0Core.turingIdealClosure.turingIdealOmega",
+            "rhs": "countableHall.twoRegularPerfectMatching."
+                   "enumeratedNeighborhoods.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "RCA₀-core ⊭ω 2-regular matchingω: the certified REC countermodel "
+                "for binary WKL transported along matching → WKL (the forward "
+                "elimination of the certified equivalence). A display derivation "
+                "only — no fact is registered.",
+    },
 ]
 
 
