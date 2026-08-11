@@ -18,8 +18,9 @@ oracle behavior, or quantitative data the proof produces.
 > registry pins `WKLω ⇔ EFILCω`, `EFILCω → Hallω`, the presentation-relating
 > `bounded-Kőnigω ⇔ WKLω` (the **explicitly bounded** variant, whose coordinatewise bound
 > is supplied data as an internal graph function — never full finitely-branching Kőnig,
-> which is ACA-level and stays a separate concept), and the first **cross-concept**
-> equivalence `WKLω ⇔ 2-regular perfect matchingω` (the **enumerated-neighborhood**
+> which is ACA-level and stays a separate concept), and the first certified equivalence
+> involving the **countableHall family**, `WKLω ⇔ 2-regular perfect matchingω` (the
+> **enumerated-neighborhood**
 > refinement of Shafer/Hirst's countable 2-regular graph — presentation-sensitive, with
 > the perfect-matching-to-one-sided bridge still MISSING and the one-sided Hall lower
 > bound still open), each kernel-checked over **every

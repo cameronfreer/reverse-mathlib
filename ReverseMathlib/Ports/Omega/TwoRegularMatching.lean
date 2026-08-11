@@ -19,9 +19,9 @@ perfect-matching variant joins the `countableHall` conceptual family, with the
 typed equivalence fact, the exact semantic certificate (visibly composed from
 the four named route theorems, pinned by dependency gates in
 `scripts/MetaSmoke.lean`), and its certification against the
-`rca0.turingIdealOmega` context. The first **cross-concept** certified
-equivalence: a `wkl`-family variant on one side, a `countableHall`-family
-variant on the other.
+`rca0.turingIdealOmega` context. A cross-concept equivalence linking WKL to
+the `countableHall` family — the first certified equivalence involving that
+family (WKLω ⇔ EFILCω already links the `wkl` and `efilc` concepts).
 
 Routes, each its own frozen artifact:
 
@@ -86,9 +86,9 @@ rm_fact wklTwoRegularMatchingOmega equivalence where
   scope := omegaModels
   lhs := [countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega]
   rhs := [wkl.binaryTree.turingIdealOmega]
-  note := "The fifth production ω fact and the first CROSS-CONCEPT certified \
-    equivalence: the enumerated-neighborhood 2-regular perfect-matching variant \
-    (countableHall family) and the binary-tree WKL variant are equivalent at the \
+  note := "The fifth production ω fact and the first certified equivalence \
+    involving the countableHall family: the enumerated-neighborhood 2-regular \
+    perfect-matching variant and the binary-tree WKL variant are equivalent at the \
     Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst \
     thesis Thms 2.3 and 3.3 — proof-carrying transcription at this exact internal \
     presentation; the perfectMatchingToOneSidedOmega presentation bridge stays \

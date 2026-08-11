@@ -584,6 +584,15 @@ existing WKL bridge. The decoder's reduction reads the separator alone. -/
   ReverseMathlib.Omega.treeSepF
 
 #rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.treeSepG
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.prefixCode_aliveForever
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.event_of_dying_child
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
   ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep
 
 #rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
@@ -596,6 +605,16 @@ existing WKL bridge. The decoder's reduction reads the separator alone. -/
   ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
 
 #rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree
+  [ReverseMathlib.Omega.treeFiberGraph_le_tree,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree
   [ReverseMathlib.Omega.treeFiberGraph_le_tree,
    ReverseMathlib.Omega.treeToSystem,
    ReverseMathlib.Omega.systemTreeSet,
@@ -685,12 +704,25 @@ private theorem allZero_evtFirst : evtFirst allZeroTree (seqCode []) 1 := by
   rintro (⟨ha, -⟩ | ⟨ha, -⟩) <;>
     exact not_hasExt_of_lt (by rw [hlen]; omega) ha
 
--- the convention, concretely: the all-zeros root event is rightDead, not leftDead
+-- the compiler-side convention, concretely: the all-zeros root event is
+-- rightDead, not leftDead
 example : rightDead allZeroTree (seqCode []) 1 :=
   ⟨allZero_evtFirst, allZero_alive0⟩
 
 example : ¬leftDead allZeroTree (seqCode []) 1 := fun hld =>
   allZero_notAlive1 hld.2
+
+-- the decoder-side convention, concretely: root tag absent from the separator
+-- gives first bit 0; present gives first bit 1
+example : prefixCode (∅ : Set ℕ) 1 = seqCode [0] := by
+  classical
+  rw [prefixCode, prefixCode, if_neg (Set.notMem_empty _), decodeSeq_seqCode]
+  rfl
+
+example : prefixCode (Set.univ : Set ℕ) 1 = seqCode [1] := by
+  classical
+  rw [prefixCode, prefixCode, if_pos (Set.mem_univ _), decodeSeq_seqCode]
+  rfl
 
 end SideConventionFixture
 
@@ -820,8 +852,9 @@ renders its honest verdict. -/
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
 -- The certified-facts scoreboard: exactly FIVE unique certified ω-model facts — the
 -- WKLω ⇔ EFILCω equivalence, the EFILCω → Hallω upper implication, the
--- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, the cross-concept
--- WKLω ⇔ 2-regular perfect matchingω equivalence, and the RCA₀-core ⊭ω WKL
+-- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, the
+-- WKLω ⇔ 2-regular perfect matchingω equivalence (the first involving the
+-- countableHall family), and the RCA₀-core ⊭ω WKL
 -- separation — zero all-model, zero syntactic. The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
@@ -1362,7 +1395,7 @@ info: facts (9):
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
     note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
   wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
-    note: The fifth production ω fact and the first CROSS-CONCEPT certified equivalence: the enumerated-neighborhood 2-regular perfect-matching variant (countableHall family) and the binary-tree WKL variant are equivalent at the Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst thesis Thms 2.3 and 3.3 — proof-carrying transcription at this exact internal presentation; the perfectMatchingToOneSidedOmega presentation bridge stays MISSING (this variant sits on the perfect-matching side and does not discharge it), and the one-sided Hall exact lower bound stays open
+    note: The fifth production ω fact and the first certified equivalence involving the countableHall family: the enumerated-neighborhood 2-regular perfect-matching variant and the binary-tree WKL variant are equivalent at the Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst thesis Thms 2.3 and 3.3 — proof-carrying transcription at this exact internal presentation; the perfectMatchingToOneSidedOmega presentation bridge stays MISSING (this variant sits on the perfect-matching side and does not discharge it), and the one-sided Hall exact lower bound stays open
 base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
 reducibility notions (3): fixWeihrauch, strongWeihrauch, weihrauch
