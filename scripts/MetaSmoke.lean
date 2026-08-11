@@ -775,6 +775,18 @@ replacing them with an inline or unrestricted proof. -/
 #rm_assert_proof_depends ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence
   ReverseMathlib.Omega.boundedKonigAt_of_weakKonigAt
 
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.matching_separates
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.twoRegularPerfectMatchingAt_of_efilcAt
+
+#rm_assert_proof_depends ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence
+  ReverseMathlib.Omega.efilcAt_of_weakKonigAt
+
 #rm_assert_proof_depends ReverseMathlib.Ports.efilc_hall_omega_implication
   ReverseMathlib.Omega.countableHallAt_of_efilcAt
 
@@ -806,13 +818,14 @@ renders its honest verdict. -/
 
 -- Production registry statistics: the state from imports alone, BEFORE the synthetic fixtures
 -- below are registered. The fixture-inclusive statistic is pinned separately at the end.
--- The certified-facts scoreboard: exactly FOUR unique certified ω-model facts — the
+-- The certified-facts scoreboard: exactly FIVE unique certified ω-model facts — the
 -- WKLω ⇔ EFILCω equivalence, the EFILCω → Hallω upper implication, the
--- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, and the RCA₀-core ⊭ω WKL
+-- presentation-relating bounded-Kőnigω ⇔ WKLω equivalence, the cross-concept
+-- WKLω ⇔ 2-regular perfect matchingω equivalence, and the RCA₀-core ⊭ω WKL
 -- separation — zero all-model, zero syntactic. The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 4; variants: 8; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 4; variants: 9; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -892,6 +905,10 @@ info: weakKonigEfilcOmega
       some ⟨`wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega⟩)
     "BoundedKonigAt is owned by wkl.explicitlyBoundedTree.internalBoundFunction.\
       turingIdealOmega"
+  check (cat.interfaceOwner[`ReverseMathlib.Omega.TwoRegularPerfectMatchingAt]? ==
+      some ⟨`countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega⟩)
+    "TwoRegularPerfectMatchingAt is owned by countableHall.\
+      twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega"
 
 /-! ### Conceptual catalog (production seed + acceptance tests)
 
@@ -905,6 +922,7 @@ info: concepts (4):
   reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
+    variant reverse-mathlib:countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.TwoRegularPerfectMatchingAt⟩
     problem reverse-mathlib:hall.oneSidedRelationEnumerator [single]
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
@@ -1197,7 +1215,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 5; variants: 10; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 11; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1329,7 +1347,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (8):
+info: facts (9):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The fourth production ω fact: the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — recorded, no evidence linked
@@ -1343,6 +1361,8 @@ info: facts (8):
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
     note: The first production ω fact: the presentation-explicit binary-tree WKL and enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer
+  wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
+    note: The fifth production ω fact and the first CROSS-CONCEPT certified equivalence: the enumerated-neighborhood 2-regular perfect-matching variant (countableHall family) and the binary-tree WKL variant are equivalent at the Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst thesis Thms 2.3 and 3.3 — proof-carrying transcription at this exact internal presentation; the perfectMatchingToOneSidedOmega presentation bridge stays MISSING (this variant sits on the perfect-matching side and does not discharge it), and the one-sided Hall exact lower bound stays open
 base theories (2): fixRca0, rca0
 formula classes (1): fixPi11
 reducibility notions (3): fixWeihrauch, strongWeihrauch, weihrauch
@@ -1544,7 +1564,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 5; variants: 12; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 4; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 13; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 5; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1796,7 +1816,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (13):
+info: facts (14):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1831,6 +1851,10 @@ info: facts (13):
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
       realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+  wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the four named route theorems: matching_separates then weakKonigAt_of_disjointRangeSeparationAt (the reversal, through the bridge-local unregistered disjoint-range separation interface), and efilcAt_of_weakKonigAt then twoRegularPerfectMatchingAt_of_efilcAt (the forward, through the frozen EFILC bridge); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
 -/
 #guard_msgs in
 #revmath_facts
@@ -1839,7 +1863,7 @@ info: facts (13):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -1942,7 +1966,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -2039,7 +2063,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats
@@ -2192,7 +2216,7 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
 -- Backend ingestion (production + fixtures) adds no certified fact: the scoreboard is
 -- byte-identical to the pre-ingestion check above.
 /--
-info: concepts: 5; variants: 13; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 7; all-model: 0; syntactic: 0
+info: concepts: 5; variants: 14; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); certified unique facts — ω-model: 8; all-model: 0; syntactic: 0
 -/
 #guard_msgs in
 #revmath_stats

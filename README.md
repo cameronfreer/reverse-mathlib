@@ -14,11 +14,15 @@ particular proof takes, which stronger ambient resources make a standard or eleg
 transformation possible, what the statement's presentation supplies, and what witnesses,
 oracle behavior, or quantitative data the proof produces.
 
-> **Today it certifies exactly four ω-model facts — and no all-model or syntactic object-language RCA₀ result.** The
-> registry pins `WKLω ⇔ EFILCω`, `EFILCω → Hallω`, and the presentation-relating
+> **Today it certifies exactly five ω-model facts — and no all-model or syntactic object-language RCA₀ result.** The
+> registry pins `WKLω ⇔ EFILCω`, `EFILCω → Hallω`, the presentation-relating
 > `bounded-Kőnigω ⇔ WKLω` (the **explicitly bounded** variant, whose coordinatewise bound
 > is supplied data as an internal graph function — never full finitely-branching Kőnig,
-> which is ACA-level and stays a separate concept), each kernel-checked over **every
+> which is ACA-level and stays a separate concept), and the first **cross-concept**
+> equivalence `WKLω ⇔ 2-regular perfect matchingω` (the **enumerated-neighborhood**
+> refinement of Shafer/Hirst's countable 2-regular graph — presentation-sensitive, with
+> the perfect-matching-to-one-sided bridge still MISSING and the one-sided Hall lower
+> bound still open), each kernel-checked over **every
 > Turing ideal**, and the first certified **separation** `RCA₀-core ⊭ω WKL` — a typed
 > countermodel certificate witnessed by REC through an explicit bounded-computation Kleene
 > tree, a model-class separation and never a turnstile underivability claim. The
@@ -28,7 +32,7 @@ oracle behavior, or quantitative data the proof produces.
 > ŴKL/EFILC/Hall are checked backend evidence, while **converse context adequacy** and
 > the backend calculus's **standard-calculus comparison** remain pending — so no
 > `RCA₀ ⊢ …` or unqualified `RCA₀ ⊬ …` turnstile claim exists at any scope (the
-> scoreboard reads ω-model: 4, all-model: 0, syntactic: 0, and scopes are never
+> scoreboard reads ω-model: 5, all-model: 0, syntactic: 0, and scopes are never
 > promoted). Alongside these live three additional evidence grades, kept permanently
 > distinct: **imported checked** Weihrauch reductions (`WKL ≤sW EFILC`,
 > `EFILC ≤W WKL` certified-ordinary, `Hall ≤sW EFILC`), proved natively in
