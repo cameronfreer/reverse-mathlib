@@ -12,6 +12,14 @@ theorem's known calibration") is a final result in its own right, not preliminar
 awaiting promotion. The slogan: *classify the theorem, preserve the proof, and never
 confuse the two.*
 
+The name has a double meaning: conventional **reverse mathematics** — which principles
+suffice or are necessary over a weak base — and **reverse-engineering mathlib** — which
+ideas, representations, interfaces, and proof routes are embodied in its declarations. The
+project studies not only the weakest principles known to prove a theorem, but which route a
+particular proof takes, which stronger ambient resources make a standard or elegant
+transformation possible, what the statement's presentation supplies, and what witnesses,
+oracle behavior, or quantitative data the proof produces.
+
 For the complete worked example behind these distinctions, see the
 **[Hall–EFILC case study](docs/hall-efilc-case-study.md)**, pinned to checkpoint `4fea2b5`.
 

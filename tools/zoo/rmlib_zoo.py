@@ -1179,25 +1179,34 @@ a {{ color: #205ea6; }}
 </style></head><body><main>
 <h1>reverse-mathlib atlas</h1>
 <p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
-<div class="banner"><p><strong>Honesty note:</strong> this atlas displays four grades of
-evidence, permanently distinct — kernel-checked ambient factorizations (proof
+<div class="banner"><p><strong>Honesty note:</strong> this atlas displays five families
+of evidence, permanently distinct — kernel-checked ambient factorizations (proof
 architecture, not strength), certified ω-model facts over Turing ideals, imported
-reductions checked externally at pinned revisions, and reported corpus findings at pinned
-snapshots. No <code>RCA₀ ⊢ …</code> turnstile theorem exists at any scope; scopes are
-never promoted, and derived closure results are computed, never registered.</p>
+reductions checked externally at pinned revisions, backend records from the checked
+ω-semantics bridge, and reported corpus findings at pinned snapshots — plus a computed
+closure that is a view, not evidence. No <code>RCA₀ ⊢ …</code> turnstile theorem exists
+at any scope; scopes are never promoted, and derived closure results are computed,
+never registered.</p>
 <details><summary>Full epistemics statement</summary>
 <p>Every edge in the <em>ambient factorizations</em> panel is a kernel-checked relative
 certificate in unrestricted Lean over standard ℕ — ambient factorization, proof
 architecture, not strength. The <em>certified facts</em> are kernel-checked over every
 Turing ideal; the identification of Turing ideals with RCA₀'s ω-models is
-literature-backed, with backend object-syntax adequacy pending. The <em>imported
-reductions</em> are Weihrauch reductions checked in a separate machine-model repository
-at pinned revisions and ingested as external evidence, never axioms. The <em>corpus</em>
-holds reported literature findings at pinned snapshots, with missing presentation
-bridges named explicitly; an absence finding means not found in the pinned snapshot,
-never a mathematical negation. The <em>concept projection</em> is a noncanonical, lossy,
-direct-only overview; the per-family graphs are canonical, and they are never flattened
-into one.</p></details></div>
+literature-backed. The <em>backend</em> records come from the external checked
+ω-semantics bridge to FormalizedFormalLogic/Foundation: the forward context
+realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on
+ω-structures) and exact statement adapters for ŴKL/EFILC/Hall are <strong>checked</strong>
+at pinned revisions with interface fingerprints recomputed locally, while converse
+context adequacy and the backend calculus's standard-calculus comparison remain
+pending. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
+machine-model repository at pinned revisions and ingested as external evidence, never
+axioms. The <em>corpus</em> holds reported literature findings at pinned snapshots, with
+missing presentation bridges named explicitly; an absence finding means not found in
+the pinned snapshot, never a mathematical negation. The <em>computed closure</em> is a
+view: typed proof trees over the certified and imported leaves, hand-declared and
+typechecked, never registered and never counted. The <em>concept projection</em> is a
+noncanonical, lossy, direct-only overview; the per-family graphs are canonical, and
+they are never flattened into one.</p></details></div>
 <p class="summary"><strong>Counts (each family separate):</strong>
 {len(catalog['concepts'])} concepts · {len(catalog['statementVariants'])} variants ·
 {len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts

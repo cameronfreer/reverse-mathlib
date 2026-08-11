@@ -1,148 +1,98 @@
 # reverse-mathlib
 
-**A typed, proof-carrying atlas of mathematical strength and proof architecture in Lean.**
-It records exact statement variants, presentations, represented uniform problems, and
-concrete proof artifacts under several deliberately noncollapsed analyses: ordinary and
-strict reverse mathematics, higher-order reverse mathematics, Weihrauch reducibility,
-quantitative proof mining, and mathlib-specific proof-route archaeology.
+**A typed, proof-carrying atlas of mathematical strength and proof architecture in Lean**
+— conventional reverse mathematics and reverse-engineering mathlib, analyzed side by side
+under several deliberately noncollapsed lenses (ordinary/strict/higher-order RM,
+Weihrauch reducibility, proof mining, proof-route archaeology). *Classify the theorem,
+preserve the proof, and never confuse the two.*
 
-The name has a double meaning: conventional **reverse mathematics** — which principles
-suffice or are necessary over a weak base — and **reverse-engineering mathlib** — which
-ideas, representations, interfaces, and proof routes are embodied in its declarations. The
-project studies not only the weakest principles known to prove a theorem, but which route a
-particular proof takes, which stronger ambient resources make a standard or elegant
-transformation possible, what the statement's presentation supplies, and what witnesses,
-oracle behavior, or quantitative data the proof produces.
+[Live atlas](https://cameronfreer.github.io/reverse-mathlib/) ·
+[What the claims mean](ABOUT.md) ·
+[Hall–EFILC case study](docs/hall-efilc-case-study.md) ·
+[Roadmap](ROADMAP.md)
 
-> **Today it certifies exactly five ω-model facts — and no all-model or syntactic object-language RCA₀ result.** The
-> registry pins `WKLω ⇔ EFILCω`, `EFILCω → Hallω`, the presentation-relating
-> `bounded-Kőnigω ⇔ WKLω` (the **explicitly bounded** variant, whose coordinatewise bound
-> is supplied data as an internal graph function — never full finitely-branching Kőnig,
-> which is ACA-level and stays a separate concept), and the first certified equivalence
-> involving the **countableHall family**, `WKLω ⇔ 2-regular perfect matchingω` (the
-> **enumerated-neighborhood**
-> refinement of Shafer/Hirst's countable 2-regular graph — presentation-sensitive, with
-> the perfect-matching-to-one-sided bridge still MISSING and the one-sided Hall lower
-> bound still open), each kernel-checked over **every
-> Turing ideal**, and the first certified **separation** `RCA₀-core ⊭ω WKL` — a typed
-> countermodel certificate witnessed by REC through an explicit bounded-computation Kleene
-> tree, a model-class separation and never a turnstile underivability claim. The
-> identification of Turing ideals with the ω-models of RCA₀ is literature-backed;
-> object-syntax **forward context realization** (every Turing ideal satisfies an
-> explicit semantic RCA₀ theory on ω-structures) and **exact statement adapters** for
-> ŴKL/EFILC/Hall are checked backend evidence, while **converse context adequacy** and
-> the backend calculus's **standard-calculus comparison** remain pending — so no
-> `RCA₀ ⊢ …` or unqualified `RCA₀ ⊬ …` turnstile claim exists at any scope (the
-> scoreboard reads ω-model: 5, all-model: 0, syntactic: 0, and scopes are never
-> promoted). Alongside these live three additional evidence grades, kept permanently
-> distinct: **imported checked** Weihrauch reductions (`WKL ≤sW EFILC`,
-> `EFILC ≤W WKL` certified-ordinary, `Hall ≤sW EFILC`), proved natively in
-> [computable-analysis](https://github.com/cameronfreer/computable-analysis) at pinned
-> revisions and ingested as external evidence — never axioms; **backend** records from
-> the [ω-semantics bridge](https://github.com/cameronfreer/reverse-mathlib-foundation)
-> (realization, adapters, and a calculus-relative nonderivability, ingested with
-> locally recomputed interface fingerprints); and **reported** corpus findings (what
-> RMZoo, Simpson, and Hirst classify, at pinned snapshots), with missing presentation
-> bridges named explicitly. Everything else remains ambient Lean factorization:
-> proof-route archaeology, not strength.
+> **Scoreboard: 5 ω-model facts / 0 all-model / 0 syntactic.**
+> No unqualified `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists at any scope; scopes and
+> presentations are never promoted, and derived closure results are computed, never
+> registered.
 
-**The first program: mining Lean proofs for WKL-shaped compactness routes.**
-reverse-mathlib's first mathematical program mines ordinary Lean proofs for WKL-shaped
-compactness arguments — not to label theorems WKL-equivalent automatically, but to extract
-reusable capabilities whose upper bounds, equivalences, representations, and computational
-content are then certified at explicit scopes. The first extracted capability is EFILC
-(explicit finite inverse-limit compactness, the boundary found inside mathlib's infinite
-Hall proof): certified equivalent to binary-tree WKL at the Turing-ideal ω layer, and
-mutually Weihrauch-reducible with it at the represented-problem layer (one direction
-strong). Countable Hall is presently a downstream upper-bound consumer of that capability
-— not another certified equivalent; its reversal is an audited open question. The REC/WKL
-separation is the program's negative control: the route gates prove it touches none of
-the EFILC machinery, so the capability is a discovered boundary, not a universal
-intermediary. Reversals are sought separately, never inferred from the mined route. This
-is the spine of the project's first chapter, not the ontology of the whole atlas.
+## What it does
 
-*Classify the theorem, preserve the proof, and never confuse the two.*
+- **Mines proof routes**: exact statement/value/proof-only dependency closures over
+  elaborated Lean declarations (`#rm_deps`, `#rm_frontier`), with hard `#rm_assert_*`
+  CI gates that fail on truncated graphs — proof-route archaeology, not strength labels.
+- **Extracts capabilities**: boundaries found inside ordinary mathlib proofs — the first
+  is EFILC, the explicit finite inverse-limit compactness inside mathlib's infinite Hall
+  proof — refactored into kernel-checked relative theorems and represented uniform
+  problems.
+- **Certifies at explicit scopes**: a typed catalog where concepts ≠ exact statement
+  variants ≠ Lean interfaces, with direction-aware typed certificates against registered
+  semantic contexts, and route gates that keep every claimed proof architecture checked.
 
-- **[ABOUT.md](ABOUT.md)** — what each layer actually establishes, how it relates to classical
-  reverse mathematics, and the assurance routes toward genuine `RCA₀ ⊢ …` results.
-- **[Hall–EFILC case study](docs/hall-efilc-case-study.md)** — the checkpointed worked example:
-  mining-guided capability extraction across ambient, ω-model, and Weihrauch semantics.
-- **[ROADMAP.md](ROADMAP.md)** — Simpson as the vertical theorem spine, RMZoo as the
-  horizontal principle graph, the strict-RM and quantitative tracks, and the issue tranches.
-- **Live atlas**: <https://cameronfreer.github.io/reverse-mathlib/> — the evidence atlas:
-  certified semantic facts, the ambient-factorization graph, imported reductions, corpus
-  audits, and the canonical
+## Certified results
+
+All five facts are kernel-checked over **every Turing ideal** against the
+`rca0.turingIdealOmega` context; the identification of Turing ideals with RCA₀'s
+ω-models is literature-backed. A `⊭ω` fact is a countermodel-witnessed model-class
+separation, never a turnstile underivability claim.
+
+| Fact | Statement | Notes |
+| --- | --- | --- |
+| `wklEfilcOmega` | WKLω ⇔ EFILCω | the first capability calibration |
+| `efilcHallOmega` | EFILCω → Hallω | upper implication only; Hall's reversal is an audited open question |
+| `rca0CoreWklOmega` | RCA₀-core ⊭ω WKL | REC countermodel through an explicit bounded-computation Kleene tree |
+| `boundedKonigWklOmega` | bounded-Kőnigω ⇔ WKLω | explicitly bounded (the bound is supplied data); never full finitely-branching Kőnig, which is ACA-level and a separate concept |
+| `wklTwoRegularMatchingOmega` | 2-regular matchingω ⇔ WKLω | enumerated-neighborhood refinement of Shafer/Hirst; the perfect-matching-to-one-sided presentation bridge stays MISSING |
+
+Detailed presentation caveats, certificate names, and pending bridges live on the atlas
+cards and registration notes — each fact's card is the authority for its exact claim.
+
+## Other checked evidence
+
+Kept permanently distinct from the certified scoreboard:
+
+- **Imported checked** Weihrauch reductions (`WKL ≤sW EFILC`, `EFILC ≤W WKL`
+  certified-ordinary, `Hall ≤sW EFILC`), proved natively in
+  [computable-analysis](https://github.com/cameronfreer/computable-analysis) at pinned
+  revisions and ingested as external evidence — never axioms.
+- **Backend** records from the
+  [ω-semantics bridge](https://github.com/cameronfreer/reverse-mathlib-foundation), an
+  external checked bridge to
+  [FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
+  checked forward context realization and exact statement adapters for ŴKL/EFILC/Hall,
+  plus a calculus-relative nonderivability, ingested as pinned versioned JSON with
+  interface fingerprints recomputed locally; **converse context adequacy** and the
+  **standard-calculus comparison** remain pending. Backend evidence upgrades the
+  interpretation of existing facts; it enters no edge, port, closure, or certified count.
+- **A quantitative pilot**: Kohlenbach's metastability of bounded monotone sequences with
+  an executable rational realizer — bounds, not rates
+  ([docs/quantitative-pilot.md](docs/quantitative-pilot.md)).
+- **Reported** corpus findings (RMZoo, Simpson, Hirst, at pinned snapshots) with missing
+  presentation bridges named explicitly; an absence finding means not found in the
+  snapshot, never a mathematical negation.
+
+## The first program
+
+reverse-mathlib's first program mines Lean proofs for WKL-shaped compactness routes: the
+mined EFILC capability is certified equivalent to binary-tree WKL at the ω layer and
+mutually Weihrauch-reducible with it at the represented layer, while countable Hall
+remains a downstream upper-bound consumer whose reversal is an audited open question. The
+REC/WKL separation is the program's negative control — route gates prove it touches none
+of the EFILC machinery, so the capability is a discovered boundary, not a universal
+intermediary. The full worked example is the
+[Hall–EFILC case study](docs/hall-efilc-case-study.md).
+
+## Repository map
+
+- `ReverseMathlib/` — mathematical root: `Standard/`, `Slice/`, `Classical/`, `Omega/`,
+  `Quantitative/`. Sorry-free, standard axioms only.
+- `ReverseMathlib/Registry.lean` — tooling root: `Meta/` (miner, registry, exporter) and
+  `Ports/` (catalog and registrations). Never imported by the mathematical root.
+- `scripts/` — CI gates: sorry/root boundaries, axiom audits for both roots, and the
+  architectural regression suite (`MetaSmoke.lean`).
+- `tools/zoo/` — the `rmlib-zoo` build/check/serve/diff CLI behind the live atlas and the
+  canonical
   [`catalog.direct.json`](https://cameronfreer.github.io/reverse-mathlib/catalog.direct.json).
-
-## What exists today
-
-- **Dependency miner** (`#rm_deps`, `#rm_frontier`, hard `#rm_assert_*` CI gates): exact
-  statement/value/proof-only closures over elaborated declarations; raw closures are never
-  cut; assertions fail on truncated graphs.
-- **The Hall walking slice**: mathlib's infinite Hall theorem mined at its compactness
-  boundary and refactored as kernel-checked relative theorems —
-  `WeakKonig ⇄ EFILC → CountableHall`, all in unrestricted Lean, composed end-to-end from
-  mathlib's order-theoretic Kőnig lemma to `Classical.countableHall_nat`. CI certifies the
-  proof-only closures exclude the topological route.
-- **A typed catalog**: concepts (`reverse-mathlib:wkl`) ≠ exact statement variants
-  (`wkl.binaryTree.ambient`) ≠ Lean interfaces, with registered semantic layers, typed
-  external references (`rmzoo:` / `simpson:` / `concordance:` / `sanders:`), direction-aware
-  typed certificates, and import-wide collision detection.
-- **A quantitative pilot** (`ReverseMathlib/Quantitative/`): Kohlenbach's metastability of
-  bounded monotone sequences (Prop. 2.27, Cor. 2.28) with an executable rational realizer and
-  its finite-query locality theorem — bounds, not rates; see
-  [docs/quantitative-pilot.md](docs/quantitative-pilot.md).
-- **A deterministic exporter and site**: canonical JSON extracted from the elaborated
-  environment's persistent extension state, rendered to the Pages site on every push.
-
-## External checked evidence: the ω-semantics bridge
-
-[reverse-mathlib-foundation](https://github.com/cameronfreer/reverse-mathlib-foundation)
-is an **external checked bridge** between this repository and
-[FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
-a separate workspace pinning exact revisions of both and relating the frozen ω-layer
-capabilities here to explicit L₂ sentences evaluated with Foundation's Tarski semantics.
-It provides, as kernel-checked theorems with typed export records:
-
-- **one-way context realization** — every Turing ideal satisfies an explicit semantic
-  RCA₀ theory on ω-structures (realization evidence only; no converse claim);
-- **unconditional exact statement adapters** — closed sentences whose satisfaction, for
-  an *arbitrary* second-order part, is exactly the frozen `WeakKonigAt` / `EFILCAt` /
-  `CountableHallAt`;
-- **checked ω-model countermodels** — the recursive-set structure satisfies the RCA₀
-  theory and falsifies the ŴKL and EFILC sentences (via the Kleene tree certified
-  here);
-- **calculus-relative nonderivability** — a bridge-local Henkin-safe calculus, sound
-  over all Henkin structures, in which the RCA₀ theory does not derive the ŴKL
-  sentence. Explicitly *not* an unqualified standard-calculus RCA₀ ⊬ WKL: the
-  comparison with a pinned standard proof system is recorded as pending.
-
-The bridge is **ingested** as versioned, pinned JSON backend evidence
-(`rmlib-bridge-evidence/1`, `imports/reverse-mathlib-foundation/`): four typed record
-kinds stored in their own backend-evidence family, with the bridge's interface
-fingerprints (`lean-interface-expr/1`) recomputed locally at ingestion, so any semantic
-drift in the referenced declarations fails closed while documentation-only commits stay
-compatible. Displayed by `#rm_backend_evidence` and rendered as its own atlas section.
-
-The resulting evidence state, kept permanently distinct: **checked** forward context
-realization (one-way) and **checked** unconditional statement adapters; **pending**
-converse context adequacy; **pending** standard-calculus comparison for the bridge
-calculus. None of this changes the certified scoreboard — backend evidence upgrades the
-interpretation of existing facts, it is not another mathematical leaf, and it enters no
-graph edge, port, closure, or certified count.
-
-## Structure
-
-- `ReverseMathlib/` — mathematical root: `Standard/` principle statements, `Slice/` relative
-  proofs, `Classical/` outright instances, `Quantitative/` the Q-track. Sorry-free, standard
-  axioms only, `warningAsError` with the mathlib linter set.
-- `ReverseMathlib/Registry.lean` — tooling root: `Meta/` (miner, registry, catalog, exporter),
-  `Ports/` (catalog seed and port records). Never imported by the mathematical root.
-- `ReverseMathlibExperimental/`, `ReverseMathlibFixtures/` — staging and collision-test
-  libraries; never imported by production roots.
-- `scripts/` — CI gates: sorry boundary and root isolation, axiom audits for both roots,
-  miner micro-tests and the hard dependency assertions.
-- `tools/zoo/` — the `rmlib-zoo` build/check/serve/diff CLI.
 
 ## Building
 
@@ -154,8 +104,7 @@ lake build
 ```
 
 Useful commands once built (import `ReverseMathlib.Registry`): `#rm_deps <decl>`,
-`#rm_frontier <decl>`, `#rm_concepts`, `#revmath_registry`, `#revmath_port? countableHall`,
-`#revmath_stats`.
+`#rm_frontier <decl>`, `#rm_concepts`, `#revmath_registry`, `#revmath_stats`.
 
 ## License
 
