@@ -573,6 +573,127 @@ source relation; packaging = ideal closure plus the proved mem_iff fields. -/
    ReverseMathlib.Omega.EFILCAt,
    ReverseMathlib.Omega.WeakKonigAt]
 
+/-! ### Separation → WKL route gates (#42 slice 5)
+
+An independent calibration: the direction rides the injection compiler (whose
+only reused oracle engine is the finite level transcript), the decoder, and the
+forced-event correctness — never matching, EFILC, Hall, bounded König, or any
+existing WKL bridge. The decoder's reduction reads the separator alone. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.treeSepF
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.TreeSeparation.prefixCode
+
+#rm_assert_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_proof_depends ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree
+  ReverseMathlib.Omega.levelCodeUpTo_recursiveIn
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree
+  [ReverseMathlib.Omega.treeFiberGraph_le_tree,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep
+  [ReverseMathlib.Omega.TreeSeparation.fGraph,
+   ReverseMathlib.Omega.TreeSeparation.gGraph,
+   ReverseMathlib.Omega.TreeSeparation.fval,
+   ReverseMathlib.Omega.TreeSeparation.gval,
+   ReverseMathlib.Omega.TreeSeparation.evtFirst,
+   ReverseMathlib.Omega.TreeSeparation.hasExt,
+   ReverseMathlib.Omega.DisjointRangeSeparationAt]
+
+#rm_assert_not_proof_depends ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt
+  [ReverseMathlib.Omega.gadgetBigraph,
+   ReverseMathlib.Omega.matching_separates,
+   ReverseMathlib.Omega.bigraphToSystem,
+   ReverseMathlib.Omega.sectionMatchingFunction,
+   ReverseMathlib.Omega.TwoRegularPerfectMatchingAt,
+   ReverseMathlib.Omega.treeToSystem,
+   ReverseMathlib.Omega.systemTreeSet,
+   ReverseMathlib.Omega.sectionPathInternal,
+   ReverseMathlib.Omega.efilcAt_of_weakKonigAt,
+   ReverseMathlib.Omega.weakKonigAt_of_efilcAt,
+   ReverseMathlib.Omega.boundedTreeToSystem,
+   ReverseMathlib.Omega.BoundedKonigAt,
+   ReverseMathlib.Omega.hallToSystem,
+   ReverseMathlib.Omega.CountableHallAt,
+   ReverseMathlib.Omega.treeFiberGraph_le_tree]
+
+/-! ### Side-convention fixture (#42 slice 5)
+
+The all-zeros tree: at the root the right child dies at stage `1`, so the event
+is `rightDead` (survivor `0`) and never `leftDead` — an accidental side reversal
+in the compiler or decoder convention fails these fixtures. -/
+
+section SideConventionFixture
+
+open ReverseMathlib.Omega ReverseMathlib.Omega.TreeSeparation
+
+private def allZeroTree : Set ℕ := {c | ∃ n, c = seqCode (List.replicate n 0)}
+
+private theorem allZero_bl10 : bitListOfIndex 1 0 = [0] := by
+  rw [bitListOfIndex_eq_div_mod]
+  simp
+
+private theorem allZero_bl11 : bitListOfIndex 1 1 = [1] := by
+  rw [bitListOfIndex_eq_div_mod]
+  simp
+
+private theorem allZero_alive0 : aliveAt allZeroTree (seqCode []) 0 1 := by
+  refine ⟨0, by omega, ?_, ?_⟩
+  · exact ⟨1, by rw [allZero_bl10]; simp⟩
+  · rw [allZero_bl10, childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    simp
+
+private theorem allZero_notAlive1 : ¬aliveAt allZeroTree (seqCode []) 1 1 := by
+  rintro ⟨i, hi, hmem, htake⟩
+  have hchild : decodeSeq (childCode (seqCode []) 1) = [1] := by
+    rw [childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    rfl
+  rw [hchild] at htake
+  simp only [List.length_singleton] at htake
+  rcases (by omega : i = 0 ∨ i = 1) with rfl | rfl
+  · rw [allZero_bl10] at htake
+    simp at htake
+  · rw [allZero_bl11] at hmem
+    obtain ⟨n, hn⟩ := hmem
+    have := seqCode_injective hn
+    rcases n with - | n
+    · simp at this
+    · have h0 : (1 : ℕ) ∈ List.replicate (n + 1) (0 : ℕ) := by
+        rw [← this]
+        simp
+      have := List.eq_of_mem_replicate h0
+      omega
+
+private theorem allZero_evtFirst : evtFirst allZeroTree (seqCode []) 1 := by
+  refine ⟨Or.inl ⟨allZero_alive0, allZero_notAlive1⟩, fun s' hs' => ?_⟩
+  obtain rfl : s' = 0 := by omega
+  have hlen : ∀ b : ℕ, (decodeSeq (childCode (seqCode []) b)).length = 1 := by
+    intro b
+    rw [childCode, decodeSeq_seqCode, decodeSeq_seqCode]
+    simp
+  rintro (⟨ha, -⟩ | ⟨ha, -⟩) <;>
+    exact not_hasExt_of_lt (by rw [hlen]; omega) ha
+
+-- the convention, concretely: the all-zeros root event is rightDead, not leftDead
+example : rightDead allZeroTree (seqCode []) 1 :=
+  ⟨allZero_evtFirst, allZero_alive0⟩
+
+example : ¬leftDead allZeroTree (seqCode []) 1 := fun hld =>
+  allZero_notAlive1 hld.2
+
+end SideConventionFixture
+
 /-! ### Hall ω route gates (#22 slice 4)
 
 `EFILCω → countable Hall ω` must factor through the `hallToSystem`/`sectionTransversal`

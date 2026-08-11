@@ -85,7 +85,13 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.SeparationGadget.gadgetLeftGraph_le_join,
    ``ReverseMathlib.Omega.SeparationGadget.gadgetRightGraph_le_join,
    ``ReverseMathlib.Omega.SeparationGadget.separatorSet_le_graph,
-   ``ReverseMathlib.Omega.matching_separates]
+   ``ReverseMathlib.Omega.matching_separates,
+   -- Matching slice 5: the tree-to-injections reductions, the path decoder, and the
+   -- reversal's second leg (separation ⇒ WKL)
+   ``ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree,
+   ``ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree,
+   ``ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep,
+   ``ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

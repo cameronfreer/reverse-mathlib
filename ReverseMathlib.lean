@@ -35,5 +35,6 @@ import ReverseMathlib.Omega.SeparationGadget
 import ReverseMathlib.Omega.SeparationGadgetReduction
 import ReverseMathlib.Omega.SeparationGadgetDecode
 import ReverseMathlib.Omega.TreeSeparationCompile
+import ReverseMathlib.Omega.SeparationToPath
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
