@@ -7,7 +7,7 @@ import ReverseMathlib.Omega.Graph
 import ReverseMathlib.Omega.InternalSet
 
 /-!
-# The bridge-local disjoint-range separation interface (issue #42, slice 3)
+# The disjoint-range separation interface (issue #42, slice 3; registered by #46)
 
 The internal form of Hirst's Theorem 1.2 (ii) (thesis p. 7; the WKL₀
 characterization Shafer's Theorem 6.1.2 reversal targets): if `f` and `g` are
@@ -15,12 +15,13 @@ characterization Shafer's Theorem 6.1.2 reversal targets): if `f` and `g` are
 and avoiding every `g`-value. Injectivity is part of the source principle, so it
 lives in the capability itself, not in a consumer's input adapter.
 
-**Bridge-local and deliberately UNREGISTERED**: no statement variant, no fact, no
-alias. This interface exists so the 2-regular matching reversal can factor
-through it exactly as in the source — perfect matching ⟹ disjoint-range
-separation ⟹ WKL — and so the future relative-Σ⁰₁-separation front (fact six)
-arrives with a worked consumer before any registration decision. Nothing here
-enters any certified count.
+Built **bridge-local first**: the 2-regular matching reversal factors through
+this interface exactly as in the source — perfect matching ⟹ disjoint-range
+separation ⟹ WKL — so by the time the interface was registered (the sixth
+certified fact, `ReverseMathlib.Ports.Omega.RangeSeparationFact`) it carried
+worked artifacts on both sides. The registered presentation is exactly this
+injection-graph form — never generic "Σ⁰₁ separation": formula-coded
+presentations join only once their adapters are proved.
 
 Everything is relational through `InternalFunction.MapsTo` and set membership —
 `eval` never enters a statement (the statement-burden gate in
@@ -48,7 +49,10 @@ def SeparatesRanges {Ω : OmegaPart} (f g : InternalFunction Ω)
 /-- Disjoint-range separation at a second-order part: every pair of internal
 injections with disjoint ranges has an internal separating set. The internal
 form of Hirst's Theorem 1.2 (ii); no base-theory premise inside the
-capability. Bridge-local, unregistered. -/
+capability. Built bridge-local during the matching tranche; now registered at
+the exact injection-graph presentation
+(`disjointRangeSeparation.injectionGraphs.turingIdealOmega`, the sixth
+certified fact). -/
 def DisjointRangeSeparationAt (Ω : OmegaPart) : Prop :=
   ∀ f g : InternalFunction Ω, f.IsInjective → g.IsInjective →
     DisjointRanges f g → ∃ Z : Ω.InternalSet, SeparatesRanges f g Z

@@ -11,7 +11,7 @@ preserve the proof, and never confuse the two.*
 [Hall–EFILC case study](docs/hall-efilc-case-study.md) ·
 [Roadmap](ROADMAP.md)
 
-> **Scoreboard: 5 ω-model facts / 0 all-model / 0 syntactic.**
+> **Scoreboard: 6 ω-model facts / 0 all-model / 0 syntactic.**
 > No unqualified `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists at any scope; scopes and
 > presentations are never promoted, and derived closure results are computed, never
 > registered.
@@ -31,7 +31,7 @@ preserve the proof, and never confuse the two.*
 
 ## Certified results
 
-All five facts are kernel-checked over **every Turing ideal** against the
+All six facts are kernel-checked over **every Turing ideal** against the
 `rca0.turingIdealOmega` context; the identification of Turing ideals with RCA₀'s
 ω-models is literature-backed. A `⊭ω` fact is a countermodel-witnessed model-class
 separation, never a turnstile underivability claim.
@@ -43,6 +43,7 @@ separation, never a turnstile underivability claim.
 | `rca0CoreWklOmega` | RCA₀-core ⊭ω WKL | REC countermodel through an explicit bounded-computation Kleene tree |
 | `boundedKonigWklOmega` | bounded-Kőnigω ⇔ WKLω | explicitly bounded (the bound is supplied data); never full finitely-branching Kőnig, which is ACA-level and a separate concept |
 | `wklTwoRegularMatchingOmega` | 2-regular matchingω ⇔ WKLω | enumerated-neighborhood refinement of Shafer/Hirst; the perfect-matching-to-one-sided presentation bridge stays MISSING |
+| `disjointRangeSeparationWklOmega` | disjoint-range separationω ⇔ WKLω | the exact injection-graph presentation (Hirst Thm 1.2 (ii)); never generic Σ⁰₁ separation — formula-coded adapters unproved |
 
 Detailed presentation caveats, certificate names, and pending bridges live on the atlas
 cards and registration notes — each fact's card is the authority for its exact claim.
