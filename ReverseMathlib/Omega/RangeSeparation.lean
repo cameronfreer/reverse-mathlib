@@ -7,7 +7,7 @@ import ReverseMathlib.Omega.Graph
 import ReverseMathlib.Omega.InternalSet
 
 /-!
-# The bridge-local disjoint-range separation interface (issue #42, slice 3)
+# The disjoint-range separation interface (issue #42, slice 3; registered by #46)
 
 The internal form of Hirst's Theorem 1.2 (ii) (thesis p. 7; the WKL₀
 characterization Shafer's Theorem 6.1.2 reversal targets): if `f` and `g` are
@@ -49,7 +49,10 @@ def SeparatesRanges {Ω : OmegaPart} (f g : InternalFunction Ω)
 /-- Disjoint-range separation at a second-order part: every pair of internal
 injections with disjoint ranges has an internal separating set. The internal
 form of Hirst's Theorem 1.2 (ii); no base-theory premise inside the
-capability. Bridge-local, unregistered. -/
+capability. Built bridge-local during the matching tranche; now registered at
+the exact injection-graph presentation
+(`disjointRangeSeparation.injectionGraphs.turingIdealOmega`, the sixth
+certified fact). -/
 def DisjointRangeSeparationAt (Ω : OmegaPart) : Prop :=
   ∀ f g : InternalFunction Ω, f.IsInjective → g.IsInjective →
     DisjointRanges f g → ∃ Z : Ω.InternalSet, SeparatesRanges f g Z
