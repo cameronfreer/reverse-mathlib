@@ -25,10 +25,17 @@ What ingestion establishes, kept permanently distinct:
 * **checked unconditional statement adapters** for ŴKL, EFILC, and one-sided Hall;
 * **calculus identity and calculus-relative nonderivability** — `Rca0Theory ⊬
   wklSentence` in the backend's `henkinSafeV1` calculus, standard-calculus comparison
-  still pending.
+  still pending;
+* **the all-model semantic countermodel** — `Rca0Theory ⊭ wklSentence` over all
+  general (Henkin-style) L₂ structures, witnessed by the ω-structure over REC —
+  the one backend record that contributes a checked scoped result.
 
-No certified fact, no port, no closure edge, no graph edge, and no scoreboard change:
-the certified counts remain exactly what `#revmath_stats` reports without this module.
+Backend evidence never adds a local certified fact, graph edge, port, or closure
+edge — but a fully validated semantic-countermodel record contributes one checked
+scoped result to the explicitly backend-qualified scoreboard column
+(`all-model: 1 (backendChecked)`), and any downgrade withdraws it (the column
+falls back to 0). The local certified-facts section stays exactly the local
+kernel-checked facts.
 -/
 
 namespace ReverseMathlib.Ports
@@ -52,9 +59,9 @@ rm_external_ref rmFoundationBridge
 
 /- The artifact-publishing revision: the bridge commit whose tree contains the vendored
 artifact byte-for-byte. Necessarily distinct from the artifact's embedded export/check
-revision (`39ec48b…`) — by self-reference, the artifact cannot be committed at the
+revision (`d3bf116…`) — by self-reference, the artifact cannot be committed at the
 revision it records. Both are stored, exported, and rendered. -/
 rm_ingest_bridge_evidence "imports/reverse-mathlib-foundation/rmlib-bridge-evidence.json"
-  artifactRevision := "ad99bc5bda3e5abfef6093ce32ae4c3032bea975"
+  artifactRevision := "020b7a85212b1d873fa3e33ff65a3f21db5d5952"
 
 end ReverseMathlib.Ports

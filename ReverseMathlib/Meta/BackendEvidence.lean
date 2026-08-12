@@ -5,6 +5,7 @@ Authors: Cameron Freer
 -/
 import ReverseMathlib.Meta.Interchange
 import ReverseMathlib.Meta.InterfaceEncoder
+import ReverseMathlib.Meta.Registry
 
 /-!
 # Backend-evidence ingestion: `rmlib-bridge-evidence/1`
@@ -63,7 +64,7 @@ namespace ReverseMathlib.Meta
 open Lean Elab Command
 
 /-- The accepted backend-evidence schema version. -/
-def backendEvidenceSchemaV1 : String := "rmlib-bridge-evidence/1"
+def backendEvidenceSchemaV2 : String := "rmlib-bridge-evidence/2"
 
 /-- The accepted fingerprint-schema version. -/
 def fingerprintSchemaV1 : String := "lean-interface-expr/1"
@@ -83,7 +84,7 @@ def BackendStatus.tag : BackendStatus → String
   | .backendChecked => "backendChecked"
   | .reported => "reported"
 
-/-- Kind-specific payload of a backend-evidence record. The four kinds are permanently
+/-- Kind-specific payload of a backend-evidence record. The five kinds are permanently
 distinct; scope discipline lives in the rendering functions, which are generated from
 these typed fields. -/
 inductive BackendRecordData where
@@ -104,6 +105,12 @@ inductive BackendRecordData where
   by id. -/
   | calculusNonderivability (calculusRecord : String) (sentenceAdapter : String)
       (calculusId : String) (theory : String) (sentence : String)
+  /-- All-model semantic countermodel: the backend theory does not semantically imply
+  the backend sentence over the general model class. References are identity checks
+  only — neither licenses an all-model adapter to any local capability. -/
+  | semanticCountermodel (contextRealization : String) (sentenceAdapter : String)
+      (theory : String) (sentence : String) (scope : String) (modelClass : String)
+      (witnessProvenance : String) (witnessBase : String)
   deriving Inhabited, Repr, BEq
 
 /-- Stable kind tag. -/
@@ -112,6 +119,7 @@ def BackendRecordData.kindTag : BackendRecordData → String
   | .statementAdapter .. => "statementAdapter"
   | .calculusIdentity .. => "calculusIdentity"
   | .calculusNonderivability .. => "calculusNonderivability"
+  | .semanticCountermodel .. => "semanticCountermodel"
 
 /-- A typed backend-evidence record: source coordinates, trust status, and the
 kind-specific payload. -/
@@ -322,7 +330,7 @@ private def parseRecordShell (j : Json) : CommandElabM ParsedRecord := do
   let ctx := s!"record '{id}'"
   let kind ← getStr j "kind" ctx
   unless ["contextRealization", "statementAdapter", "calculusIdentity",
-      "calculusNonderivability"].contains kind do
+      "calculusNonderivability", "semanticCountermodel"].contains kind do
     throwError "backend evidence: {ctx}: unknown kind '{kind}'"
   let claimedStatus ← getStr j "status" ctx
   unless ["backendChecked", "reported"].contains claimedStatus do
@@ -411,6 +419,30 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
            data := .calculusNonderivability calculusRecord sentenceAdapter "" theory
              sentence,
            roots := [] }
+  | "semanticCountermodel" => do
+    let realizationRef ← getStr j "contextRealization" ctx
+    let adapterRef ← getStr j "sentenceAdapter" ctx
+    let theory ← getStr j "theory" ctx
+    let sentence ← getStr j "sentence" ctx
+    let scope ← getStr j "scope" ctx
+    unless scope == "allModels" do
+      throwError "backend evidence: {ctx}: unknown scope '{scope}' (only 'allModels' \
+        exists for semantic countermodels)"
+    let modelClass ← getStr j "modelClass" ctx
+    unless modelClass == "foundationStruc2General" do
+      throwError "backend evidence: {ctx}: unknown modelClass '{modelClass}' (only \
+        'foundationStruc2General' exists)"
+    let witnessProvenance ← getStr j "witnessProvenance" ctx
+    unless witnessProvenance == "omegaStructure" do
+      throwError "backend evidence: {ctx}: unknown witnessProvenance \
+        '{witnessProvenance}' (only 'omegaStructure' exists — the witness is \
+        provenance, not the scope)"
+    let witnessBase ← getStr j "witnessBase" ctx
+    -- references are linked and identity-checked in phase 3
+    pure { shell := p,
+           data := .semanticCountermodel realizationRef adapterRef theory sentence
+             scope modelClass witnessProvenance witnessBase,
+           roots := [] }
   | k => throwError "backend evidence: {ctx}: unknown kind '{k}'"
 
 end BackendEvidence
@@ -434,9 +466,9 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     | .ok j => pure j
   -- envelope
   let schema ← getStr json "schema" "evidence file"
-  unless schema == backendEvidenceSchemaV1 do
+  unless schema == backendEvidenceSchemaV2 do
     throwErrorAt path "backend evidence: unknown schema version '{schema}' (this \
-      reader accepts '{backendEvidenceSchemaV1}'); schema changes are versioned, never \
+      reader accepts '{backendEvidenceSchemaV2}'); schema changes are versioned, never \
       silently reinterpreted"
   let fpSchema ← getStr json "fingerprintSchema" "evidence file"
   unless fpSchema == fingerprintSchemaV1 do
@@ -526,6 +558,36 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
       linked := linked.push { r with
         data := .calculusNonderivability calcRef adapterRef calculusId theory sentence,
         roots := adapter.roots }
+    | .semanticCountermodel realizationRef adapterRef theory sentence scope
+        modelClass wp wb => do
+      let ctx := s!"record '{r.shell.id}'"
+      let some realization := resolved.find? (·.shell.id == realizationRef)
+        | throwErrorAt path "backend evidence: {ctx}: contextRealization \
+            '{realizationRef}' does not name a record in this file"
+      match realization.data with
+        | .contextRealization t _ _ _ _ _ =>
+          unless t == theory do
+            throwErrorAt path "backend evidence: {ctx}: theory '{theory}' disagrees \
+              with referenced realization's theory '{t}' — the reference is an \
+              identity check only"
+        | d => throwErrorAt path "backend evidence: {ctx}: contextRealization \
+            '{realizationRef}' has kind '{d.kindTag}', not contextRealization"
+      let some adapter := resolved.find? (·.shell.id == adapterRef)
+        | throwErrorAt path "backend evidence: {ctx}: sentenceAdapter '{adapterRef}' \
+            does not name a record in this file"
+      match adapter.data with
+        | .statementAdapter sSent _ _ _ _ =>
+          unless sSent == sentence do
+            throwErrorAt path "backend evidence: {ctx}: sentence '{sentence}' \
+              disagrees with referenced adapter's sentence '{sSent}' — the reference \
+              is an identity check only, never an all-model adapter to any local \
+              capability"
+        | d => throwErrorAt path "backend evidence: {ctx}: sentenceAdapter \
+            '{adapterRef}' has kind '{d.kindTag}', not statementAdapter"
+      linked := linked.push { r with
+        data := .semanticCountermodel realizationRef adapterRef theory sentence scope
+          modelClass wp wb,
+        roots := [] }
     | _ => linked := linked.push r
   -- phase 4: fingerprints recomputed from the resolved local roots
   let env ← getEnv
@@ -570,7 +632,7 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     let mut recordReasons := downgradeReasons
     if theoremName?.isNone &&
         ["contextRealization", "statementAdapter",
-          "calculusNonderivability"].contains r.shell.kind then
+          "calculusNonderivability", "semanticCountermodel"].contains r.shell.kind then
       recordReasons := recordReasons.push "missing theorem"
     if r.shell.exportName.isEmpty then
       recordReasons := recordReasons.push "empty export name"
@@ -594,6 +656,15 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         audit? := checking.audit?, allowedAxioms := checking.allowedAxioms,
         exportName := r.shell.exportName, theoremName?,
         status, downgraded? := reason?, data := r.data }
+    -- a fully validated, undowngraded countermodel contributes a checked scoped
+    -- result (Registry-owned extension; dedup by semantic key at count time);
+    -- any downgrade contributes nothing — the all-model column falls back to 0
+    if status == .backendChecked then
+      if let .semanticCountermodel _ _ theory sentence _ modelClass _ _ := r.data then
+        modifyEnv fun env => scopedResultExt.addEntry env
+          { scope := .allModels, verification := .backendChecked,
+            kind := "semanticCountermodel", modelClass, theory, sentence,
+            sourceId := r.shell.id }
 
 /-- Scope-safe rendering of one record — generated from the typed fields, so the
 calculus and comparison qualifiers cannot be dropped without changing the data. -/
@@ -612,6 +683,13 @@ def BackendEvidenceEntry.render (e : BackendEvidenceEntry) : String :=
   | .calculusNonderivability _ _ calculusId theory sentence =>
     s!"nonderivability [calculus-relative]: {theory} ⊬ {sentence} in '{calculusId}', \
       with standard-calculus comparison pending — never an unqualified turnstile claim"
+  | .semanticCountermodel _ _ theory sentence _ _ _ witnessBase =>
+    s!"semantic countermodel [allModels, foundationStruc2General]: {theory} ⊭ \
+      {sentence} over all general (Henkin-style) second-order L₂ structures — the \
+      standard model class for subsystems of Z₂; witnessed by the ω-structure over \
+      {witnessBase} (an ω-countermodel is in particular an L₂ countermodel; witness \
+      provenance, not scope). Never an unqualified conventional-RCA₀ claim: the \
+      theory-presentation comparison stays pending"
 
 /-- `#rm_backend_evidence`: display the backend-evidence records, sorted by id.
 External backend evidence only — never axioms, never certified counts, no port, no

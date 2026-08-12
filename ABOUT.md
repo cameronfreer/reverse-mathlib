@@ -161,8 +161,9 @@ implication only) the second; both are reported as `⊨ω`, never as `⊢`.
 
 | Result | Status |
 | --- | --- |
-| `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))`, `… → (EFILCω(Ω) → Hallω(Ω))`, `… → (bounded-Kőnigω(Ω) ↔ WKLω(Ω))` (the explicitly bounded presentation: the bound is supplied data), `… → (2-regular-matchingω(Ω) ↔ WKLω(Ω))` (the enumerated-neighborhood presentation — the first certified equivalence involving the countableHall family), `… → (disjoint-range-separationω(Ω) ↔ WKLω(Ω))` (the exact injection-graph presentation), and `∃ Ω, IsTuringIdeal Ω ∧ ¬WKLω(Ω)` (REC, the Kleene tree) | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 6 / all-model: 0 / syntactic: 0) |
+| `∀ Ω, IsTuringIdeal Ω → (WKLω(Ω) ↔ EFILCω(Ω))`, `… → (EFILCω(Ω) → Hallω(Ω))`, `… → (bounded-Kőnigω(Ω) ↔ WKLω(Ω))` (the explicitly bounded presentation: the bound is supplied data), `… → (2-regular-matchingω(Ω) ↔ WKLω(Ω))` (the enumerated-neighborhood presentation — the first certified equivalence involving the countableHall family), `… → (disjoint-range-separationω(Ω) ↔ WKLω(Ω))` (the exact injection-graph presentation), and `∃ Ω, IsTuringIdeal Ω ∧ ¬WKLω(Ω)` (REC, the Kleene tree) | **Kernel-checked** (typed semantic certificates, scoreboard ω-model: 6 (kernelChecked) / all-model: 1 (backendChecked) / syntactic: 0) |
 | Reading these as `RCA₀ ⊨ω WKL ↔ EFILC`, `RCA₀ + WKL ⊨ω Hall` | Mathematically standard, **literature-backed** ([Sim09] VIII.1); backend object-syntax adequacy pending |
+| `Rca0Theory ⊭all ŴKL` — the backend theory does not semantically imply the ŴKL sentence over all general (Henkin-style) L₂ structures, witnessed by the ω-structure over REC | **Backend-checked** (the bridge's typed semantic-countermodel record, ingested at pinned revisions with locally recomputed fingerprints; never an unqualified conventional-RCA₀ claim — the theory-presentation comparison stays pending) |
 | `RCA₀ ⊢ WKL ↔ EFILC` (and `RCA₀ + WKL ⊢ Hall`) in checked object syntax | **Not established**; scopes are never promoted |
 
 The composites (`WKLω → Hallω` through the certified leaves; `Hall ≤W WKL` through the

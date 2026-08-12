@@ -24,24 +24,19 @@
  "fingerprints": [],
  "records": [
   {
-   "kind": "calculusIdentity",
-   "id": "fix.dup",
+   "kind": "semanticCountermodel",
+   "id": "fix.cmclass",
    "status": "backendChecked",
    "export": "Fix.export",
-   "calculusId": "fixCalc",
-   "derivability": "Fix.D",
-   "soundness": "Fix.sound",
-   "standardComparison": "pending"
-  },
-  {
-   "kind": "calculusIdentity",
-   "id": "fix.dup",
-   "status": "backendChecked",
-   "export": "Fix.export",
-   "calculusId": "fixCalc",
-   "derivability": "Fix.D",
-   "soundness": "Fix.sound",
-   "standardComparison": "pending"
+   "theorem": "Fix.thm",
+   "contextRealization": "fix.none",
+   "sentenceAdapter": "fix.none",
+   "theory": "Fix.Theory",
+   "sentence": "Fix.wklSentence",
+   "scope": "allModels",
+   "modelClass": "fullPowerset",
+   "witnessProvenance": "omegaStructure",
+   "witnessBase": "Fix.witness"
   }
  ]
 }

@@ -35,7 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v4"
+SCHEMA_ID = "reverse-mathlib.catalog/v5"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
@@ -179,7 +179,7 @@ def cmd_check(args: argparse.Namespace) -> None:
     if len(be_ids) != len(set(be_ids)):
         problems.append("duplicate ids in backendEvidence")
     BE_KINDS = {"contextRealization", "statementAdapter", "calculusIdentity",
-                "calculusNonderivability"}
+                "calculusNonderivability", "semanticCountermodel"}
     for r in bes:
         rid = r.get("id")
         if r.get("kind") not in BE_KINDS:
@@ -200,6 +200,20 @@ def cmd_check(args: argparse.Namespace) -> None:
                     not chk.get("allowedAxioms"):
                 problems.append(f"backendEvidence {rid}: backendChecked without complete "
                                 "checking coordinates")
+        if r.get("kind") == "semanticCountermodel":
+            data = r.get("data", {})
+            for ref_field in ("contextRealization", "sentenceAdapter"):
+                if data.get(ref_field) not in be_ids:
+                    problems.append(f"backendEvidence {rid}: broken record reference "
+                                    f"{ref_field}={data.get(ref_field)!r}")
+            if data.get("scope") != "allModels" or                     data.get("modelClass") != "foundationStruc2General":
+                problems.append(f"backendEvidence {rid}: unknown scope/modelClass tags")
+            rendered = r.get("display", {}).get("rendered", "")
+            for marker in ("allModels", "ω-countermodel", "conventional-RCA₀"):
+                if marker not in rendered:
+                    problems.append(f"backendEvidence {rid}: rendering must carry the "
+                                    f"scope, witness-provenance, and honesty markers "
+                                    f"(missing {marker!r})")
         if r.get("kind") == "calculusNonderivability":
             data = r.get("data", {})
             for ref_field in ("calculusRecord", "sentenceAdapter"):

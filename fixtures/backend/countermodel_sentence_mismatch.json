@@ -24,8 +24,20 @@
  "fingerprints": [],
  "records": [
   {
+   "kind": "contextRealization",
+   "id": "fix.cmreal",
+   "status": "backendChecked",
+   "export": "Fix.export",
+   "theorem": "Fix.thm",
+   "theory": "Fix.Theory",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "direction": "forward",
+   "realizationStatus": "realizationOnly"
+  },
+  {
    "kind": "statementAdapter",
-   "id": "fix.adapterA",
+   "id": "fix.cmadapter",
    "status": "backendChecked",
    "export": "Fix.export",
    "theorem": "Fix.thm",
@@ -35,15 +47,19 @@
    "adapterStatus": "unconditional"
   },
   {
-   "kind": "calculusNonderivability",
-   "id": "fix.refkind",
+   "kind": "semanticCountermodel",
+   "id": "fix.cmsent",
    "status": "backendChecked",
    "export": "Fix.export",
    "theorem": "Fix.thm",
-   "calculusRecord": "fix.adapterA",
-   "sentenceAdapter": "fix.adapterA",
+   "contextRealization": "fix.cmreal",
+   "sentenceAdapter": "fix.cmadapter",
    "theory": "Fix.Theory",
-   "sentence": "Fix.wklSentence"
+   "sentence": "Fix.otherSentence",
+   "scope": "allModels",
+   "modelClass": "foundationStruc2General",
+   "witnessProvenance": "omegaStructure",
+   "witnessBase": "Fix.witness"
   }
  ]
 }

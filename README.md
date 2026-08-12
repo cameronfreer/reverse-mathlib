@@ -11,7 +11,10 @@ preserve the proof, and never confuse the two.*
 [Hall–EFILC case study](docs/hall-efilc-case-study.md) ·
 [Roadmap](ROADMAP.md)
 
-> **Scoreboard: 6 ω-model facts / 0 all-model / 0 syntactic.**
+> **Scoreboard — checked scoped results: ω-model: 6 (kernelChecked); all-model: 1
+> (backendChecked); syntactic: 0.** The all-model entry is the exact backend-checked
+> `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂ structures — never an
+> unqualified conventional-RCA₀ claim.
 > No unqualified `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists at any scope; scopes and
 > presentations are never promoted, and derived closure results are computed, never
 > registered.
@@ -63,8 +66,10 @@ Kept permanently distinct from the certified scoreboard:
   checked forward context realization and exact statement adapters for ŴKL/EFILC/Hall,
   plus a calculus-relative nonderivability, ingested as pinned versioned JSON with
   interface fingerprints recomputed locally; **converse context adequacy** and the
-  **standard-calculus comparison** remain pending. Backend evidence upgrades the
-  interpretation of existing facts; it enters no edge, port, closure, or certified count.
+  **standard-calculus comparison** remain pending. Backend evidence never adds a local
+  certified fact, graph edge, port, or closure edge — but the validated all-model
+  countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the ω-structure over
+  REC) contributes the one explicitly backend-qualified scoped result above.
 - **A quantitative pilot**: Kohlenbach's metastability of bounded monotone sequences with
   an executable rational realizer — bounds, not rates
   ([docs/quantitative-pilot.md](docs/quantitative-pilot.md)).
