@@ -388,6 +388,29 @@ def cmd_check(args: argparse.Namespace) -> None:
     if len(cluster_srcs) != len(set(cluster_srcs)):
         problems.append("an intra-concept fact appears more than once across "
                         "concept enclosures")
+    for sr in catalog.get("scopedResults", []):
+        sid = sr.get("sourceId")
+        if sr.get("scope") != "allModels" or sr.get("verification") != "backendChecked":
+            problems.append(f"scopedResults {sid}: unknown scope/verification")
+        src_rec = next((x for x in bes if x["id"] == sid), None)
+        if src_rec is None:
+            problems.append(f"scopedResults {sid}: sourceId does not reference a "
+                            "backendEvidence record")
+        else:
+            if src_rec.get("kind") != "semanticCountermodel" or \
+                    src_rec.get("status") != "backendChecked":
+                problems.append(f"scopedResults {sid}: source record must be a "
+                                "backendChecked semanticCountermodel")
+            data = src_rec.get("data", {})
+            if (sr.get("kind"), sr.get("modelClass"), sr.get("theory"),
+                    sr.get("sentence")) != ("semanticCountermodel",
+                    data.get("modelClass"), data.get("theory"), data.get("sentence")):
+                problems.append(f"scopedResults {sid}: semantic key disagrees with "
+                                "the source record's data")
+    sr_keys = [(x.get("kind"), x.get("modelClass"), x.get("theory"), x.get("sentence"))
+               for x in catalog.get("scopedResults", [])]
+    if len(sr_keys) != len(set(sr_keys)):
+        problems.append("duplicate semantic keys in scopedResults")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
     # tree that typechecks; the evaluator's fail-closed fixtures run here too
     for name in selftest_derivations():
@@ -1054,7 +1077,9 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             "semantic RCA₀ claims); checked unconditional statement adapters; "
             "converse context adequacy still pending; the nonderivability is "
             "calculus-relative with the standard-calculus comparison still pending. "
-            "No certified fact, no graph edge, no scoreboard contribution.</em></p>\n")
+            "No local certified fact, no graph edge, no port, no closure edge; the "
+            "validated semantic-countermodel record contributes exactly the "
+            "backend-qualified all-model scoped result.</em></p>\n")
 
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
@@ -1221,6 +1246,10 @@ view: typed proof trees over the certified and imported leaves, hand-declared an
 typechecked, never registered and never counted. The <em>concept projection</em> is a
 noncanonical, lossy, direct-only overview; the per-family graphs are canonical, and
 they are never flattened into one.</p></details></div>
+<p class="summary"><strong>Checked scoped results:</strong>
+ω-model: {len([f for f in catalog.get('facts', []) if f.get('evidence')])}
+(kernelChecked) · all-model: {len([x for x in catalog.get('scopedResults', [])
+if x.get('scope') == 'allModels'])} (backendChecked) · syntactic: 0</p>
 <p class="summary"><strong>Counts (each family separate):</strong>
 {len(catalog['concepts'])} concepts · {len(catalog['statementVariants'])} variants ·
 {len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts

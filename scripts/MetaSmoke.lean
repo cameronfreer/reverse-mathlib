@@ -996,7 +996,7 @@ namespaces (7):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
-  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/1): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, and calculus records ingested as backend evidence only, with interface fingerprints recomputed locally
+  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, and calculus records ingested as backend evidence only, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -2176,8 +2176,7 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
       check ((e.render.splitOn "pending").length > 1)
         "nonderivability rendering carries the pending comparison qualifier"
 
-/--
--/
+/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/3' (this reader accepts 'rmlib-bridge-evidence/2'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
@@ -2286,6 +2285,12 @@ error: backend evidence: record 'fix.cmclass': unknown modelClass 'fullPowerset'
 -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/countermodel_unknown_modelclass.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/--
+error: backend evidence: record 'fix.cmdup': duplicate semantic payload — a checked scoped result with key (semanticCountermodel, foundationStruc2General, RMFoundationBridge.Rca0Theory, RMFoundationBridge.wklSentence) already exists; duplicate semantic payloads fail hard, never silently deduplicate
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/countermodel_duplicate_payload.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 -- The scoped-result surface holds EXACTLY the production countermodel — one entry,
 -- backendChecked, at the exact semantic key; every fixture ingestion above (hard

@@ -8,23 +8,28 @@ import ReverseMathlib.Meta.InterfaceEncoder
 import ReverseMathlib.Meta.Registry
 
 /-!
-# Backend-evidence ingestion: `rmlib-bridge-evidence/1`
+# Backend-evidence ingestion: `rmlib-bridge-evidence/2`
 
 The contract-first channel by which an external checked backend (the
-reverse-mathlib-foundation ω-semantics bridge) is ingested as **backend evidence** — a
-fourth evidence grade, stored in its own extension apart from certified facts, imported
-reductions, and reported corpus findings. **No Lean dependency in either direction**;
+reverse-mathlib-foundation ω-semantics bridge) is ingested as **backend evidence** —
+its own evidence family, stored in its own extension apart from certified facts,
+imported reductions, and reported corpus findings. **No Lean dependency in either direction**;
 the backend repository owns its theorems, this side ingests a versioned canonical JSON
 file (deterministic fixed-order serialization; this reader never depends on key order).
 Contract: reverse-mathlib-foundation `docs/evidence-schema.md`.
 
-Four record kinds, kept permanently distinct: **context realization** (one-way — a
+Five record kinds, kept permanently distinct: **context realization** (one-way — a
 realization licenses per-context readings only, never unrestricted semantic base-theory
 claims), **statement adapters** (unconditional, tying an external sentence to a
 registered local variant's exact interface), **calculus identity** (a backend-local
-calculus with its soundness theorem and a pending standard-calculus comparison), and
+calculus with its soundness theorem and a pending standard-calculus comparison),
 **calculus-relative nonderivability** (typed references to its calculus and adapter
-records; rendered only with its calculus and comparison qualifiers).
+records; rendered only with its calculus and comparison qualifiers), and the
+**all-model semantic countermodel** (identity-checked references, closed
+scope/model-class tags, witness provenance). Backend evidence never adds a local
+certified fact, graph edge, port, or closure edge; the one validated
+semantic-countermodel record contributes the explicitly backend-qualified all-model
+scoped result, withdrawn on any downgrade.
 
 ## Resolution and semantic anchors
 
@@ -661,6 +666,14 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     -- any downgrade contributes nothing — the all-model column falls back to 0
     if status == .backendChecked then
       if let .semanticCountermodel _ _ theory sentence _ modelClass _ _ := r.data then
+        let existing := scopedResultExt.getState (← getEnv)
+        if existing.any (fun e =>
+            e.semanticKey == ("semanticCountermodel", modelClass, theory, sentence)) then
+          throwErrorAt path "backend evidence: record '{r.shell.id}': duplicate \
+            semantic payload — a checked scoped result with key \
+            (semanticCountermodel, {modelClass}, {theory}, {sentence}) already \
+            exists; duplicate semantic payloads fail hard, never silently \
+            deduplicate"
         modifyEnv fun env => scopedResultExt.addEntry env
           { scope := .allModels, verification := .backendChecked,
             kind := "semanticCountermodel", modelClass, theory, sentence,

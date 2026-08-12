@@ -532,6 +532,16 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
             ("downgraded", optStrJson r.downgraded?),
             ("data", dataJson),
             ("display", Json.mkObj [("rendered", Json.str r.render)])])),
+     ("scopedResults", Json.arr
+       (((scopedResultExt.getState env).qsort fun a b => a.sourceId < b.sourceId).map
+         fun r => Json.mkObj
+           [("scope", Json.str r.scope.tag),
+            ("verification", Json.str r.verification.tag),
+            ("kind", Json.str r.kind),
+            ("modelClass", Json.str r.modelClass),
+            ("theory", Json.str r.theory),
+            ("sentence", Json.str r.sentence),
+            ("sourceId", Json.str r.sourceId)])),
      ("corpus", corpusJson env),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \

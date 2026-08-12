@@ -41,7 +41,7 @@ kernel-checked facts.
 namespace ReverseMathlib.Ports
 
 rm_namespace rmFoundationBridge "cameronfreer/reverse-mathlib-foundation backend \
-  evidence (rmlib-bridge-evidence/1): the external checked ω-semantics bridge to \
+  evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to \
   FormalizedFormalLogic/Foundation — context-realization, statement-adapter, and \
   calculus records ingested as backend evidence only, with interface fingerprints \
   recomputed locally"
