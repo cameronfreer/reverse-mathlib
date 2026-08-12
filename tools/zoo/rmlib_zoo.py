@@ -388,29 +388,9 @@ def cmd_check(args: argparse.Namespace) -> None:
     if len(cluster_srcs) != len(set(cluster_srcs)):
         problems.append("an intra-concept fact appears more than once across "
                         "concept enclosures")
-    for sr in catalog.get("scopedResults", []):
-        sid = sr.get("sourceId")
-        if sr.get("scope") != "allModels" or sr.get("verification") != "backendChecked":
-            problems.append(f"scopedResults {sid}: unknown scope/verification")
-        src_rec = next((x for x in bes if x["id"] == sid), None)
-        if src_rec is None:
-            problems.append(f"scopedResults {sid}: sourceId does not reference a "
-                            "backendEvidence record")
-        else:
-            if src_rec.get("kind") != "semanticCountermodel" or \
-                    src_rec.get("status") != "backendChecked":
-                problems.append(f"scopedResults {sid}: source record must be a "
-                                "backendChecked semanticCountermodel")
-            data = src_rec.get("data", {})
-            if (sr.get("kind"), sr.get("modelClass"), sr.get("theory"),
-                    sr.get("sentence")) != ("semanticCountermodel",
-                    data.get("modelClass"), data.get("theory"), data.get("sentence")):
-                problems.append(f"scopedResults {sid}: semantic key disagrees with "
-                                "the source record's data")
-    sr_keys = [(x.get("kind"), x.get("modelClass"), x.get("theory"), x.get("sentence"))
-               for x in catalog.get("scopedResults", [])]
-    if len(sr_keys) != len(set(sr_keys)):
-        problems.append("duplicate semantic keys in scopedResults")
+    problems.extend(check_scoped_results(catalog))
+    for name in selftest_scoped_results():
+        problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
     # tree that typechecks; the evaluator's fail-closed fixtures run here too
     for name in selftest_derivations():
@@ -1247,9 +1227,9 @@ typechecked, never registered and never counted. The <em>concept projection</em>
 noncanonical, lossy, direct-only overview; the per-family graphs are canonical, and
 they are never flattened into one.</p></details></div>
 <p class="summary"><strong>Checked scoped results:</strong>
-ω-model: {len([f for f in catalog.get('facts', []) if f.get('evidence')])}
-(kernelChecked) · all-model: {len([x for x in catalog.get('scopedResults', [])
-if x.get('scope') == 'allModels'])} (backendChecked) · syntactic: 0</p>
+ω-model: {scoreboard_cell(catalog, 'omegaModels')} ·
+all-model: {scoreboard_cell(catalog, 'allModels')} ·
+syntactic: {scoreboard_cell(catalog, 'provability')}</p>
 <p class="summary"><strong>Counts (each family separate):</strong>
 {len(catalog['concepts'])} concepts · {len(catalog['statementVariants'])} variants ·
 {len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts
@@ -1743,6 +1723,101 @@ def build_computed_closure(catalog: dict) -> dict:
                    "never a registered fact, never in any certified count; the "
                    "canonical graphs stay direct-only.",
         "nodes": sorted(nodes), "edges": premise_edges + edges}
+
+
+def scoreboard_cell(catalog: dict, scope: str) -> str:
+    """One scoped-results scoreboard cell, mirroring #revmath_stats exactly: local
+    certified facts filtered by their context scope (kernelChecked by construction)
+    plus scoped results filtered by scope, annotated by verification."""
+    facts_k = len([f for f in catalog.get("facts", []) if f.get("evidence")
+                   and f.get("context", {}).get("scope") == scope])
+    contribs = [x for x in catalog.get("scopedResults", [])
+                if x.get("scope") == scope]
+    kc = facts_k + len([c for c in contribs
+                        if c.get("verification") == "kernelChecked"])
+    bc = len([c for c in contribs if c.get("verification") == "backendChecked"])
+    total = kc + bc
+    if total == 0:
+        return "0"
+    if bc == 0:
+        return f"{total} (kernelChecked)"
+    if kc == 0:
+        return f"{total} (backendChecked)"
+    return f"{total} ({kc} kernelChecked, {bc} backendChecked)"
+
+
+def check_scoped_results(catalog: dict) -> list[str]:
+    """Bidirectional fail-closed validation of the scopedResults family: every entry
+    must reference a backendChecked semanticCountermodel with an agreeing semantic
+    key, AND every backendChecked semanticCountermodel must have exactly one entry —
+    deleting the family or its sole entry is a reported failure, never a silent
+    pass. Entries must be sorted by unique sourceIds; semantic keys unique."""
+    problems: list[str] = []
+    bes = catalog.get("backendEvidence", [])
+    srs = catalog.get("scopedResults", [])
+    qualifying = [r for r in bes if r.get("kind") == "semanticCountermodel"
+                  and r.get("status") == "backendChecked"]
+    sids = [sr.get("sourceId") for sr in srs]
+    if sids != sorted(sids):
+        problems.append("scopedResults not sorted by sourceId")
+    if len(sids) != len(set(sids)):
+        problems.append("duplicate sourceIds in scopedResults")
+    for sr in srs:
+        sid = sr.get("sourceId")
+        if sr.get("scope") != "allModels" or sr.get("verification") != "backendChecked":
+            problems.append(f"scopedResults {sid}: unknown scope/verification")
+        src_rec = next((x for x in bes if x["id"] == sid), None)
+        if src_rec is None:
+            problems.append(f"scopedResults {sid}: sourceId does not reference a "
+                            "backendEvidence record")
+        else:
+            if src_rec.get("kind") != "semanticCountermodel" or \
+                    src_rec.get("status") != "backendChecked":
+                problems.append(f"scopedResults {sid}: source record must be a "
+                                "backendChecked semanticCountermodel")
+            data = src_rec.get("data", {})
+            if (sr.get("kind"), sr.get("modelClass"), sr.get("theory"),
+                    sr.get("sentence")) != ("semanticCountermodel",
+                    data.get("modelClass"), data.get("theory"), data.get("sentence")):
+                problems.append(f"scopedResults {sid}: semantic key disagrees with "
+                                "the source record's data")
+    for q in qualifying:
+        n = sids.count(q["id"])
+        if n != 1:
+            problems.append(f"backendChecked semanticCountermodel {q['id']!r} has "
+                            f"{n} scoped results (exactly one required — omission "
+                            "and duplication both fail)")
+    sr_keys = [(x.get("kind"), x.get("modelClass"), x.get("theory"), x.get("sentence"))
+               for x in srs]
+    if len(sr_keys) != len(set(sr_keys)):
+        problems.append("duplicate semantic keys in scopedResults")
+    return problems
+
+
+def selftest_scoped_results() -> list[str]:
+    """Omission/tamper fixtures: each mutation of a minimal valid catalog must be
+    reported by check_scoped_results. Returns fixtures that wrongly passed."""
+    rec = {"id": "cm.1", "kind": "semanticCountermodel", "status": "backendChecked",
+           "data": {"modelClass": "foundationStruc2General", "theory": "T",
+                    "sentence": "S"}}
+    sr = {"sourceId": "cm.1", "scope": "allModels", "verification": "backendChecked",
+          "kind": "semanticCountermodel", "modelClass": "foundationStruc2General",
+          "theory": "T", "sentence": "S"}
+    good = {"backendEvidence": [rec], "scopedResults": [sr]}
+    if check_scoped_results(good):
+        return ["minimal valid catalog wrongly rejected"]
+    bad = {
+        "whole family deleted": {"backendEvidence": [rec]},
+        "sole entry deleted": {"backendEvidence": [rec], "scopedResults": []},
+        "entry duplicated": {"backendEvidence": [rec], "scopedResults": [sr, sr]},
+        "semantic key tampered": {"backendEvidence": [rec], "scopedResults":
+            [{**sr, "sentence": "S2"}]},
+        "verification tampered": {"backendEvidence": [rec], "scopedResults":
+            [{**sr, "verification": "kernelChecked"}]},
+        "dangling sourceId": {"backendEvidence": [rec], "scopedResults":
+            [sr, {**sr, "sourceId": "cm.2"}]},
+    }
+    return [name for name, cat in bad.items() if not check_scoped_results(cat)]
 
 
 def selftest_derivations() -> list[str]:

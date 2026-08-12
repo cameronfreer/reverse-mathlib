@@ -868,7 +868,8 @@ renders its honest verdict. -/
 -- WKLω ⇔ 2-regular perfect matchingω equivalence (the first involving the
 -- countableHall family), the injection-graph disjoint-range separationω ⇔ WKLω
 -- equivalence, and the RCA₀-core ⊭ω WKL
--- separation — zero all-model, zero syntactic. The Hall claim is an upper implication
+-- separation — plus the one backend-qualified all-model scoped result (the bridge's
+-- countermodel record) and zero syntactic. The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
 info: concepts: 5; variants: 10; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
@@ -996,7 +997,7 @@ namespaces (7):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
-  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, and calculus records ingested as backend evidence only, with interface fingerprints recomputed locally
+  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -2127,7 +2128,7 @@ info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 cla
 #revmath_stats
 
 /-! ### Backend-evidence ingestion: encoder vectors, production artifact, fail-closed
-fixtures (schema `rmlib-bridge-evidence/1`) -/
+fixtures (schema `rmlib-bridge-evidence/2`) -/
 
 def _root_.ReverseMathlib.SmokeFixtures.encVecId : Nat → Nat := fun n => n
 

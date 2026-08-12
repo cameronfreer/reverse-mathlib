@@ -42,9 +42,9 @@ namespace ReverseMathlib.Ports
 
 rm_namespace rmFoundationBridge "cameronfreer/reverse-mathlib-foundation backend \
   evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to \
-  FormalizedFormalLogic/Foundation — context-realization, statement-adapter, and \
-  calculus records ingested as backend evidence only, with interface fingerprints \
-  recomputed locally"
+  FormalizedFormalLogic/Foundation — context-realization, statement-adapter, \
+  calculus, and semantic-countermodel records ingested as backend evidence, with \
+  interface fingerprints recomputed locally"
 
 rm_external_ref rmFoundationBridge "rca0/turingIdealOmega" exactAlias semanticContext
   rca0.turingIdealOmega
