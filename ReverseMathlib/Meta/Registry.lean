@@ -350,6 +350,54 @@ structure FactEvidenceEntry where
   note : String := ""
   deriving Inhabited, Repr, BEq
 
+/-- A **checked scoped result** contributed by a validated external backend — the
+generic registry surface for scope-qualified claims whose endpoints cannot be
+typed locally (pin: reverse-mathlib cannot state Foundation's `Struc₂`
+predicates, so a backend record is more honest than a local fact). Never a
+certified fact, graph edge, port, or closure edge; counted only in the
+explicitly verification-qualified scoped-results scoreboard. Deduplication is
+by the semantic key `(kind, modelClass, theory, sentence)`, never by source
+id. -/
+structure ScopedResultEntry where
+  /-- The semantic scope of the claim. -/
+  scope : FactScope
+  /-- How the claim was checked (`backendChecked` for backend contributions). -/
+  verification : Verification
+  /-- The claim kind (e.g. `semanticCountermodel`). -/
+  kind : String
+  /-- The closed model-class tag (e.g. `foundationStruc2General`). -/
+  modelClass : String
+  /-- The exact source-side theory identity. -/
+  theory : String
+  /-- The exact source-side sentence identity. -/
+  sentence : String
+  /-- Source provenance (backend record id) — display only, never the dedup key. -/
+  sourceId : String
+  deriving Inhabited, Repr, BEq
+
+/-- The semantic dedup key. -/
+def ScopedResultEntry.semanticKey (e : ScopedResultEntry) :
+    String × String × String × String :=
+  (e.kind, e.modelClass, e.theory, e.sentence)
+
+initialize scopedResultExt : SimplePersistentEnvExtension ScopedResultEntry
+    (Array ScopedResultEntry) ←
+  registerSimplePersistentEnvExtension {
+    addEntryFn := Array.push
+    addImportedFn := fun as => as.flatten
+  }
+
+/-- The scoped results at a scope, deduplicated by semantic key. -/
+def scopedResultsAt (entries : Array ScopedResultEntry) (s : FactScope) :
+    Array ScopedResultEntry := Id.run do
+  let mut seen : Array (String × String × String × String) := #[]
+  let mut out : Array ScopedResultEntry := #[]
+  for e in entries do
+    if e.scope == s && !seen.contains e.semanticKey then
+      seen := seen.push e.semanticKey
+      out := out.push e
+  return out
+
 initialize factEvidenceExt : SimplePersistentEnvExtension FactEvidenceEntry
     (Array FactEvidenceEntry) ←
   registerSimplePersistentEnvExtension {
@@ -1094,13 +1142,25 @@ elab "#revmath_stats" : command => do
   let factEvs := factEvidenceExt.getState env
   let evs := ports.flatMap (·.evidence)
   let count (v : Verification) := evs.filter (·.verification == v) |>.size
-  let omega := (certifiedFactsAt cat factEvs .omegaModels).size
-  let allM := (certifiedFactsAt cat factEvs .allModels).size
-  let syn := (certifiedFactsAt cat factEvs .provability).size
+  let scopedRes := scopedResultExt.getState env
+  -- one scoreboard cell: local certified facts (kernelChecked by construction)
+  -- plus deduplicated scoped results, annotated by verification source
+  let cell (s : FactScope) (facts : Nat) : String :=
+    let contrib := scopedResultsAt scopedRes s
+    let kc := facts + (contrib.filter (·.verification == .kernelChecked)).size
+    let bc := (contrib.filter (·.verification == .backendChecked)).size
+    let total := kc + bc
+    if total == 0 then "0"
+    else if bc == 0 then s!"{total} (kernelChecked)"
+    else if kc == 0 then s!"{total} (backendChecked)"
+    else s!"{total} ({kc} kernelChecked, {bc} backendChecked)"
+  let omega := cell .omegaModels (certifiedFactsAt cat factEvs .omegaModels).size
+  let allM := cell .allModels (certifiedFactsAt cat factEvs .allModels).size
+  let syn := cell .provability (certifiedFactsAt cat factEvs .provability).size
   logInfo <| s!"concepts: {cat.concepts.size}; variants: {cat.variants.size}; \
     ports: {ports.size}; evidence: {evs.size} \
     ({count .kernelChecked} kernel checked, {count .claimed} claimed, \
-    {count .backendChecked} backend checked); certified unique facts — ω-model: {omega}; \
-    all-model: {allM}; syntactic: {syn}"
+    {count .backendChecked} backend checked); checked scoped results — \
+    ω-model: {omega}; all-model: {allM}; syntactic: {syn}"
 
 end ReverseMathlib.Meta

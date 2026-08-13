@@ -12,7 +12,7 @@ import ReverseMathlib.Meta.BackendEvidence
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v4`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v5`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
@@ -424,7 +424,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v4"),
+    [("schema", Json.str "reverse-mathlib.catalog/v5"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
@@ -497,6 +497,17 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
                 ("calculusId", Json.str calculusId),
                 ("theory", Json.str theory),
                 ("sentence", Json.str sentence)]
+           | .semanticCountermodel contextRealization sentenceAdapter theory sentence
+               scope modelClass witnessProvenance witnessBase =>
+             Json.mkObj
+               [("contextRealization", Json.str contextRealization),
+                ("sentenceAdapter", Json.str sentenceAdapter),
+                ("theory", Json.str theory),
+                ("sentence", Json.str sentence),
+                ("scope", Json.str scope),
+                ("modelClass", Json.str modelClass),
+                ("witnessProvenance", Json.str witnessProvenance),
+                ("witnessBase", Json.str witnessBase)]
          Json.mkObj
            [("id", Json.str r.id),
             ("kind", Json.str r.data.kindTag),
@@ -521,6 +532,16 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
             ("downgraded", optStrJson r.downgraded?),
             ("data", dataJson),
             ("display", Json.mkObj [("rendered", Json.str r.render)])])),
+     ("scopedResults", Json.arr
+       (((scopedResultExt.getState env).qsort fun a b => a.sourceId < b.sourceId).map
+         fun r => Json.mkObj
+           [("scope", Json.str r.scope.tag),
+            ("verification", Json.str r.verification.tag),
+            ("kind", Json.str r.kind),
+            ("modelClass", Json.str r.modelClass),
+            ("theory", Json.str r.theory),
+            ("sentence", Json.str r.sentence),
+            ("sourceId", Json.str r.sourceId)])),
      ("corpus", corpusJson env),
      ("ambientGraph", Json.mkObj
        [("comment", Json.str "kernel-checked relative certificates in unrestricted Lean; \
