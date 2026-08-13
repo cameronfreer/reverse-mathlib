@@ -363,10 +363,14 @@ structure ScopedResultEntry where
   scope : FactScope
   /-- How the claim was checked (`backendChecked` for backend contributions). -/
   verification : Verification
-  /-- The claim kind (e.g. `semanticCountermodel`). -/
+  /-- The claim kind (e.g. `semanticCountermodel`, `calculusNonderivability`). -/
   kind : String
-  /-- The closed model-class tag (e.g. `foundationStruc2General`). -/
-  modelClass : String
+  /-- The typed qualifier's tag (closed: `modelClass` for semantic claims,
+  `calculus` for syntactic claims) — never overloaded across kinds. -/
+  qualifierTag : String
+  /-- The typed qualifier's identifier (e.g. `foundationStruc2General`,
+  `l2VarWitnessLK.v1`). -/
+  qualifierId : String
   /-- The exact source-side theory identity. -/
   theory : String
   /-- The exact source-side sentence identity. -/
@@ -377,8 +381,8 @@ structure ScopedResultEntry where
 
 /-- The semantic dedup key. -/
 def ScopedResultEntry.semanticKey (e : ScopedResultEntry) :
-    String × String × String × String :=
-  (e.kind, e.modelClass, e.theory, e.sentence)
+    String × String × String × String × String :=
+  (e.kind, e.qualifierTag, e.qualifierId, e.theory, e.sentence)
 
 initialize scopedResultExt : SimplePersistentEnvExtension ScopedResultEntry
     (Array ScopedResultEntry) ←
@@ -390,7 +394,7 @@ initialize scopedResultExt : SimplePersistentEnvExtension ScopedResultEntry
 /-- The scoped results at a scope, deduplicated by semantic key. -/
 def scopedResultsAt (entries : Array ScopedResultEntry) (s : FactScope) :
     Array ScopedResultEntry := Id.run do
-  let mut seen : Array (String × String × String × String) := #[]
+  let mut seen : Array (String × String × String × String × String) := #[]
   let mut out : Array ScopedResultEntry := #[]
   for e in entries do
     if e.scope == s && !seen.contains e.semanticKey then

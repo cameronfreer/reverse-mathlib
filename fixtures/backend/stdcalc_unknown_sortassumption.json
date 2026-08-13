@@ -1,0 +1,38 @@
+{
+ "schema": "rmlib-bridge-evidence/3",
+ "fingerprintSchema": "lean-interface-expr/1",
+ "source": {
+  "toolchain": "leanprover/lean4:v4.32.2",
+  "revision": "78cf94f49b09494eb7c9daa318e95106ef9dec29",
+  "repository": "example/fixture-backend",
+  "dependencies": {
+   "reverse-mathlib": "cf2b730a957ee151f4d6975dafec1c5bfcb99fcd",
+   "mathlib": "905b95818eb32af7874a58b427f50c1711a5e96c",
+   "Foundation": "9800e78127294798496adc6e37c8b9ded637d93a"
+  }
+ },
+ "namespace": "rmFoundationBridge",
+ "checking": {
+  "mechanism": "leanKernel",
+  "audit": "fixture",
+  "allowedAxioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ]
+ },
+ "fingerprints": [],
+ "records": [
+  {
+   "status": "backendChecked",
+   "source": "[Sim09] §I.2 (assumed two-sorted logic, nonempty sorts; bridge-defined LK presentation at the pinned Foundation rule shape, variable-witness ∃² rule)",
+   "soundness": "RMFoundationBridge.StdLKProvable.soundness",
+   "sortAssumption": "emptySortsAllowed",
+   "kind": "standardCalculusIdentity",
+   "id": "fix3.calculus.l2VarWitnessLK.v1",
+   "export": "RMFoundationBridge.stdCalculusExport",
+   "derivability": "RMFoundationBridge.StdLKProvable",
+   "calculusId": "l2VarWitnessLK.v1"
+  }
+ ]
+}

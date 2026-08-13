@@ -69,7 +69,7 @@ namespace ReverseMathlib.Meta
 open Lean Elab Command
 
 /-- The accepted backend-evidence schema version. -/
-def backendEvidenceSchemaV2 : String := "rmlib-bridge-evidence/2"
+def backendEvidenceSchemaV3 : String := "rmlib-bridge-evidence/3"
 
 /-- The accepted fingerprint-schema version. -/
 def fingerprintSchemaV1 : String := "lean-interface-expr/1"
@@ -116,6 +116,17 @@ inductive BackendRecordData where
   | semanticCountermodel (contextRealization : String) (sentenceAdapter : String)
       (theory : String) (sentence : String) (scope : String) (modelClass : String)
       (witnessProvenance : String) (witnessBase : String)
+  /-- Pinned standard-calculus identity: the backend's fully specified presentation of
+  the conventional two-sorted logic, with its direct soundness, its sort assumption as
+  a closed tag, and its documentary source pin. -/
+  | standardCalculusIdentity (calculusId : String) (derivability : String)
+      (soundness : String) (sortAssumption : String) (source : String)
+  /-- Typed calculus comparison: both calculi separately sound, no embedding in either
+  direction. Record references are resolved in phase 3; the resolved calculus ids are
+  carried for rendering. -/
+  | calculusComparison (standardCalculusRecord : String)
+      (comparedCalculusRecord : String) (relation : String)
+      (standardCalculusId : String) (comparedCalculusId : String)
   deriving Inhabited, Repr, BEq
 
 /-- Stable kind tag. -/
@@ -125,6 +136,8 @@ def BackendRecordData.kindTag : BackendRecordData → String
   | .calculusIdentity .. => "calculusIdentity"
   | .calculusNonderivability .. => "calculusNonderivability"
   | .semanticCountermodel .. => "semanticCountermodel"
+  | .standardCalculusIdentity .. => "standardCalculusIdentity"
+  | .calculusComparison .. => "calculusComparison"
 
 /-- A typed backend-evidence record: source coordinates, trust status, and the
 kind-specific payload. -/
@@ -335,7 +348,8 @@ private def parseRecordShell (j : Json) : CommandElabM ParsedRecord := do
   let ctx := s!"record '{id}'"
   let kind ← getStr j "kind" ctx
   unless ["contextRealization", "statementAdapter", "calculusIdentity",
-      "calculusNonderivability", "semanticCountermodel"].contains kind do
+      "calculusNonderivability", "semanticCountermodel", "standardCalculusIdentity",
+      "calculusComparison"].contains kind do
     throwError "backend evidence: {ctx}: unknown kind '{kind}'"
   let claimedStatus ← getStr j "status" ctx
   unless ["backendChecked", "reported"].contains claimedStatus do
@@ -406,10 +420,11 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
     let derivability ← getStr j "derivability" ctx
     let soundness ← getStr j "soundness" ctx
     let standardComparison ← getStr j "standardComparison" ctx
-    unless standardComparison == "pending" do
+    unless ["pending", "recorded"].contains standardComparison do
       throwError "backend evidence: {ctx}: unknown standardComparison \
-        '{standardComparison}' (only 'pending' exists until a pinned standard calculus \
-        is compared)"
+        '{standardComparison}' (only 'pending' and 'recorded' exist; 'recorded' \
+        means a typed calculus-comparison record names the exact relation — never \
+        an embedding)"
     pure { shell := p,
            data := .calculusIdentity calculusId derivability soundness
              standardComparison,
@@ -448,6 +463,34 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
            data := .semanticCountermodel realizationRef adapterRef theory sentence
              scope modelClass witnessProvenance witnessBase,
            roots := [] }
+  | "standardCalculusIdentity" => do
+    let calculusId ← getStr j "calculusId" ctx
+    let derivability ← getStr j "derivability" ctx
+    let soundness ← getStr j "soundness" ctx
+    let sortAssumption ← getStr j "sortAssumption" ctx
+    unless sortAssumption == "nonemptySetSort" do
+      throwError "backend evidence: {ctx}: unknown sortAssumption '{sortAssumption}' \
+        (only 'nonemptySetSort' exists — the standard calculus's theory-level \
+        soundness consumes a nonempty designated part)"
+    let source ← getStr j "source" ctx
+    if source.isEmpty then
+      throwError "backend evidence: {ctx}: empty source — the pinned standard \
+        calculus must carry its documentary source pin"
+    pure { shell := p,
+           data := .standardCalculusIdentity calculusId derivability soundness
+             sortAssumption source,
+           roots := [] }
+  | "calculusComparison" => do
+    let stdRef ← getStr j "standardCalculusRecord" ctx
+    let cmpRef ← getStr j "comparedCalculusRecord" ctx
+    let relation ← getStr j "relation" ctx
+    unless relation == "independentDirectSoundness" do
+      throwError "backend evidence: {ctx}: unknown relation '{relation}' (only \
+        'independentDirectSoundness' exists — no embedding relation is admissible)"
+    -- calculus ids are filled in phase 3 from the referenced records
+    pure { shell := p,
+           data := .calculusComparison stdRef cmpRef relation "" "",
+           roots := [] }
   | k => throwError "backend evidence: {ctx}: unknown kind '{k}'"
 
 end BackendEvidence
@@ -471,9 +514,9 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     | .ok j => pure j
   -- envelope
   let schema ← getStr json "schema" "evidence file"
-  unless schema == backendEvidenceSchemaV2 do
+  unless schema == backendEvidenceSchemaV3 do
     throwErrorAt path "backend evidence: unknown schema version '{schema}' (this \
-      reader accepts '{backendEvidenceSchemaV2}'); schema changes are versioned, never \
+      reader accepts '{backendEvidenceSchemaV3}'); schema changes are versioned, never \
       silently reinterpreted"
   let fpSchema ← getStr json "fingerprintSchema" "evidence file"
   unless fpSchema == fingerprintSchemaV1 do
@@ -548,8 +591,10 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
             not name a record in this file"
       let calculusId ← match calcRec.data with
         | .calculusIdentity cid _ _ _ => pure cid
+        | .standardCalculusIdentity cid _ _ _ _ => pure cid
         | d => throwErrorAt path "backend evidence: {ctx}: calculusRecord '{calcRef}' \
-            has kind '{d.kindTag}', not calculusIdentity"
+            has kind '{d.kindTag}', not a calculus identity (calculusIdentity or \
+            standardCalculusIdentity)"
       let some adapter := resolved.find? (·.shell.id == adapterRef)
         | throwErrorAt path "backend evidence: {ctx}: sentenceAdapter '{adapterRef}' \
             does not name a record in this file"
@@ -593,6 +638,25 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         data := .semanticCountermodel realizationRef adapterRef theory sentence scope
           modelClass wp wb,
         roots := [] }
+    | .calculusComparison stdRef cmpRef relation _ _ => do
+      let ctx := s!"record '{r.shell.id}'"
+      let some stdRec := resolved.find? (·.shell.id == stdRef)
+        | throwErrorAt path "backend evidence: {ctx}: standardCalculusRecord \
+            '{stdRef}' does not name a record in this file"
+      let stdId ← match stdRec.data with
+        | .standardCalculusIdentity cid _ _ _ _ => pure cid
+        | d => throwErrorAt path "backend evidence: {ctx}: standardCalculusRecord \
+            '{stdRef}' has kind '{d.kindTag}', not standardCalculusIdentity"
+      let some cmpRec := resolved.find? (·.shell.id == cmpRef)
+        | throwErrorAt path "backend evidence: {ctx}: comparedCalculusRecord \
+            '{cmpRef}' does not name a record in this file"
+      let cmpId ← match cmpRec.data with
+        | .calculusIdentity cid _ _ _ => pure cid
+        | d => throwErrorAt path "backend evidence: {ctx}: comparedCalculusRecord \
+            '{cmpRef}' has kind '{d.kindTag}', not calculusIdentity"
+      linked := linked.push { r with
+        data := .calculusComparison stdRef cmpRef relation stdId cmpId,
+        roots := [] }
     | _ => linked := linked.push r
   -- phase 4: fingerprints recomputed from the resolved local roots
   let env ← getEnv
@@ -632,28 +696,37 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         revision drift is acceptable only when the semantic interface is unchanged"
   -- final status and storage: per-record coordinate completeness (empty strings count
   -- as missing — malformed trust coordinates must never become backendChecked)
+  let statusOf : ResolvedRecord → BackendStatus × Option String := fun r =>
+    let theoremName? := nonempty? r.shell.theoremName?
+    let recordReasons := Id.run do
+      let mut recordReasons := downgradeReasons
+      if theoremName?.isNone &&
+          ["contextRealization", "statementAdapter",
+            "calculusNonderivability", "semanticCountermodel"].contains r.shell.kind then
+        recordReasons := recordReasons.push "missing theorem"
+      if r.shell.exportName.isEmpty then
+        recordReasons := recordReasons.push "empty export name"
+      if let .calculusIdentity _ derivability soundness _ := r.data then
+        if soundness.isEmpty then
+          recordReasons := recordReasons.push "empty soundness name"
+        if derivability.isEmpty then
+          recordReasons := recordReasons.push "empty derivability name"
+      if let .standardCalculusIdentity _ derivability soundness _ _ := r.data then
+        if soundness.isEmpty then
+          recordReasons := recordReasons.push "empty soundness name"
+        if derivability.isEmpty then
+          recordReasons := recordReasons.push "empty derivability name"
+      return recordReasons
+    if r.shell.claimedStatus == "reported" then
+      (BackendStatus.reported, some "reported at source")
+    else if recordReasons.isEmpty then
+      (BackendStatus.backendChecked, none)
+    else
+      (BackendStatus.reported,
+        some (String.intercalate "; " recordReasons.toList))
   for r in linked do
     let theoremName? := nonempty? r.shell.theoremName?
-    let mut recordReasons := downgradeReasons
-    if theoremName?.isNone &&
-        ["contextRealization", "statementAdapter",
-          "calculusNonderivability", "semanticCountermodel"].contains r.shell.kind then
-      recordReasons := recordReasons.push "missing theorem"
-    if r.shell.exportName.isEmpty then
-      recordReasons := recordReasons.push "empty export name"
-    if let .calculusIdentity _ derivability soundness _ := r.data then
-      if soundness.isEmpty then
-        recordReasons := recordReasons.push "empty soundness name"
-      if derivability.isEmpty then
-        recordReasons := recordReasons.push "empty derivability name"
-    let (status, reason?) :=
-      if r.shell.claimedStatus == "reported" then
-        (BackendStatus.reported, some "reported at source")
-      else if recordReasons.isEmpty then
-        (BackendStatus.backendChecked, none)
-      else
-        (BackendStatus.reported,
-          some (String.intercalate "; " recordReasons.toList))
+    let (status, reason?) := statusOf r
     modifyEnv fun env => backendEvidenceExt.addEntry env
       { id := r.shell.id, ns := ⟨nsName⟩, repository, revision, artifactRevision,
         artifactPath := path.getString, rmRevision, foundationRevision,
@@ -661,23 +734,45 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         audit? := checking.audit?, allowedAxioms := checking.allowedAxioms,
         exportName := r.shell.exportName, theoremName?,
         status, downgraded? := reason?, data := r.data }
-    -- a fully validated, undowngraded countermodel contributes a checked scoped
-    -- result (Registry-owned extension; dedup by semantic key at count time);
-    -- any downgrade contributes nothing — the all-model column falls back to 0
+    -- a fully validated, undowngraded countermodel contributes the all-model scoped
+    -- result, and a fully validated nonderivability AT THE PINNED STANDARD CALCULUS
+    -- (its reference must resolve to an undowngraded standardCalculusIdentity)
+    -- contributes the syntactic scoped result. The qualifier is typed per kind —
+    -- (modelClass, …) vs (calculus, …) — and enters the semantic key. Any downgrade
+    -- contributes nothing: the affected column falls back to 0.
     if status == .backendChecked then
       if let .semanticCountermodel _ _ theory sentence _ modelClass _ _ := r.data then
         let existing := scopedResultExt.getState (← getEnv)
         if existing.any (fun e =>
-            e.semanticKey == ("semanticCountermodel", modelClass, theory, sentence)) then
+            e.semanticKey ==
+              ("semanticCountermodel", "modelClass", modelClass, theory, sentence)) then
           throwErrorAt path "backend evidence: record '{r.shell.id}': duplicate \
             semantic payload — a checked scoped result with key \
-            (semanticCountermodel, {modelClass}, {theory}, {sentence}) already \
-            exists; duplicate semantic payloads fail hard, never silently \
+            (semanticCountermodel, modelClass, {modelClass}, {theory}, {sentence}) \
+            already exists; duplicate semantic payloads fail hard, never silently \
             deduplicate"
         modifyEnv fun env => scopedResultExt.addEntry env
           { scope := .allModels, verification := .backendChecked,
-            kind := "semanticCountermodel", modelClass, theory, sentence,
-            sourceId := r.shell.id }
+            kind := "semanticCountermodel", qualifierTag := "modelClass",
+            qualifierId := modelClass, theory, sentence, sourceId := r.shell.id }
+      if let .calculusNonderivability calcRef _ calculusId theory sentence := r.data then
+        if let some calcRec := linked.find? (·.shell.id == calcRef) then
+          if calcRec.data.kindTag == "standardCalculusIdentity" &&
+              (statusOf calcRec).1 == .backendChecked then
+            let existing := scopedResultExt.getState (← getEnv)
+            if existing.any (fun e =>
+                e.semanticKey ==
+                  ("calculusNonderivability", "calculus", calculusId,
+                    theory, sentence)) then
+              throwErrorAt path "backend evidence: record '{r.shell.id}': duplicate \
+                semantic payload — a checked scoped result with key \
+                (calculusNonderivability, calculus, {calculusId}, {theory}, \
+                {sentence}) already exists; duplicate semantic payloads fail hard, \
+                never silently deduplicate"
+            modifyEnv fun env => scopedResultExt.addEntry env
+              { scope := .provability, verification := .backendChecked,
+                kind := "calculusNonderivability", qualifierTag := "calculus",
+                qualifierId := calculusId, theory, sentence, sourceId := r.shell.id }
 
 /-- Scope-safe rendering of one record — generated from the typed fields, so the
 calculus and comparison qualifiers cannot be dropped without changing the data. -/
@@ -694,8 +789,8 @@ def BackendEvidenceEntry.render (e : BackendEvidenceEntry) : String :=
     s!"calculus identity: backend-local calculus '{calculusId}' with soundness \
       {soundness}; standard-calculus comparison {comparison}"
   | .calculusNonderivability _ _ calculusId theory sentence =>
-    s!"nonderivability [calculus-relative]: {theory} ⊬ {sentence} in '{calculusId}', \
-      with standard-calculus comparison pending — never an unqualified turnstile claim"
+    s!"nonderivability [calculus-relative]: {theory} ⊬ {sentence} in '{calculusId}' — \
+      never an unqualified conventional-RCA₀ turnstile claim"
   | .semanticCountermodel _ _ theory sentence _ _ _ witnessBase =>
     s!"semantic countermodel [allModels, foundationStruc2General]: {theory} ⊭ \
       {sentence} over all general (Henkin-style) second-order L₂ structures — the \
@@ -703,6 +798,14 @@ def BackendEvidenceEntry.render (e : BackendEvidenceEntry) : String :=
       {witnessBase} (an ω-countermodel is in particular an L₂ countermodel; witness \
       provenance, not scope). Never an unqualified conventional-RCA₀ claim: the \
       theory-presentation comparison stays pending"
+  | .standardCalculusIdentity calculusId _ soundness sortAssumption source =>
+    s!"pinned standard calculus '{calculusId}' [{sortAssumption}]: direct soundness \
+      {soundness}, no completeness; source pin: {source} — the identification with \
+      the source's prose logic is a documented reading, never a checked claim"
+  | .calculusComparison _ _ relation stdId cmpId =>
+    s!"calculus comparison [{relation}]: '{stdId}' and '{cmpId}' are separately \
+      sound; no embedding in either direction — derivability never transfers \
+      between the calculi"
 
 /-- `#rm_backend_evidence`: display the backend-evidence records, sorted by id.
 External backend evidence only — never axioms, never certified counts, no port, no

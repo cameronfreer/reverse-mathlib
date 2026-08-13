@@ -12,8 +12,12 @@ preserve the proof, and never confuse the two.*
 [Roadmap](ROADMAP.md)
 
 > **Scoreboard — checked scoped results: ω-model: 6 (kernelChecked); all-model: 1
-> (backendChecked); syntactic: 0.** The all-model entry is the exact backend-checked
-> `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂ structures — never an
+> (backendChecked); syntactic: 1 (backendChecked).** The all-model entry is the exact
+> backend-checked `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂
+> structures; the syntactic entry is the exact backend-checked
+> `Rca0Theory ⊬ wklSentence in l2VarWitnessLK.v1` (the bridge's pinned standard
+> calculus — a fully specified LK presentation of the two-sorted logic assumed in
+> Simpson §I.2, with direct soundness and no completeness claim). Neither is ever an
 > unqualified conventional-RCA₀ claim.
 > No unqualified `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists at any scope; scopes and
 > presentations are never promoted, and derived closure results are computed, never

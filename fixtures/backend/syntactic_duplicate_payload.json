@@ -1,7 +1,9 @@
 {
+ "schema": "rmlib-bridge-evidence/3",
+ "fingerprintSchema": "lean-interface-expr/1",
  "source": {
   "toolchain": "leanprover/lean4:v4.32.2",
-  "revision": "d3bf116b5b87e81cd3cdbc98062205eb50727ece",
+  "revision": "78cf94f49b09494eb7c9daa318e95106ef9dec29",
   "repository": "example/fixture-backend",
   "dependencies": {
    "reverse-mathlib": "cf2b730a957ee151f4d6975dafec1c5bfcb99fcd",
@@ -9,91 +11,16 @@
    "Foundation": "9800e78127294798496adc6e37c8b9ded637d93a"
   }
  },
- "schema": "rmlib-bridge-evidence/3",
- "records": [
-  {
-   "theory": "RMFoundationBridge.Rca0Theory",
-   "theorem": "RMFoundationBridge.forward_adequacy",
-   "status": "backendChecked",
-   "realizationStatus": "realizationOnly",
-   "kind": "contextRealization",
-   "id": "fix.realization.rca0.turingIdeal",
-   "export": "RMFoundationBridge.rca0RealizationExport",
-   "direction": "forward",
-   "contextKey": "rca0/turingIdealOmega",
-   "context": "ReverseMathlib.Omega.IsTuringIdeal"
-  },
-  {
-   "variantKey": "wkl/binaryTree.turingIdealOmega",
-   "theorem": "RMFoundationBridge.models_wklSentence_iff",
-   "status": "backendChecked",
-   "sentence": "RMFoundationBridge.wklSentence",
-   "kind": "statementAdapter",
-   "id": "fix.adapter.wkl.binaryTree.foundationL2",
-   "export": "RMFoundationBridge.wklAdapterExport",
-   "capability": "ReverseMathlib.Omega.WeakKonigAt",
-   "adapterStatus": "unconditional"
-  },
-  {
-   "variantKey": "efilc/explicitSequential.enumeratedFibers.turingIdealOmega",
-   "theorem": "RMFoundationBridge.models_efilcSentence_iff",
-   "status": "backendChecked",
-   "sentence": "RMFoundationBridge.efilcSentence",
-   "kind": "statementAdapter",
-   "id": "fix.adapter.efilc.explicitSequential.enumeratedFibers.foundationL2",
-   "export": "RMFoundationBridge.efilcAdapterExport",
-   "capability": "ReverseMathlib.Omega.EFILCAt",
-   "adapterStatus": "unconditional"
-  },
-  {
-   "variantKey": "countableHall/oneSidedInjective.enumeratedCandidates.turingIdealOmega",
-   "theorem": "RMFoundationBridge.models_hallSentence_iff",
-   "status": "backendChecked",
-   "sentence": "RMFoundationBridge.hallSentence",
-   "kind": "statementAdapter",
-   "id": "fix.adapter.countableHall.oneSidedInjective.enumeratedCandidates.foundationL2",
-   "export": "RMFoundationBridge.hallAdapterExport",
-   "capability": "ReverseMathlib.Omega.CountableHallAt",
-   "adapterStatus": "unconditional"
-  },
-  {
-   "status": "backendChecked",
-   "standardComparison": "pending",
-   "soundness": "RMFoundationBridge.soundness_sentence",
-   "kind": "calculusIdentity",
-   "id": "fix.calculus.henkinSafeV1",
-   "export": "RMFoundationBridge.bridgeCalculusExport",
-   "derivability": "RMFoundationBridge.Derivable",
-   "calculusId": "henkinSafeV1"
-  },
-  {
-   "theory": "RMFoundationBridge.Rca0Theory",
-   "theorem": "RMFoundationBridge.rca0_not_derives_wkl",
-   "status": "backendChecked",
-   "sentenceAdapter": "fix.adapter.wkl.binaryTree.foundationL2",
-   "sentence": "RMFoundationBridge.wklSentence",
-   "kind": "calculusNonderivability",
-   "id": "fix.nonderivability.rca0.wkl.henkinSafeV1",
-   "export": "RMFoundationBridge.wklNonderivabilityExport",
-   "calculusRecord": "fix.calculus.henkinSafeV1"
-  },
-  {
-   "witnessProvenance": "omegaStructure",
-   "witnessBase": "ReverseMathlib.Omega.recursivePart",
-   "theory": "RMFoundationBridge.Rca0Theory",
-   "theorem": "RMFoundationBridge.rca0_not_semantically_implies_wkl",
-   "status": "backendChecked",
-   "sentenceAdapter": "fix.adapter.wkl.binaryTree.foundationL2",
-   "sentence": "RMFoundationBridge.wklSentence",
-   "scope": "allModels",
-   "modelClass": "foundationStruc2General",
-   "kind": "semanticCountermodel",
-   "id": "fix.cmdup",
-   "export": "RMFoundationBridge.wklCountermodelExport",
-   "contextRealization": "fix.realization.rca0.turingIdeal"
-  }
- ],
  "namespace": "rmFoundationBridge",
+ "checking": {
+  "mechanism": "leanKernel",
+  "audit": "fixture",
+  "allowedAxioms": [
+   "Classical.choice",
+   "Quot.sound",
+   "propext"
+  ]
+ },
  "fingerprints": [
   {
    "name": "ReverseMathlib.Omega.CountableHallAt",
@@ -216,14 +143,103 @@
    "canonicalInterface": "(def _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\".\"sets\" 0 (P d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (a (c _.\"Set\" 0) (a (c _.\"Set\" 0) (c _.\"Nat\")))) (l d (c _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\") (pr _.\"ReverseMathlib\".\"Omega\".\"OmegaPart\" 0 (b 0))))"
   }
  ],
- "fingerprintSchema": "lean-interface-expr/1",
- "checking": {
-  "mechanism": "leanKernel",
-  "audit": "lake env lean scripts/Audit.lean",
-  "allowedAxioms": [
-   "Classical.choice",
-   "Quot.sound",
-   "propext"
-  ]
- }
+ "records": [
+  {
+   "theory": "RMFoundationBridge.Rca0Theory",
+   "theorem": "RMFoundationBridge.forward_adequacy",
+   "status": "backendChecked",
+   "realizationStatus": "realizationOnly",
+   "kind": "contextRealization",
+   "id": "fix3.realization.rca0.turingIdeal",
+   "export": "RMFoundationBridge.rca0RealizationExport",
+   "direction": "forward",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal"
+  },
+  {
+   "variantKey": "wkl/binaryTree.turingIdealOmega",
+   "theorem": "RMFoundationBridge.models_wklSentence_iff",
+   "status": "backendChecked",
+   "sentence": "RMFoundationBridge.wklSentence",
+   "kind": "statementAdapter",
+   "id": "fix3.adapter.wkl.binaryTree.foundationL2",
+   "export": "RMFoundationBridge.wklAdapterExport",
+   "capability": "ReverseMathlib.Omega.WeakKonigAt",
+   "adapterStatus": "unconditional"
+  },
+  {
+   "variantKey": "efilc/explicitSequential.enumeratedFibers.turingIdealOmega",
+   "theorem": "RMFoundationBridge.models_efilcSentence_iff",
+   "status": "backendChecked",
+   "sentence": "RMFoundationBridge.efilcSentence",
+   "kind": "statementAdapter",
+   "id": "fix3.adapter.efilc.explicitSequential.enumeratedFibers.foundationL2",
+   "export": "RMFoundationBridge.efilcAdapterExport",
+   "capability": "ReverseMathlib.Omega.EFILCAt",
+   "adapterStatus": "unconditional"
+  },
+  {
+   "variantKey": "countableHall/oneSidedInjective.enumeratedCandidates.turingIdealOmega",
+   "theorem": "RMFoundationBridge.models_hallSentence_iff",
+   "status": "backendChecked",
+   "sentence": "RMFoundationBridge.hallSentence",
+   "kind": "statementAdapter",
+   "id": "fix3.adapter.countableHall.oneSidedInjective.enumeratedCandidates.foundationL2",
+   "export": "RMFoundationBridge.hallAdapterExport",
+   "capability": "ReverseMathlib.Omega.CountableHallAt",
+   "adapterStatus": "unconditional"
+  },
+  {
+   "status": "backendChecked",
+   "standardComparison": "recorded",
+   "soundness": "RMFoundationBridge.soundness_sentence",
+   "kind": "calculusIdentity",
+   "id": "fix3.calculus.henkinSafeV1",
+   "export": "RMFoundationBridge.bridgeCalculusExport",
+   "derivability": "RMFoundationBridge.Derivable",
+   "calculusId": "henkinSafeV1"
+  },
+  {
+   "theory": "RMFoundationBridge.Rca0Theory",
+   "theorem": "RMFoundationBridge.rca0_not_derives_wkl",
+   "status": "backendChecked",
+   "sentenceAdapter": "fix3.adapter.wkl.binaryTree.foundationL2",
+   "sentence": "RMFoundationBridge.wklSentence",
+   "kind": "calculusNonderivability",
+   "id": "fix3.nonderivability.rca0.wkl.henkinSafeV1",
+   "export": "RMFoundationBridge.wklNonderivabilityExport",
+   "calculusRecord": "fix3.calculus.henkinSafeV1"
+  },
+  {
+   "status": "backendChecked",
+   "source": "[Sim09] §I.2 (assumed two-sorted logic, nonempty sorts; bridge-defined LK presentation at the pinned Foundation rule shape, variable-witness ∃² rule)",
+   "soundness": "RMFoundationBridge.StdLKProvable.soundness",
+   "sortAssumption": "nonemptySetSort",
+   "kind": "standardCalculusIdentity",
+   "id": "fix3.calculus.l2VarWitnessLK.v1",
+   "export": "RMFoundationBridge.stdCalculusExport",
+   "derivability": "RMFoundationBridge.StdLKProvable",
+   "calculusId": "l2VarWitnessLK.v1"
+  },
+  {
+   "status": "backendChecked",
+   "standardCalculusRecord": "fix3.calculus.l2VarWitnessLK.v1",
+   "relation": "independentDirectSoundness",
+   "kind": "calculusComparison",
+   "id": "fix3.calculus.comparison.l2VarWitnessLK.henkinSafeV1",
+   "export": "RMFoundationBridge.calculusComparisonExport",
+   "comparedCalculusRecord": "fix3.calculus.henkinSafeV1"
+  },
+  {
+   "theory": "RMFoundationBridge.Rca0Theory",
+   "theorem": "RMFoundationBridge.rca0_not_stdLK_proves_wkl",
+   "status": "backendChecked",
+   "sentenceAdapter": "fix3.adapter.wkl.binaryTree.foundationL2",
+   "sentence": "RMFoundationBridge.wklSentence",
+   "kind": "calculusNonderivability",
+   "id": "fix3.nonderivability.rca0.wkl.l2VarWitnessLK.v1",
+   "export": "RMFoundationBridge.wklStandardNonprovabilityExport",
+   "calculusRecord": "fix3.calculus.l2VarWitnessLK.v1"
+  }
+ ]
 }

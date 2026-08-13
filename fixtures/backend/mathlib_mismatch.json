@@ -1,5 +1,5 @@
 {
- "schema": "rmlib-bridge-evidence/2",
+ "schema": "rmlib-bridge-evidence/3",
  "fingerprintSchema": "lean-interface-expr/1",
  "source": {
   "repository": "example/fixture-backend",
