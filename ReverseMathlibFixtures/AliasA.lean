@@ -9,6 +9,7 @@ import ReverseMathlibFixtures.Base
 Compiles cleanly in isolation — the collision only exists in a module importing both siblings. -/
 
 rm_concept fixConceptA where
+  statement := "fixture statement for fixConceptA"
   description := "fixture concept registered by module AliasA"
 
 rm_external_ref fixzoo "X" exactAlias concept fixConceptA

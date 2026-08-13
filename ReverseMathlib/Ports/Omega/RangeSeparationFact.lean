@@ -42,6 +42,9 @@ namespace ReverseMathlib.Ports
 open ReverseMathlib.Omega
 
 rm_concept disjointRangeSeparation where
+  statement := "Disjoint-range separation: for every pair of injections with disjoint \
+    ranges there is a separating set that contains every value of the first injection \
+    and no value of the second"
   description := "Disjoint-range separation as a conceptual family: separating \
     sets for pairs of injections with disjoint ranges (Hirst Thm 1.2 (ii) / \
     Simpson's Σ⁰₁-separation circle). The registered presentation is the exact \

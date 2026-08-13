@@ -34,6 +34,8 @@ rm_namespace computableAnalysis "cameronfreer/computable-analysis catalog identi
   evidence only — no Lean dependency in either direction"
 
 rm_concept wkl where
+  statement := "Weak Kőnig's lemma: every infinite binary tree — a prefix-closed set of \
+    finite bit sequences with a node at every level — has an infinite path"
   description := "Weak Kőnig's lemma as a conceptual family: binary-tree formulations across \
     semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded \
     ω-model formulation, joined through the kernel-checked presentation equivalence \
@@ -41,11 +43,18 @@ rm_concept wkl where
     principle and belongs to a separate concept, not under the rmzoo:WKL alias"
 
 rm_concept explicitFiniteInverseLimitCompactness where
+  statement := "Explicit finite inverse-limit compactness: every sequential inverse system \
+    of nonempty, explicitly enumerated finite fibers with bonding maps between adjacent \
+    levels has a section — a choice of one point per level respecting every bonding map"
   description := "Explicit finite inverse-limit compactness as a conceptual family: \
     sequential systems of explicitly enumerated finite fibers with adjacent bonding maps"
   label := "EFILC"
 
 rm_concept countableHall where
+  statement := "Countable Hall / marriage: a countable family of finite sets satisfying \
+    the marriage condition (every finite subfamily has at least as many candidates as \
+    members) admits an injective transversal; the family's perfect-matching forms instead \
+    assert that suitable countable bipartite graphs have perfect matchings"
   description := "Countable Hall / marriage as a conceptual family: the one-sided \
     injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but \
     not identical, and no RMZoo symbol exists for this family"

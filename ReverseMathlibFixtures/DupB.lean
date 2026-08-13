@@ -8,4 +8,5 @@ import ReverseMathlibFixtures.Base
 /-! # Fixture DupB: independently registers concept `fixDup`. -/
 
 rm_concept fixDup where
+  statement := "fixture statement for fixDup"
   description := "fixture duplicate concept, registered by DupB"

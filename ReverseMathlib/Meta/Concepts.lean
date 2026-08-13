@@ -160,6 +160,11 @@ structure ExternalRef where
 structure ConceptEntry where
   /-- The open identifier. -/
   id : ConceptId
+  /-- The informal mathematical statement: what this concept-level item asserts, stated
+  definition-first for a reader who has not seen the family before. Required and nonempty —
+  every concept the atlas displays must be defined, not merely scoped. Presentation caveats
+  and family scoping belong in `description`, never here. -/
+  statement : String
   /-- Informal description. -/
   description : String
   /-- Display label — presentation metadata, separate from mathematics. -/
@@ -811,20 +816,26 @@ elab "rm_namespace " id:ident descr:str : command => do
   let _ := cat
   modifyEnv fun env => namespaceExt.addEntry env ⟨⟨n⟩, descr.getString⟩
 
-/-- `rm_concept id where description := "…" [label := "…"]`: register a conceptual family.
-Deliberately requires no Lean proposition. -/
+/-- `rm_concept id where statement := "…" description := "…" [label := "…"]`: register a
+conceptual family. `statement` is the required informal definition (what the item asserts);
+`description` carries family scoping and presentation caveats. Deliberately requires no
+Lean proposition. -/
 syntax (name := rmConceptCmd) "rm_concept " ident " where "
-  &"description" " := " str (&"label" " := " str)? : command
+  &"statement" " := " str &"description" " := " str (&"label" " := " str)? : command
 
 @[command_elab rmConceptCmd]
 def elabRmConcept : CommandElab := fun stx => do
   let id := stx[1].getId
-  let description := (⟨stx[5]⟩ : TSyntax `str).getString
-  let label := if stx[6].getNumArgs == 0 then toString id
-    else (⟨stx[6][2]⟩ : TSyntax `str).getString
+  let statement := (⟨stx[5]⟩ : TSyntax `str).getString
+  let description := (⟨stx[8]⟩ : TSyntax `str).getString
+  let label := if stx[9].getNumArgs == 0 then toString id
+    else (⟨stx[9][2]⟩ : TSyntax `str).getString
   if (conceptExt.getState (← getEnv)).any (·.id.name == id) then
     throwErrorAt stx[1] "concept catalog: duplicate concept id '{id}'"
-  modifyEnv fun env => conceptExt.addEntry env ⟨⟨id⟩, description, label⟩
+  if statement.trimAscii.isEmpty then
+    throwErrorAt stx[5] "concept catalog: concept '{id}' requires a nonempty statement \
+      (the informal definition of what it asserts)"
+  modifyEnv fun env => conceptExt.addEntry env ⟨⟨id⟩, statement, description, label⟩
 
 private def parseRelation (stx : Syntax) : CommandElabM ExternalRefRelation :=
   match stx.getId with
@@ -1209,6 +1220,7 @@ elab "#rm_concepts" : command => do
   let mut lines := #[s!"concepts ({concepts.size}):"]
   for c in concepts do
     lines := lines.push s!"  {c.id.serialized} — {c.description}"
+    lines := lines.push s!"    statement: {c.statement}"
     let cvars := (cat.variants.filter (·.concept == c.id)).qsort fun a b =>
       Name.lt a.id.name b.id.name
     for v in cvars do

@@ -30,6 +30,7 @@ def fixModelPred : DummyOmegaPart → Prop := fun _ => True
 def fixModelPred2 : DummyOmegaPart → Prop := fun _ => False
 
 rm_concept fixModelConcept where
+  statement := "fixture statement for fixModelConcept"
   description := "fixture parent concept for model-indexed interface tests"
 
 -- Accept: the interface type is definitionally the layer's schema.
