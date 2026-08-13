@@ -9,6 +9,7 @@ import ReverseMathlibFixtures.Base
 concept. Compiles cleanly in isolation. -/
 
 rm_concept fixConceptB where
+  statement := "fixture statement for fixConceptB"
   description := "fixture concept registered by module AliasB"
 
 rm_external_ref fixzoo "X" exactAlias concept fixConceptB

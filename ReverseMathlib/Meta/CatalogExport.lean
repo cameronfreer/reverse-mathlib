@@ -12,7 +12,7 @@ import ReverseMathlib.Meta.BackendEvidence
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v5`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v6`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
@@ -27,7 +27,12 @@ they are never edges of any implication closure and never turnstile claims; `v4`
 `backendEvidence` family (external checked backend records with both sides of every
 crosswalk, their typed record references, and their trust statuses — never certified
 facts, never graph edges) and admits `semanticContext` among external-reference target
-kinds.
+kinds; `v5` adds the `scopedResults` family (validated scope-qualified results contributed
+by backend evidence — explicitly verification-tagged, deduplicated by semantic key, and
+counted only on the scoped-results scoreboard, never among the certified facts); `v6` adds
+the required concept `statement` field — the informal definition of what each conceptual
+family asserts, distinct from the scoping `description`, so every displayed item is
+defined, not merely scoped.
 
 Canonical-file properties:
 
@@ -322,6 +327,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
   let conceptJson (c : ConceptEntry) : Json :=
     Json.mkObj
       [("id", Json.str c.id.serialized),
+       ("statement", Json.str c.statement),
        ("description", Json.str c.description),
        ("display", Json.mkObj [("label", Json.str c.displayLabel)])]
   let layerJson (l : SemanticLayerEntry) : Json :=
@@ -424,7 +430,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v5"),
+    [("schema", Json.str "reverse-mathlib.catalog/v6"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),

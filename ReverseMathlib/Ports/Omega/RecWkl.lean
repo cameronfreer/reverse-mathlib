@@ -29,11 +29,15 @@ namespace ReverseMathlib.Ports
 open ReverseMathlib.Omega
 
 rm_concept rca0Core where
+  statement := "Not a mathematical principle but a base capability: a second-order part is \
+    an RCA₀ core when it is nonempty, closed downward under Turing reducibility, and \
+    closed under recursive join — the Turing-ideal closure conditions used for the \
+    repository's RCA₀ ω context"
   description := "The second-order core of RCA₀ at a fixed first-order part: nonemptiness, \
     downward Δ⁰₁ (Turing) closure, and closure under recursive join — the Turing-ideal \
-    closure conditions. A base-capability concept: it names what the base theory's \
-    ω-models satisfy by definition, so ω-scope separations have an honest typed lhs; it \
-    is not a theorem-strength concept and carries no external crosswalk"
+    closure conditions used as the repository's RCA₀ ω context. A base-capability \
+    concept: it names those closure conditions so ω-scope separations have an honest \
+    typed lhs; it is not a theorem-strength concept and carries no external crosswalk"
 
 rm_statement_variant rca0Core.turingIdealClosure.turingIdealOmega where
   concept := rca0Core

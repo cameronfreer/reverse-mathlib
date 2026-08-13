@@ -12,6 +12,7 @@ rm_namespace fixzoo "fixture namespace for cross-module collision tests"
 rm_semantic_layer fixlayer "fixture semantic layer"
 
 rm_concept fixBaseConcept where
+  statement := "fixture statement for fixBaseConcept"
   description := "fixture parent concept for variant collision tests"
 
 /-- A fixture Prop for interface-ownership collision tests. -/

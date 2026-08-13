@@ -970,22 +970,27 @@ that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
 info: concepts (5):
-  reverse-mathlib:countableHall — Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
+  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; the family's registered perfect-matching form asserts that every countable bipartite graph that is 2-regular on both sides has a perfect matching
+    scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
     variant reverse-mathlib:countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.TwoRegularPerfectMatchingAt⟩
     problem reverse-mathlib:hall.oneSidedRelationEnumerator [single]
     simpson:"X.3.15" [relatedVariant]
     simpson:"X.3.16" [relatedVariant]
-  reverse-mathlib:disjointRangeSeparation — Disjoint-range separation as a conceptual family: separating sets for pairs of injections with disjoint ranges (Hirst Thm 1.2 (ii) / Simpson's Σ⁰₁-separation circle). The registered presentation is the exact injection-graph form; formula-coded Σ⁰₁ separation, arbitrary-function, and enumeration presentations join only once their adapters are proved
+  reverse-mathlib:disjointRangeSeparation — Disjoint-range separation: for every pair of injections with disjoint ranges there is a separating set that contains every value of the first injection and no value of the second
+    scoping: Disjoint-range separation as a conceptual family: separating sets for pairs of injections with disjoint ranges (Hirst Thm 1.2 (ii) / Simpson's Σ⁰₁-separation circle). The registered presentation is the exact injection-graph form; formula-coded Σ⁰₁ separation, arbitrary-function, and enumeration presentations join only once their adapters are proved
     variant reverse-mathlib:disjointRangeSeparation.injectionGraphs.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.DisjointRangeSeparationAt⟩
-  reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
+  reverse-mathlib:explicitFiniteInverseLimitCompactness — Explicit finite inverse-limit compactness: every sequential inverse system of nonempty, explicitly enumerated finite fibers with bonding maps between adjacent levels has a section — a choice of one point per level respecting every bonding map
+    scoping: Explicit finite inverse-limit compactness as a conceptual family: sequential systems of explicitly enumerated finite fibers with adjacent bonding maps
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
     variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
     problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
-  reverse-mathlib:rca0Core — The second-order core of RCA₀ at a fixed first-order part: nonemptiness, downward Δ⁰₁ (Turing) closure, and closure under recursive join — the Turing-ideal closure conditions. A base-capability concept: it names what the base theory's ω-models satisfy by definition, so ω-scope separations have an honest typed lhs; it is not a theorem-strength concept and carries no external crosswalk
+  reverse-mathlib:rca0Core — Not a mathematical principle but a base capability: a second-order part is an RCA₀ core when it is nonempty, closed downward under Turing reducibility, and closed under recursive join — the Turing-ideal closure conditions used for the repository's RCA₀ ω context
+    scoping: The second-order core of RCA₀ at a fixed first-order part: nonemptiness, downward Δ⁰₁ (Turing) closure, and closure under recursive join — the Turing-ideal closure conditions used as the repository's RCA₀ ω context. A base-capability concept: it names those closure conditions so ω-scope separations have an honest typed lhs; it is not a theorem-strength concept and carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
-  reverse-mathlib:wkl — Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded ω-model formulation, joined through the kernel-checked presentation equivalence boundedKonigWklOmega. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
+  reverse-mathlib:wkl — Weak Kőnig's lemma: every infinite binary tree — a prefix-closed set of finite bit sequences with a node at every level — has an infinite path
+    scoping: Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded ω-model formulation, joined through the kernel-checked presentation equivalence boundedKonigWklOmega. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
     variant reverse-mathlib:wkl.binaryTree.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.WeakKonigAt⟩
     variant reverse-mathlib:wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.BoundedKonigAt⟩
@@ -1020,7 +1025,17 @@ error: concept catalog: no exact alias for simpson:"I.10" (provenance relations 
 /-- error: concept catalog: duplicate concept id 'wkl' -/
 #guard_msgs in
 rm_concept wkl where
+  statement := "duplicate"
   description := "duplicate"
+
+-- A concept without an informal definition is rejected: every displayed item is defined.
+/--
+error: concept catalog: concept 'undefinedConcept' requires a nonempty statement (the informal definition of what it asserts)
+-/
+#guard_msgs in
+rm_concept undefinedConcept where
+  statement := "   "
+  description := "fixture concept with a blank statement"
 
 /--
 error: concept catalog: namespace 'nosuchns' is not registered (rm_namespace first; namespaces are extensible by registration)
@@ -1068,6 +1083,7 @@ theorem bogusCert : ReverseMathlib.Meta.RelativeCertificate ((1 : ℕ) = 1) smok
   ⟨fun _ => trivial⟩
 
 rm_concept smokeConcept where
+  statement := "fixture statement for registry tests"
   description := "fixture concept for registry tests"
 
 rm_statement_variant smokeVariant where

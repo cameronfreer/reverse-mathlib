@@ -35,7 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v5"
+SCHEMA_ID = "reverse-mathlib.catalog/v6"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
@@ -145,6 +145,10 @@ def cmd_check(args: argparse.Namespace) -> None:
             problems.append(f"{section} not sorted by {key}")
         if len(ids) != len(set(ids)):
             problems.append(f"duplicate ids in {section}")
+    for c in catalog.get("concepts", []):
+        if not str(c.get("statement", "")).strip():
+            problems.append(f"concept {c.get('id')!r} missing a nonempty statement "
+                            "(every displayed item must be defined)")
     contexts = {c["id"] for c in catalog.get("semanticContexts", [])}
     for f in catalog.get("facts", []):
         for ev in f.get("evidence", []):
@@ -643,6 +647,24 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     return True
 
 
+def principles_section(catalog: dict) -> str:
+    """The definitions block: what each concept-level item asserts, right at the top.
+    Statements are typed registry data (the required rm_concept `statement` field),
+    never prose invented at render time."""
+    items = "\n".join(
+        f'<dt><strong>{html.escape(c["display"]["label"])}</strong> — '
+        f'<code>{html.escape(c["id"])}</code></dt>'
+        f'<dd>{html.escape(c["statement"])}</dd>'
+        for c in catalog.get("concepts", []))
+    return f"""<section id="principles"><h2>The principles</h2>
+<p><em>What each concept-level item asserts. Exact Lean interfaces, presentation
+caveats, and per-variant forms are in the <a href="#concepts-sec">concepts</a> and
+<a href="#variants-sec">variants</a> sections.</em></p>
+<dl class="principles">
+{items}
+</dl></section>"""
+
+
 def site_html(catalog: dict, have_svg: bool, dot_text: str,
               view_svgs: set[str] | None = None) -> str:
     deps = catalog["dependencies"]
@@ -686,9 +708,7 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
         if svg_name:
             fig = (f'<figure class="graph"><img src="{e(svg_name)}" '
                    f'alt="{e(title)}: directed graph with {e(str(nodes_n))} nodes and '
-                   f'{edges_n} edges"/>'
-                   f'<figcaption>Rendered from the canonical DOT; the edge-detail list '
-                   f'below is the accessible equivalent.</figcaption></figure>')
+                   f'{edges_n} edges"/></figure>')
         else:
             fig = ("<p><em>(graph image rendered when Graphviz is available at build "
                    "time; the edge-detail list below is the always-present accessible "
@@ -697,8 +717,8 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
 ({nodes_n} nodes, {edges_n} edges; {e(styling)})</summary>
 <p><em>{e(comment)}</em></p>
 {fig}
-<details><summary>Edge details (accessible list; families distinguished by label text
-and line style, not color alone)</summary><ul>{edge_items}</ul></details>
+<details><summary>Edge details (accessible list; families distinguished by label
+text and line style, never by color alone)</summary><ul>{edge_items}</ul></details>
 <p><small>Download: <a href="{e(dot_href)}">DOT</a> · <a href="{e(json_href)}">JSON</a></small></p>
 </details>"""
 
@@ -802,17 +822,23 @@ reduction: open head (pinned, external)</span>
         panel = graph_panel(
             "Concept projection", "per-family line styles; no transitive closure; "
             "concept enclosures hold intra-concept calibrations at variant level",
-            v["comment"], f"{len(v['nodes'])} concepts, {displayed} displayed",
+            "orientation only — the exact merge and enclosure rules are in the "
+            "projection fine print above",
+            f"{len(v['nodes'])} concepts, {displayed} displayed",
             view_edge_items({**v, "edges": v["edges"] + cluster_edges}),
             len(v["edges"]) + len(cluster_edges),
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
             "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
             open_=True)
+        fine_print = (f'<details class="fineprint"><summary>Projection fine print '
+                      f'(exact merge and enclosure rules)</summary>'
+                      f'<p>{e(v["comment"])}</p></details>')
         return (f'<h2 id="overview">Concept overview — a noncanonical, lossy, '
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
                 f'granularity for orientation only; the per-family graphs below are '
-                f'canonical.</em></p>\n{legend_html()}\n{panel}')
+                f'canonical.</em></p>\n{fine_print}\n{legend_html()}\n{panel}\n'
+                f'{principles_section(catalog)}')
 
     def canonical_graphs_section() -> str:
         ag = catalog.get("ambientGraph", {})
@@ -840,7 +866,9 @@ reduction: open head (pinned, external)</span>
                 len(v["edges"]), f"{vname}.svg" if vname in view_svgs else None,
                 f"views/{vname}/graph.dot", f"views/{vname}/graph.json"))
         return ('<h2 id="graphs">Canonical graphs (one per evidence family — never '
-                'flattened into one)</h2>\n' + legend_html() + "\n"
+                'flattened into one)</h2>\n'
+                '<p><em>Line styles as in the legend under the concept overview '
+                'above.</em></p>\n'
                 + "\n".join(panels))
 
     def facts_section() -> str:
@@ -858,30 +886,29 @@ reduction: open head (pinned, external)</span>
                               if ev.get("context")})
             ctx_links = ", ".join(f'<a href="#ctx-{e(c)}"><code>{e(c)}</code></a>'
                                   for c in ctx_ids)
-            ev_items = "".join(
-                f"<li>certificate <code>{e(ev['certificate'])}</code> "
-                f"[context <code>{e(ev['context'])}</code>]"
-                + (f" — {e(ev['note'])}" if ev.get("note") else "") + "</li>"
-                for ev in f_["evidence"])
+            ev_items = (
+                f"<li>base <code>{e(str(ctx.get('base', '')))}</code> · "
+                f"context {ctx_links}</li>" + "".join(
+                    f"<li>certificate <code>{e(ev['certificate'])}</code> "
+                    f"[context <code>{e(ev['context'])}</code>]"
+                    + (f" — {e(ev['note'])}" if ev.get("note") else "") + "</li>"
+                    for ev in f_["evidence"]))
             note_block = f"<p>{e(f_['note'])}</p>" if f_.get("note") else ""
             study_link = case_study_link(f_["id"])
             cards.append(f"""<div class="card" data-family="certified">
 <h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
 <span class="tag">{e(f_['kind'])}</span> <span class="tag">kernelChecked</span>
 <span class="tag">scope {e(str(ctx.get('scope', '')))}</span></h3>
-<p class="meta"><code>{e(f_['id'])}</code> · base <code>{e(str(ctx.get('base', '')))}</code>
-· context {ctx_links}</p>
-<details><summary>certifications, note, and case study</summary><ul>{ev_items}</ul>{note_block}{study_link}</details>
+<p class="meta"><code>{e(f_['id'])}</code></p>
+<details><summary>base, context, certifications, note, and case study</summary><ul>{ev_items}</ul>{note_block}{study_link}</details>
 </div>""")
         return section(
             "facts-sec", "Certified semantic facts", len(cards), "\n".join(cards),
-            "<p><em>The principal conclusions — extensional classifications, distinct "
-            "from the proof routes below: each fact is certified by a typed semantic "
-            "certificate against a registered context (see the "
-            "<a href=\"#reference\">reference</a> for each context's exact status "
-            "wording). A nonimplication (⊭) fact is a countermodel-witnessed "
-            "model-class separation — never a turnstile underivability claim and "
-            "never an edge of any implication closure.</em></p>\n")
+            "<p><em>The principal conclusions, certified by typed semantic "
+            "certificates against registered contexts (exact context statuses in the "
+            "<a href=\"#reference\">reference</a>). A nonimplication (⊭) fact is a "
+            "countermodel-witnessed model-class separation — never a turnstile "
+            "underivability claim, never a closure edge.</em></p>\n")
 
     def concept_index() -> str:
         refs_by_target: dict[str, list[dict]] = {}
@@ -896,8 +923,9 @@ reduction: open head (pinned, external)</span>
             refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
             study_link = case_study_link(c["id"])
             cards.append(f"""<details class="card">
-<summary><strong>{e(gloss(c['description']))}</strong> — <code>{e(c['id'])}</code></summary>
-<p>{e(c['description'])}</p>
+<summary><strong>{e(gloss(c['statement']))}</strong> — <code>{e(c['id'])}</code></summary>
+<p>{e(c['statement'])}</p>
+<p class="meta">{e(c['description'])}</p>
 {refs_block}{study_link}</details>""")
         return section("concepts-sec", "Concepts", len(cards), "\n".join(cards))
 
@@ -1168,6 +1196,12 @@ dt {{ color: #666; font-size: 0.85rem; }}
 dd {{ margin: 0; overflow-wrap: anywhere; }}
 ul {{ margin: 0.3rem 0; padding-left: 1.2rem; }}
 li {{ margin: 0.25rem 0; overflow-wrap: anywhere; }}
+#principles {{ background: #f4f8fc; border: 1px solid #cfe0ef; border-radius: 6px;
+  padding: 0.4rem 1.1rem 0.9rem; margin: 1rem 0 1.5rem; }}
+#principles h2 {{ margin-top: 0.5rem; }}
+.principles {{ font-size: 1.02rem; }}
+.principles dt {{ margin-top: 0.6rem; }}
+.principles dd {{ margin: 0.2rem 0 0 1.2rem; max-width: 62rem; }}
 .banner {{ background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
            border-radius: 6px; overflow-wrap: anywhere; }}
 .banner p {{ margin: 0.3rem 0; }}
@@ -1199,14 +1233,10 @@ a {{ color: #205ea6; }}
 <h1>reverse-mathlib atlas</h1>
 <p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
 <div class="banner"><p><strong>Honesty note:</strong> this atlas displays five families
-of evidence, permanently distinct — kernel-checked ambient factorizations (proof
-architecture, not strength), certified ω-model facts over Turing ideals, imported
-reductions checked externally at pinned revisions, backend records from the checked
-ω-semantics bridge, and reported corpus findings at pinned snapshots — plus a computed
-closure that is a view, not evidence. No <code>RCA₀ ⊢ …</code> turnstile theorem exists
-at any scope; scopes are never promoted, and derived closure results are computed,
-never registered.</p>
-<details><summary>Full epistemics statement</summary>
+of evidence, permanently distinct, plus a computed closure that is a view, not
+evidence. No <code>RCA₀ ⊢ …</code> turnstile theorem exists at any scope; scopes are
+never promoted, and derived closure results are computed, never registered.</p>
+<details><summary>Full epistemics statement (what each family is and is not)</summary>
 <p>Every edge in the <em>ambient factorizations</em> panel is a kernel-checked relative
 certificate in unrestricted Lean over standard ℕ — ambient factorization, proof
 architecture, not strength. The <em>certified facts</em> are kernel-checked over every
@@ -1248,6 +1278,7 @@ syntactic: {scoreboard_cell(catalog, 'provability')}</p>
 it)</noscript></p>
 <nav class="toc"><strong>Contents:</strong>
 <a href="#overview">Overview</a> ·
+<a href="#principles">Principles</a> ·
 <a href="#facts-sec">Certified facts</a> ·
 <a href="#graphs">Canonical graphs</a> ·
 <a href="#concepts-sec">Concepts</a> ·
@@ -2281,8 +2312,9 @@ def cmd_build(args: argparse.Namespace) -> None:
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
     legend_count = page.count('<div class="legend"')
-    if legend_count != 2:
-        sys.exit(f"rmlib-zoo build: expected exactly two legend placements, found "
+    if legend_count != 1:
+        sys.exit(f"rmlib-zoo build: expected exactly one legend placement (under the "
+                 f"concept overview; the canonical graphs refer back to it), found "
                  f"{legend_count}")
     expected_imgs = (1 if have_svg else 0) + len(view_svgs)
     if page.count("<img ") != expected_imgs:
