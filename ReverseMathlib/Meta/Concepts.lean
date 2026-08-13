@@ -1219,8 +1219,8 @@ elab "#rm_concepts" : command => do
   let namespaces := cat.namespaces.qsort fun a b => Name.lt a.id.name b.id.name
   let mut lines := #[s!"concepts ({concepts.size}):"]
   for c in concepts do
-    lines := lines.push s!"  {c.id.serialized} — {c.description}"
-    lines := lines.push s!"    statement: {c.statement}"
+    lines := lines.push s!"  {c.id.serialized} — {c.statement}"
+    lines := lines.push s!"    scoping: {c.description}"
     let cvars := (cat.variants.filter (·.concept == c.id)).qsort fun a b =>
       Name.lt a.id.name b.id.name
     for v in cvars do

@@ -923,7 +923,7 @@ reduction: open head (pinned, external)</span>
             refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
             study_link = case_study_link(c["id"])
             cards.append(f"""<details class="card">
-<summary><strong>{e(gloss(c['description']))}</strong> — <code>{e(c['id'])}</code></summary>
+<summary><strong>{e(gloss(c['statement']))}</strong> — <code>{e(c['id'])}</code></summary>
 <p>{e(c['statement'])}</p>
 <p class="meta">{e(c['description'])}</p>
 {refs_block}{study_link}</details>""")
