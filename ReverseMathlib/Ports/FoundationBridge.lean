@@ -26,10 +26,11 @@ What ingestion establishes, kept permanently distinct:
 * **calculus identities and calculus-relative nonderivability** — `Rca0Theory ⊬
   wklSentence` in the backend's `henkinSafeV1` calculus AND in the backend's pinned
   standard calculus `l2VarWitnessLK.v1` (the fully specified LK presentation of the
-  two-sorted logic assumed in Simpson §I.2, with direct soundness and the
-  nonempty-sort assumption as a closed tag);
-* **the typed calculus comparison** — both calculi separately sound, no embedding in
-  either direction (derivability never transfers between them);
+  two-sorted logic assumed in Simpson §I.2, with logical equality, direct soundness
+  against equality-correct structures, and the nonempty-sort and equality-rules
+  assumptions as closed tags);
+* **the typed calculus comparison** — both calculi independently sound; the record
+  carries no embedding and licenses no derivability transfer;
 * **the all-model semantic countermodel** — `Rca0Theory ⊭ wklSentence` over all
   general (Henkin-style) L₂ structures, witnessed by the ω-structure over REC.
 

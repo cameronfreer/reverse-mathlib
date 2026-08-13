@@ -227,15 +227,19 @@ def cmd_check(args: argparse.Namespace) -> None:
             data = r.get("data", {})
             if data.get("sortAssumption") != "nonemptySetSort":
                 problems.append(f"backendEvidence {rid}: unknown sortAssumption tag")
+            if data.get("equalityRules") != "reflAndSubstitution":
+                problems.append(f"backendEvidence {rid}: unknown equalityRules tag")
             if not data.get("source"):
                 problems.append(f"backendEvidence {rid}: missing documentary source pin")
             rendered = r.get("display", {}).get("rendered", "")
             for marker in (data.get("calculusId", ""), "no completeness",
-                           "never a checked claim"):
+                           "never a checked claim", "reflAndSubstitution",
+                           "equality-correct"):
                 if not marker or marker not in rendered:
                     problems.append(f"backendEvidence {rid}: rendering must carry the "
-                                    f"calculus id and the documented-reading honesty "
-                                    f"markers (missing {marker!r})")
+                                    f"calculus id, the equality qualification, and "
+                                    f"the documented-reading honesty markers "
+                                    f"(missing {marker!r})")
         if r.get("kind") == "calculusComparison":
             data = r.get("data", {})
             if data.get("relation") != "independentDirectSoundness":
@@ -248,9 +252,10 @@ def cmd_check(args: argparse.Namespace) -> None:
                 problems.append(f"backendEvidence {rid}: comparedCalculusRecord must "
                                 "reference a calculusIdentity record")
             rendered = r.get("display", {}).get("rendered", "")
-            if "no embedding" not in rendered:
-                problems.append(f"backendEvidence {rid}: rendering must state the "
-                                "embedding-free relation")
+            if "carries no embedding and licenses no derivability transfer" \
+                    not in rendered:
+                problems.append(f"backendEvidence {rid}: rendering must state exactly "
+                                "the approved embedding-free relation")
         if r.get("kind") == "calculusNonderivability":
             data = r.get("data", {})
             for ref_field in ("calculusRecord", "sentenceAdapter"):

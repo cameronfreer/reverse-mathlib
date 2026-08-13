@@ -89,7 +89,7 @@ def BackendStatus.tag : BackendStatus → String
   | .backendChecked => "backendChecked"
   | .reported => "reported"
 
-/-- Kind-specific payload of a backend-evidence record. The five kinds are permanently
+/-- Kind-specific payload of a backend-evidence record. The seven kinds are permanently
 distinct; scope discipline lives in the rendering functions, which are generated from
 these typed fields. -/
 inductive BackendRecordData where
@@ -122,9 +122,9 @@ inductive BackendRecordData where
   | standardCalculusIdentity (calculusId : String) (derivability : String)
       (soundness : String) (sortAssumption : String) (equalityRules : String)
       (source : String)
-  /-- Typed calculus comparison: both calculi separately sound, no embedding in either
-  direction. Record references are resolved in phase 3; the resolved calculus ids are
-  carried for rendering. -/
+  /-- Typed calculus comparison: both calculi independently sound; the record carries
+  no embedding and licenses no derivability transfer. Record references are resolved
+  in phase 3; the resolved calculus ids are carried for rendering. -/
   | calculusComparison (standardCalculusRecord : String)
       (comparedCalculusRecord : String) (relation : String)
       (standardCalculusId : String) (comparedCalculusId : String)

@@ -2201,8 +2201,14 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
       check ((e.render.splitOn stdId).length > 1 &&
           (e.render.splitOn cmpId).length > 1)
         "comparison rendering names both calculi"
-      check ((e.render.splitOn "no embedding").length > 1)
-        "comparison rendering states the embedding-free relation"
+      check ((e.render.splitOn
+          "carries no embedding and licenses no derivability transfer").length > 1)
+        "comparison rendering states exactly the approved embedding-free relation"
+    if let .standardCalculusIdentity _ _ _ _ equalityRules _ := e.data then
+      check ((e.render.splitOn equalityRules).length > 1 &&
+          (e.render.splitOn "equality-correct").length > 1)
+        "standard-calculus rendering carries the equality rules and the \
+          equality-correct qualification"
 
 /-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/5' (this reader accepts 'rmlib-bridge-evidence/4'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
@@ -2331,6 +2337,12 @@ error: backend evidence: record 'fix3.calculus.l2VarWitnessLK.v1': unknown sortA
 -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/stdcalc_unknown_sortassumption.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/--
+error: backend evidence: record 'fix3.calculus.l2VarWitnessLK.v1': unknown equalityRules 'reflexivityOnly' (only 'reflAndSubstitution' exists — Simpson's logical equality, sound against equality-correct structures)
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/stdcalc_unknown_equalityrules.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /--
 error: backend evidence: record 'fix3.calculus.comparison.l2VarWitnessLK.henkinSafeV1': standardCalculusRecord 'fix3.calculus.henkinSafeV1' has kind 'calculusIdentity', not standardCalculusIdentity
