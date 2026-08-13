@@ -9,7 +9,7 @@
    "Foundation": "9800e78127294798496adc6e37c8b9ded637d93a"
   }
  },
- "schema": "rmlib-bridge-evidence/3",
+ "schema": "rmlib-bridge-evidence/4",
  "records": [
   {
    "theory": "RMFoundationBridge.Rca0Theory",

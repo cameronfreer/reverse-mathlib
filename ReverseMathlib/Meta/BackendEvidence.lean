@@ -69,7 +69,7 @@ namespace ReverseMathlib.Meta
 open Lean Elab Command
 
 /-- The accepted backend-evidence schema version. -/
-def backendEvidenceSchemaV3 : String := "rmlib-bridge-evidence/3"
+def backendEvidenceSchemaV4 : String := "rmlib-bridge-evidence/4"
 
 /-- The accepted fingerprint-schema version. -/
 def fingerprintSchemaV1 : String := "lean-interface-expr/1"
@@ -120,7 +120,8 @@ inductive BackendRecordData where
   the conventional two-sorted logic, with its direct soundness, its sort assumption as
   a closed tag, and its documentary source pin. -/
   | standardCalculusIdentity (calculusId : String) (derivability : String)
-      (soundness : String) (sortAssumption : String) (source : String)
+      (soundness : String) (sortAssumption : String) (equalityRules : String)
+      (source : String)
   /-- Typed calculus comparison: both calculi separately sound, no embedding in either
   direction. Record references are resolved in phase 3; the resolved calculus ids are
   carried for rendering. -/
@@ -472,13 +473,18 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
       throwError "backend evidence: {ctx}: unknown sortAssumption '{sortAssumption}' \
         (only 'nonemptySetSort' exists — the standard calculus's theory-level \
         soundness consumes a nonempty designated part)"
+    let equalityRules ← getStr j "equalityRules" ctx
+    unless equalityRules == "reflAndSubstitution" do
+      throwError "backend evidence: {ctx}: unknown equalityRules '{equalityRules}' \
+        (only 'reflAndSubstitution' exists — Simpson's logical equality, sound \
+        against equality-correct structures)"
     let source ← getStr j "source" ctx
     if source.isEmpty then
       throwError "backend evidence: {ctx}: empty source — the pinned standard \
         calculus must carry its documentary source pin"
     pure { shell := p,
            data := .standardCalculusIdentity calculusId derivability soundness
-             sortAssumption source,
+             sortAssumption equalityRules source,
            roots := [] }
   | "calculusComparison" => do
     let stdRef ← getStr j "standardCalculusRecord" ctx
@@ -514,9 +520,9 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     | .ok j => pure j
   -- envelope
   let schema ← getStr json "schema" "evidence file"
-  unless schema == backendEvidenceSchemaV3 do
+  unless schema == backendEvidenceSchemaV4 do
     throwErrorAt path "backend evidence: unknown schema version '{schema}' (this \
-      reader accepts '{backendEvidenceSchemaV3}'); schema changes are versioned, never \
+      reader accepts '{backendEvidenceSchemaV4}'); schema changes are versioned, never \
       silently reinterpreted"
   let fpSchema ← getStr json "fingerprintSchema" "evidence file"
   unless fpSchema == fingerprintSchemaV1 do
@@ -591,7 +597,7 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
             not name a record in this file"
       let calculusId ← match calcRec.data with
         | .calculusIdentity cid _ _ _ => pure cid
-        | .standardCalculusIdentity cid _ _ _ _ => pure cid
+        | .standardCalculusIdentity cid _ _ _ _ _ => pure cid
         | d => throwErrorAt path "backend evidence: {ctx}: calculusRecord '{calcRef}' \
             has kind '{d.kindTag}', not a calculus identity (calculusIdentity or \
             standardCalculusIdentity)"
@@ -644,7 +650,7 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         | throwErrorAt path "backend evidence: {ctx}: standardCalculusRecord \
             '{stdRef}' does not name a record in this file"
       let stdId ← match stdRec.data with
-        | .standardCalculusIdentity cid _ _ _ _ => pure cid
+        | .standardCalculusIdentity cid _ _ _ _ _ => pure cid
         | d => throwErrorAt path "backend evidence: {ctx}: standardCalculusRecord \
             '{stdRef}' has kind '{d.kindTag}', not standardCalculusIdentity"
       let some cmpRec := resolved.find? (·.shell.id == cmpRef)
@@ -711,7 +717,7 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
           recordReasons := recordReasons.push "empty soundness name"
         if derivability.isEmpty then
           recordReasons := recordReasons.push "empty derivability name"
-      if let .standardCalculusIdentity _ derivability soundness _ _ := r.data then
+      if let .standardCalculusIdentity _ derivability soundness _ _ _ := r.data then
         if soundness.isEmpty then
           recordReasons := recordReasons.push "empty soundness name"
         if derivability.isEmpty then
@@ -798,14 +804,16 @@ def BackendEvidenceEntry.render (e : BackendEvidenceEntry) : String :=
       {witnessBase} (an ω-countermodel is in particular an L₂ countermodel; witness \
       provenance, not scope). Never an unqualified conventional-RCA₀ claim: the \
       theory-presentation comparison stays pending"
-  | .standardCalculusIdentity calculusId _ soundness sortAssumption source =>
-    s!"pinned standard calculus '{calculusId}' [{sortAssumption}]: direct soundness \
-      {soundness}, no completeness; source pin: {source} — the identification with \
+  | .standardCalculusIdentity calculusId _ soundness sortAssumption
+      equalityRules source =>
+    s!"pinned standard calculus '{calculusId}' [{sortAssumption}, equality \
+      {equalityRules}]: direct soundness {soundness} (against equality-correct \
+      structures), no completeness; source pin: {source} — the identification with \
       the source's prose logic is a documented reading, never a checked claim"
   | .calculusComparison _ _ relation stdId cmpId =>
-    s!"calculus comparison [{relation}]: '{stdId}' and '{cmpId}' are separately \
-      sound; no embedding in either direction — derivability never transfers \
-      between the calculi"
+    s!"calculus comparison [{relation}]: '{stdId}' and '{cmpId}' are independently \
+      sound; this record carries no embedding and licenses no derivability \
+      transfer between the calculi"
 
 /-- `#rm_backend_evidence`: display the backend-evidence records, sorted by id.
 External backend evidence only — never axioms, never certified counts, no port, no

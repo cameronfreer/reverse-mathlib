@@ -46,7 +46,7 @@ certified-facts section stays exactly the local kernel-checked facts.
 namespace ReverseMathlib.Ports
 
 rm_namespace rmFoundationBridge "cameronfreer/reverse-mathlib-foundation backend \
-  evidence (rmlib-bridge-evidence/3): the external checked ω-semantics bridge to \
+  evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to \
   FormalizedFormalLogic/Foundation — context-realization, statement-adapter, \
   calculus, calculus-comparison, and semantic-countermodel records ingested as \
   backend evidence, with interface fingerprints recomputed locally"
@@ -64,9 +64,9 @@ rm_external_ref rmFoundationBridge
 
 /- The artifact-publishing revision: the bridge commit whose tree contains the vendored
 artifact byte-for-byte. Necessarily distinct from the artifact's embedded export/check
-revision (`78cf94f…`) — by self-reference, the artifact cannot be committed at the
+revision (`ffcebe5…`) — by self-reference, the artifact cannot be committed at the
 revision it records. Both are stored, exported, and rendered. -/
 rm_ingest_bridge_evidence "imports/reverse-mathlib-foundation/rmlib-bridge-evidence.json"
-  artifactRevision := "ef55e711e17d21f3e075741e7e6eeee100e813b4"
+  artifactRevision := "13b9b6b379712a63ba8c8bb9f6bcf9775adadf3b"
 
 end ReverseMathlib.Ports

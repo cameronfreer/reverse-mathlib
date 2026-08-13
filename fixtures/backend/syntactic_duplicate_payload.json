@@ -1,9 +1,9 @@
 {
- "schema": "rmlib-bridge-evidence/3",
+ "schema": "rmlib-bridge-evidence/4",
  "fingerprintSchema": "lean-interface-expr/1",
  "source": {
   "toolchain": "leanprover/lean4:v4.32.2",
-  "revision": "78cf94f49b09494eb7c9daa318e95106ef9dec29",
+  "revision": "ffcebe521227125582ea93768cecfa5de0d8beab",
   "repository": "example/fixture-backend",
   "dependencies": {
    "reverse-mathlib": "cf2b730a957ee151f4d6975dafec1c5bfcb99fcd",
@@ -212,12 +212,13 @@
   },
   {
    "status": "backendChecked",
-   "source": "[Sim09] §I.2 (assumed two-sorted logic, nonempty sorts; bridge-defined LK presentation at the pinned Foundation rule shape, variable-witness ∃² rule)",
+   "source": "[Sim09] §I.2 (assumed two-sorted logic with equality, nonempty sorts; bridge-defined LK presentation at the pinned Foundation rule shape, variable-witness ∃² rule, equality reflexivity and substitution)",
    "soundness": "RMFoundationBridge.StdLKProvable.soundness",
    "sortAssumption": "nonemptySetSort",
    "kind": "standardCalculusIdentity",
    "id": "fix3.calculus.l2VarWitnessLK.v1",
    "export": "RMFoundationBridge.stdCalculusExport",
+   "equalityRules": "reflAndSubstitution",
    "derivability": "RMFoundationBridge.StdLKProvable",
    "calculusId": "l2VarWitnessLK.v1"
   },

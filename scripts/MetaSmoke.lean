@@ -1002,7 +1002,7 @@ namespaces (7):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
-  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/3): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
+  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -2144,7 +2144,7 @@ info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 cla
 #revmath_stats
 
 /-! ### Backend-evidence ingestion: encoder vectors, production artifact, fail-closed
-fixtures (schema `rmlib-bridge-evidence/3`) -/
+fixtures (schema `rmlib-bridge-evidence/4`) -/
 
 def _root_.ReverseMathlib.SmokeFixtures.encVecId : Nat → Nat := fun n => n
 
@@ -2204,7 +2204,7 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
       check ((e.render.splitOn "no embedding").length > 1)
         "comparison rendering states the embedding-free relation"
 
-/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/4' (this reader accepts 'rmlib-bridge-evidence/3'); schema changes are versioned, never silently reinterpreted -/
+/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/5' (this reader accepts 'rmlib-bridge-evidence/4'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
@@ -2293,9 +2293,9 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
   let prodEntries := entries.filter
     (·.repository == "cameronfreer/reverse-mathlib-foundation")
   for e in prodEntries do
-    check (e.revision == "78cf94f49b09494eb7c9daa318e95106ef9dec29")
+    check (e.revision == "ffcebe521227125582ea93768cecfa5de0d8beab")
       "production export/check revision is the artifact's embedded revision"
-    check (e.artifactRevision == "ef55e711e17d21f3e075741e7e6eeee100e813b4")
+    check (e.artifactRevision == "13b9b6b379712a63ba8c8bb9f6bcf9775adadf3b")
       "production artifact-publishing revision is stored distinctly"
     check (e.foundationRevision == "9800e78127294798496adc6e37c8b9ded637d93a")
       "Foundation pin preserved through ingestion"

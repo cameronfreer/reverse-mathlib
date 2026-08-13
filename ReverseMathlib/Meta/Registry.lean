@@ -94,7 +94,8 @@ inductive Verification where
   | claimed
   /-- Checked by the Lean kernel in this repository. -/
   | kernelChecked
-  /-- Checked by a reverse-mathematics backend (none exists yet). -/
+  /-- Checked by an external reverse-mathematics backend at pinned revisions (the
+  ω-semantics bridge is the one that exists). -/
   | backendChecked
   deriving Inhabited, Repr, BEq
 
@@ -356,7 +357,7 @@ typed locally (pin: reverse-mathlib cannot state Foundation's `Struc₂`
 predicates, so a backend record is more honest than a local fact). Never a
 certified fact, graph edge, port, or closure edge; counted only in the
 explicitly verification-qualified scoped-results scoreboard. Deduplication is
-by the semantic key `(kind, modelClass, theory, sentence)`, never by source
+by the semantic key `(kind, qualifierTag, qualifierId, theory, sentence)`, never by source
 id. -/
 structure ScopedResultEntry where
   /-- The semantic scope of the claim. -/

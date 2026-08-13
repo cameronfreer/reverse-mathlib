@@ -1,9 +1,9 @@
 {
- "schema": "rmlib-bridge-evidence/3",
+ "schema": "rmlib-bridge-evidence/4",
  "fingerprintSchema": "lean-interface-expr/1",
  "source": {
   "toolchain": "leanprover/lean4:v4.32.2",
-  "revision": "78cf94f49b09494eb7c9daa318e95106ef9dec29",
+  "revision": "ffcebe521227125582ea93768cecfa5de0d8beab",
   "repository": "example/fixture-backend",
   "dependencies": {
    "reverse-mathlib": "cf2b730a957ee151f4d6975dafec1c5bfcb99fcd",

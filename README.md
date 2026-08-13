@@ -68,12 +68,15 @@ Kept permanently distinct from the certified scoreboard:
   external checked bridge to
   [FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
   checked forward context realization and exact statement adapters for ŴKL/EFILC/Hall,
-  plus a calculus-relative nonderivability, ingested as pinned versioned JSON with
-  interface fingerprints recomputed locally; **converse context adequacy** and the
-  **standard-calculus comparison** remain pending. Backend evidence never adds a local
-  certified fact, graph edge, port, or closure edge — but the validated all-model
-  countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the ω-structure over
-  REC) contributes the one explicitly backend-qualified scoped result above.
+  plus calculus-relative nonderivability in the Henkin-safe calculus AND in the
+  bridge's pinned standard calculus `l2VarWitnessLK.v1` (with logical equality; a
+  typed comparison record states both calculi are independently sound and carries no
+  embedding); **converse context adequacy** remains pending. Backend evidence never
+  adds a local certified fact, graph edge, port, or closure edge — but the validated
+  all-model countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the
+  ω-structure over REC) and the validated standard-calculus nonderivability record
+  (`Rca0Theory ⊬ wklSentence in l2VarWitnessLK.v1`) contribute the two explicitly
+  backend-qualified scoped results above.
 - **A quantitative pilot**: Kohlenbach's metastability of bounded monotone sequences with
   an executable rational realizer — bounds, not rates
   ([docs/quantitative-pilot.md](docs/quantitative-pilot.md)).

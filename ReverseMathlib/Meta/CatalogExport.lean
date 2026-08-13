@@ -519,12 +519,13 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
                 ("witnessProvenance", Json.str witnessProvenance),
                 ("witnessBase", Json.str witnessBase)]
            | .standardCalculusIdentity calculusId derivability soundness
-               sortAssumption source =>
+               sortAssumption equalityRules source =>
              Json.mkObj
                [("calculusId", Json.str calculusId),
                 ("derivability", Json.str derivability),
                 ("soundness", Json.str soundness),
                 ("sortAssumption", Json.str sortAssumption),
+                ("equalityRules", Json.str equalityRules),
                 ("source", Json.str source)]
            | .calculusComparison standardCalculusRecord comparedCalculusRecord
                relation standardCalculusId comparedCalculusId =>
