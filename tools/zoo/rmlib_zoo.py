@@ -837,7 +837,8 @@ reduction: open head (pinned, external)</span>
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
                 f'granularity for orientation only; the per-family graphs below are '
-                f'canonical.</em></p>\n{fine_print}\n{legend_html()}\n{panel}')
+                f'canonical.</em></p>\n{fine_print}\n{legend_html()}\n{panel}\n'
+                f'{principles_section(catalog)}')
 
     def canonical_graphs_section() -> str:
         ag = catalog.get("ambientGraph", {})
@@ -1195,8 +1196,12 @@ dt {{ color: #666; font-size: 0.85rem; }}
 dd {{ margin: 0; overflow-wrap: anywhere; }}
 ul {{ margin: 0.3rem 0; padding-left: 1.2rem; }}
 li {{ margin: 0.25rem 0; overflow-wrap: anywhere; }}
-.principles dt {{ margin-top: 0.55rem; }}
-.principles dd {{ margin: 0.15rem 0 0 1.2rem; max-width: 62rem; }}
+#principles {{ background: #f4f8fc; border: 1px solid #cfe0ef; border-radius: 6px;
+  padding: 0.4rem 1.1rem 0.9rem; margin: 1rem 0 1.5rem; }}
+#principles h2 {{ margin-top: 0.5rem; }}
+.principles {{ font-size: 1.02rem; }}
+.principles dt {{ margin-top: 0.6rem; }}
+.principles dd {{ margin: 0.2rem 0 0 1.2rem; max-width: 62rem; }}
 .banner {{ background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
            border-radius: 6px; overflow-wrap: anywhere; }}
 .banner p {{ margin: 0.3rem 0; }}
@@ -1264,7 +1269,6 @@ syntactic: {scoreboard_cell(catalog, 'provability')}</p>
 {len([x for x in views.get('computed-closure', {}).get('edges', []) if x.get('family') == 'computedClosure'])} computed edges (view-only) ·
 {len(catalog.get('corpus', {}).get('claims', []))} corpus claims ·
 {len(catalog.get('corpus', {}).get('bridges', []))} missing bridges</p>
-{principles_section(catalog)}
 <p class="filters">Filter:
 <input type="text" id="ftext" placeholder="text, ids, theorems…" oninput="applyFilter()">
 <select id="ffam" onchange="applyFilter()"><option value="">all families</option>
@@ -1273,8 +1277,8 @@ syntactic: {scoreboard_cell(catalog, 'provability')}</p>
 <noscript>(filtering needs JavaScript; all content below is fully visible without
 it)</noscript></p>
 <nav class="toc"><strong>Contents:</strong>
-<a href="#principles">Principles</a> ·
 <a href="#overview">Overview</a> ·
+<a href="#principles">Principles</a> ·
 <a href="#facts-sec">Certified facts</a> ·
 <a href="#graphs">Canonical graphs</a> ·
 <a href="#concepts-sec">Concepts</a> ·
