@@ -436,6 +436,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append("an intra-concept fact appears more than once across "
                         "concept enclosures")
     problems.extend(check_scoped_results(catalog))
+    for name in selftest_base_context():
+        problems.append(f"base-context classifier selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -2255,6 +2257,7 @@ def build_family_views(catalog: dict) -> dict:
             "nodes": sorted(imp_nodes), "edges": imp_edges},
         "concept-projection": {
             "view": "concept-projection", "family": "mixed-direct-only",
+            "baseContextConcepts": sorted(base_context_concepts(catalog)),
             "comment": "NONCANONICAL, LOSSY projection to concept granularity; every "
                        "edge keeps family, scope, exact endpoint ids, and status; NO "
                        "TRANSITIVE CLOSURE — only validated display merges with named "
@@ -2279,11 +2282,52 @@ STYLE = {"ambientFactorization": 'style=solid',
          "computedClosure": 'style=dotted'}
 
 
+def base_context_concepts(catalog: dict) -> set[str]:
+    """Concepts identified as base contexts by TYPED data: a registered variant
+    whose Lean interface is exactly a semantic context's contextDecl at the same
+    layer. Never a hard-coded list, and never inferred from edge shapes — a
+    principle that merely appears as the source of a separation edge is NOT a
+    base context (see selftest_base_context)."""
+    ctx_keys = {(c.get("contextDecl"), c.get("layer"))
+                for c in catalog.get("semanticContexts", [])}
+    return {str(v.get("concept", "")).split(":", 1)[-1]
+            for v in catalog.get("statementVariants", [])
+            if (v.get("interface"), v.get("layer")) in ctx_keys}
+
+
+def selftest_base_context() -> list[str]:
+    """Adversarial fixture: an ordinary principle that is the source of a direct
+    nonimplication edge (and nothing else) must NOT be classified as a base
+    context; only a context-anchored variant interface qualifies. Returns the
+    scenarios that wrongly passed."""
+    cat = {
+        "semanticContexts": [
+            {"id": "ctx.l", "contextDecl": "Fix.CtxPred", "layer": "L"}],
+        "statementVariants": [
+            {"id": "ns:base.v", "concept": "ns:base",
+             "interface": "Fix.CtxPred", "layer": "L"},
+            # the adversary: a principle with its own interface, whose ONLY fact
+            # is a direct nonimplication p ⊭ q — edge shape must not matter
+            {"id": "ns:p.v", "concept": "ns:p",
+             "interface": "Fix.PPred", "layer": "L"},
+            {"id": "ns:q.v", "concept": "ns:q",
+             "interface": "Fix.QPred", "layer": "L"}],
+    }
+    base = base_context_concepts(cat)
+    bad = []
+    if "base" not in base:
+        bad.append("context-anchored concept not identified as base")
+    if "p" in base:
+        bad.append("nonimplication-source principle wrongly pinned as base")
+    if "q" in base:
+        bad.append("nonimplication-target principle wrongly pinned as base")
+    return bad
+
+
 def view_dot(name: str, view: dict) -> str:
-    # The concept projection reads bottom-up: base-context nodes — nodes that only
-    # ever appear as the source of separation (nonImplication) edges — sit on the
-    # bottom rank, with the interderivable principles as a blob above them. The
-    # rule is structural (computed from the edges), never a hard-coded node list.
+    # The concept projection reads bottom-up: base-context concepts — identified
+    # by typed data (base_context_concepts), never by edge shape — sit on the
+    # bottom rank, with the interderivable principles as a blob above them.
     bottom_up = name == "concept-projection"
     lines = [f'digraph "{name}" {{',
              f'  rankdir={"BT" if bottom_up else "LR"};', '  node [shape=box];']
@@ -2313,16 +2357,8 @@ def view_dot(name: str, view: dict) -> str:
             continue
         lines.append(f'  "{n}";')
     if bottom_up:
-        touched: dict[str, list] = {}
-        for e in view["edges"]:
-            src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
-            tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
-            touched.setdefault(src, []).append(("src", e))
-            touched.setdefault(tgt, []).append(("tgt", e))
-        base = [n for n in view["nodes"]
-                if n not in clusters and n in touched
-                and all(role == "src" and e.get("kind") == "nonImplication"
-                        for role, e in touched[n])]
+        base = [n for n in view.get("baseContextConcepts", [])
+                if n in view["nodes"] and n not in clusters]
         if base:
             lines.append('  {rank=min; '
                          + '; '.join(f'"{n}"' for n in sorted(base)) + ';}')
