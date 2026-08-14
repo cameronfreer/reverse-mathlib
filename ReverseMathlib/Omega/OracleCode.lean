@@ -49,6 +49,90 @@ inductive OracleCode : Type
 
 namespace OracleCode
 
+/-- A code for the constant function, mirroring `Nat.Partrec.Code.const`. -/
+protected def const : ℕ → OracleCode
+  | 0 => zero
+  | n + 1 => comp succ (OracleCode.const n)
+
+/-- A code for the identity function. -/
+protected def id : OracleCode :=
+  pair left right
+
+/-- Given a code `c` taking a pair as input, a code using `n` as the first argument to
+`c`, mirroring `Nat.Partrec.Code.curry`. -/
+def curry (c : OracleCode) (n : ℕ) : OracleCode :=
+  comp c (pair (OracleCode.const n) OracleCode.id)
+
+/-- An encoding of an `OracleCode` as a ℕ, mirroring `Nat.Partrec.Code.encodeCode`
+with the five base constructors at `0`–`4` and the composite offset at `5`. -/
+def encodeCode : OracleCode → ℕ
+  | zero => 0
+  | succ => 1
+  | left => 2
+  | right => 3
+  | oracle => 4
+  | pair cf cg => 2 * (2 * Nat.pair (encodeCode cf) (encodeCode cg)) + 5
+  | comp cf cg => 2 * (2 * Nat.pair (encodeCode cf) (encodeCode cg) + 1) + 5
+  | prec cf cg => (2 * (2 * Nat.pair (encodeCode cf) (encodeCode cg)) + 1) + 5
+  | rfind' cf => (2 * (2 * encodeCode cf + 1) + 1) + 5
+
+/-- The decoder, mirroring `Nat.Partrec.Code.ofNatCode`. -/
+def ofNatCode : ℕ → OracleCode
+  | 0 => zero
+  | 1 => succ
+  | 2 => left
+  | 3 => right
+  | 4 => oracle
+  | n + 5 =>
+    let m := n.div2.div2
+    have hm : m < n + 5 := by
+      simp only [m, Nat.div2_val]
+      exact
+        lt_of_le_of_lt (le_trans (Nat.div_le_self _ _) (Nat.div_le_self _ _))
+          (Nat.succ_le_succ (Nat.le_add_right _ _))
+    have _m1 : m.unpair.1 < n + 5 := lt_of_le_of_lt m.unpair_left_le hm
+    have _m2 : m.unpair.2 < n + 5 := lt_of_le_of_lt m.unpair_right_le hm
+    match n.bodd, n.div2.bodd with
+    | false, false => pair (ofNatCode m.unpair.1) (ofNatCode m.unpair.2)
+    | false, true => comp (ofNatCode m.unpair.1) (ofNatCode m.unpair.2)
+    | true, false => prec (ofNatCode m.unpair.1) (ofNatCode m.unpair.2)
+    | true, true => rfind' (ofNatCode m)
+
+private theorem encode_ofNatCode : ∀ n, encodeCode (ofNatCode n) = n
+  | 0 => by simp [ofNatCode, encodeCode]
+  | 1 => by simp [ofNatCode, encodeCode]
+  | 2 => by simp [ofNatCode, encodeCode]
+  | 3 => by simp [ofNatCode, encodeCode]
+  | 4 => by simp [ofNatCode, encodeCode]
+  | n + 5 => by
+    let m := n.div2.div2
+    have hm : m < n + 5 := by
+      simp only [m, Nat.div2_val]
+      exact
+        lt_of_le_of_lt (le_trans (Nat.div_le_self _ _) (Nat.div_le_self _ _))
+          (Nat.succ_le_succ (Nat.le_add_right _ _))
+    have _m1 : m.unpair.1 < n + 5 := lt_of_le_of_lt m.unpair_left_le hm
+    have _m2 : m.unpair.2 < n + 5 := lt_of_le_of_lt m.unpair_right_le hm
+    have IH := encode_ofNatCode m
+    have IH1 := encode_ofNatCode m.unpair.1
+    have IH2 := encode_ofNatCode m.unpair.2
+    conv_rhs => rw [← Nat.bit_bodd_div2 n, ← Nat.bit_bodd_div2 n.div2]
+    simp only [ofNatCode.eq_6]
+    cases n.bodd <;> cases n.div2.bodd <;>
+      simp [m, encodeCode, IH, IH1, IH2, Nat.bit_val]
+
+instance instDenumerable : Denumerable OracleCode :=
+  Denumerable.mk'
+    ⟨encodeCode, ofNatCode, fun c => by
+        induction c <;> simp [encodeCode, ofNatCode, Nat.div2_val, *],
+      encode_ofNatCode⟩
+
+theorem encodeCode_eq : Encodable.encode = encodeCode :=
+  rfl
+
+theorem ofNatCode_eq : Denumerable.ofNat OracleCode = ofNatCode :=
+  rfl
+
 /-- Unbounded evaluation of an oracle code against a partial oracle, mirroring
 `Nat.Partrec.Code.eval`; the `oracle` clause is the oracle itself. -/
 def eval (o : ℕ →. ℕ) : OracleCode → ℕ →. ℕ
@@ -67,6 +151,20 @@ def eval (o : ℕ →. ℕ) : OracleCode → ℕ →. ℕ
   | rfind' cf =>
     Nat.unpaired fun a m =>
       (Nat.rfind fun n => (fun m => m = 0) <$> eval o cf (Nat.pair a (n + m))).map (· + m)
+
+@[simp]
+theorem eval_const (o : ℕ →. ℕ) : ∀ n m, eval o (OracleCode.const n) m = Part.some n
+  | 0, _ => rfl
+  | n + 1, m => by simp! [eval_const o n m]
+
+@[simp]
+theorem eval_id (o : ℕ →. ℕ) (n : ℕ) : eval o OracleCode.id n = Part.some n := by
+  simp [OracleCode.id, eval, Seq.seq]
+
+@[simp]
+theorem eval_curry (o : ℕ →. ℕ) (c : OracleCode) (n x : ℕ) :
+    eval o (curry c n) x = eval o c (Nat.pair n x) := by
+  simp [curry, eval, Seq.seq]
 
 /-- Step-bounded evaluation against a **total** oracle, mirroring
 `Nat.Partrec.Code.evaln`: inputs are guarded by the fuel, and the `oracle` clause
