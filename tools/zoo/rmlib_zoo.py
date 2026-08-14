@@ -2280,7 +2280,13 @@ STYLE = {"ambientFactorization": 'style=solid',
 
 
 def view_dot(name: str, view: dict) -> str:
-    lines = [f'digraph "{name}" {{', '  rankdir=LR;', '  node [shape=box];']
+    # The concept projection reads bottom-up: base-context nodes — nodes that only
+    # ever appear as the source of separation (nonImplication) edges — sit on the
+    # bottom rank, with the interderivable principles as a blob above them. The
+    # rule is structural (computed from the edges), never a hard-coded node list.
+    bottom_up = name == "concept-projection"
+    lines = [f'digraph "{name}" {{',
+             f'  rankdir={"BT" if bottom_up else "LR"};', '  node [shape=box];']
     clusters = view.get("clusters", {})
     anchors = {}
     if clusters:
@@ -2306,6 +2312,20 @@ def view_dot(name: str, view: dict) -> str:
         if n in clusters:
             continue
         lines.append(f'  "{n}";')
+    if bottom_up:
+        touched: dict[str, list] = {}
+        for e in view["edges"]:
+            src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
+            tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+            touched.setdefault(src, []).append(("src", e))
+            touched.setdefault(tgt, []).append(("tgt", e))
+        base = [n for n in view["nodes"]
+                if n not in clusters and n in touched
+                and all(role == "src" and e.get("kind") == "nonImplication"
+                        for role, e in touched[n])]
+        if base:
+            lines.append('  {rank=min; '
+                         + '; '.join(f'"{n}"' for n in sorted(base)) + ';}')
     for e in view["edges"]:
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
