@@ -50,8 +50,10 @@ rm_semantic_context rca0.turingIdealOmega where
     ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence \
     (rmFoundationBridge) adds: checked forward context realization (every Turing ideal \
     satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked \
-    unconditional statement adapters; converse context adequacy remains pending, and the \
-    backend calculus's standard-calculus comparison remains pending."
+    unconditional statement adapters, with nonderivability recorded in the Henkin-safe \
+    calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently \
+    sound; the typed comparison record carries no embedding and licenses no \
+    derivability transfer); converse context adequacy remains pending."
 
 rm_statement_variant wkl.binaryTree.turingIdealOmega where
   concept := wkl

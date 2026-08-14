@@ -35,7 +35,7 @@ import subprocess
 import sys
 from pathlib import Path
 
-SCHEMA_ID = "reverse-mathlib.catalog/v6"
+SCHEMA_ID = "reverse-mathlib.catalog/v7"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
@@ -183,7 +183,9 @@ def cmd_check(args: argparse.Namespace) -> None:
     if len(be_ids) != len(set(be_ids)):
         problems.append("duplicate ids in backendEvidence")
     BE_KINDS = {"contextRealization", "statementAdapter", "calculusIdentity",
-                "calculusNonderivability", "semanticCountermodel"}
+                "calculusNonderivability", "semanticCountermodel",
+                "standardCalculusIdentity", "calculusComparison"}
+    be_kind_of = {x["id"]: x.get("kind") for x in bes}
     for r in bes:
         rid = r.get("id")
         if r.get("kind") not in BE_KINDS:
@@ -218,16 +220,57 @@ def cmd_check(args: argparse.Namespace) -> None:
                     problems.append(f"backendEvidence {rid}: rendering must carry the "
                                     f"scope, witness-provenance, and honesty markers "
                                     f"(missing {marker!r})")
+        if r.get("kind") == "calculusIdentity":
+            if r.get("data", {}).get("standardComparison") not in ("pending", "recorded"):
+                problems.append(f"backendEvidence {rid}: unknown standardComparison tag")
+        if r.get("kind") == "standardCalculusIdentity":
+            data = r.get("data", {})
+            if data.get("sortAssumption") != "nonemptySetSort":
+                problems.append(f"backendEvidence {rid}: unknown sortAssumption tag")
+            if data.get("equalityRules") != "reflAndSubstitution":
+                problems.append(f"backendEvidence {rid}: unknown equalityRules tag")
+            if not data.get("source"):
+                problems.append(f"backendEvidence {rid}: missing documentary source pin")
+            rendered = r.get("display", {}).get("rendered", "")
+            for marker in (data.get("calculusId", ""), "no completeness",
+                           "never a checked claim", "reflAndSubstitution",
+                           "equality-correct"):
+                if not marker or marker not in rendered:
+                    problems.append(f"backendEvidence {rid}: rendering must carry the "
+                                    f"calculus id, the equality qualification, and "
+                                    f"the documented-reading honesty markers "
+                                    f"(missing {marker!r})")
+        if r.get("kind") == "calculusComparison":
+            data = r.get("data", {})
+            if data.get("relation") != "independentDirectSoundness":
+                problems.append(f"backendEvidence {rid}: unknown comparison relation")
+            if be_kind_of.get(data.get("standardCalculusRecord")) != \
+                    "standardCalculusIdentity":
+                problems.append(f"backendEvidence {rid}: standardCalculusRecord must "
+                                "reference a standardCalculusIdentity record")
+            if be_kind_of.get(data.get("comparedCalculusRecord")) != "calculusIdentity":
+                problems.append(f"backendEvidence {rid}: comparedCalculusRecord must "
+                                "reference a calculusIdentity record")
+            rendered = r.get("display", {}).get("rendered", "")
+            if "carries no embedding and licenses no derivability transfer" \
+                    not in rendered:
+                problems.append(f"backendEvidence {rid}: rendering must state exactly "
+                                "the approved embedding-free relation")
         if r.get("kind") == "calculusNonderivability":
             data = r.get("data", {})
             for ref_field in ("calculusRecord", "sentenceAdapter"):
                 if data.get(ref_field) not in be_ids:
                     problems.append(f"backendEvidence {rid}: broken record reference "
                                     f"{ref_field}={data.get(ref_field)!r}")
+            if be_kind_of.get(data.get("calculusRecord")) not in (
+                    "calculusIdentity", "standardCalculusIdentity"):
+                problems.append(f"backendEvidence {rid}: calculusRecord must reference "
+                                "a calculus identity record")
             rendered = r.get("display", {}).get("rendered", "")
-            if "pending" not in rendered or data.get("calculusId", "") not in rendered:
+            if data.get("calculusId", "") not in rendered or \
+                    "never an unqualified" not in rendered:
                 problems.append(f"backendEvidence {rid}: rendering must carry the "
-                                "calculus id and the pending comparison qualifier")
+                                "calculus id and refuse the unqualified reading")
     notion_ids = {x["id"] for x in catalog.get("reducibilityNotions", [])}
     uprob_ids = {x["id"].split(":", 1)[-1] for x in catalog.get("uniformProblems", [])}
     DEGREES = {"exact", "representative", "variantSensitive", "notAssigned"}
@@ -1083,11 +1126,14 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             "interface fingerprints recomputed locally at ingestion. Kept distinct: "
             "checked forward context realization (one-way — never unrestricted "
             "semantic RCA₀ claims); checked unconditional statement adapters; "
-            "converse context adequacy still pending; the nonderivability is "
-            "calculus-relative with the standard-calculus comparison still pending. "
+            "converse context adequacy still pending; each nonderivability is "
+            "calculus-relative (Henkin-safe and the pinned standard calculus "
+            "l2VarWitnessLK.v1, independently sound — the typed comparison record "
+            "carries no embedding and licenses no derivability transfer). "
             "No local certified fact, no graph edge, no port, no closure edge; the "
-            "validated semantic-countermodel record contributes exactly the "
-            "backend-qualified all-model scoped result.</em></p>\n")
+            "validated semantic-countermodel and standard-calculus nonderivability "
+            "records contribute exactly the backend-qualified all-model and "
+            "syntactic scoped results.</em></p>\n")
 
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
@@ -1246,8 +1292,10 @@ literature-backed. The <em>backend</em> records come from the external checked
 realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on
 ω-structures) and exact statement adapters for ŴKL/EFILC/Hall are <strong>checked</strong>
 at pinned revisions with interface fingerprints recomputed locally, while converse
-context adequacy and the backend calculus's standard-calculus comparison remain
-pending. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
+context adequacy remains pending; nonderivability is recorded in both the Henkin-safe
+calculus and the pinned standard calculus l2VarWitnessLK.v1, independently sound, with
+a typed comparison record that carries no embedding and licenses no derivability
+transfer. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
 machine-model repository at pinned revisions and ingested as external evidence, never
 axioms. The <em>corpus</em> holds reported literature findings at pinned snapshots, with
 missing presentation bridges named explicitly; an absence finding means not found in
@@ -1777,17 +1825,42 @@ def scoreboard_cell(catalog: dict, scope: str) -> str:
     return f"{total} ({kc} kernelChecked, {bc} backendChecked)"
 
 
+def scoped_qualifying(catalog: dict) -> dict[str, tuple]:
+    """The backend records REQUIRED to have exactly one scoped result each, mapped to
+    their expected (scope, kind, qualifierTag, qualifierId, theory, sentence) tuple:
+    backendChecked semanticCountermodels (all-model column, modelClass qualifier) and
+    backendChecked calculusNonderivability records whose calculusRecord references a
+    standardCalculusIdentity (syntactic column, calculus qualifier — the Henkin-safe
+    nonderivability never counts)."""
+    bes = catalog.get("backendEvidence", [])
+    be_kind_of = {x.get("id"): x.get("kind") for x in bes}
+    out: dict[str, tuple] = {}
+    for r in bes:
+        if r.get("status") != "backendChecked":
+            continue
+        data = r.get("data", {})
+        if r.get("kind") == "semanticCountermodel":
+            out[r["id"]] = ("allModels", "semanticCountermodel", "modelClass",
+                            data.get("modelClass"), data.get("theory"),
+                            data.get("sentence"))
+        elif (r.get("kind") == "calculusNonderivability"
+              and be_kind_of.get(data.get("calculusRecord"))
+                  == "standardCalculusIdentity"):
+            out[r["id"]] = ("provability", "calculusNonderivability", "calculus",
+                            data.get("calculusId"), data.get("theory"),
+                            data.get("sentence"))
+    return out
+
+
 def check_scoped_results(catalog: dict) -> list[str]:
     """Bidirectional fail-closed validation of the scopedResults family: every entry
-    must reference a backendChecked semanticCountermodel with an agreeing semantic
-    key, AND every backendChecked semanticCountermodel must have exactly one entry —
-    deleting the family or its sole entry is a reported failure, never a silent
+    must reference a qualifying backendChecked record with an agreeing typed semantic
+    key (qualifier tag and id included), AND every qualifying record must have exactly
+    one entry — deleting the family or any entry is a reported failure, never a silent
     pass. Entries must be sorted by unique sourceIds; semantic keys unique."""
     problems: list[str] = []
-    bes = catalog.get("backendEvidence", [])
     srs = catalog.get("scopedResults", [])
-    qualifying = [r for r in bes if r.get("kind") == "semanticCountermodel"
-                  and r.get("status") == "backendChecked"]
+    qualifying = scoped_qualifying(catalog)
     sids = [sr.get("sourceId") for sr in srs]
     if sids != sorted(sids):
         problems.append("scopedResults not sorted by sourceId")
@@ -1795,31 +1868,26 @@ def check_scoped_results(catalog: dict) -> list[str]:
         problems.append("duplicate sourceIds in scopedResults")
     for sr in srs:
         sid = sr.get("sourceId")
-        if sr.get("scope") != "allModels" or sr.get("verification") != "backendChecked":
-            problems.append(f"scopedResults {sid}: unknown scope/verification")
-        src_rec = next((x for x in bes if x["id"] == sid), None)
-        if src_rec is None:
+        if sr.get("verification") != "backendChecked":
+            problems.append(f"scopedResults {sid}: unknown verification")
+        expected = qualifying.get(sid)
+        if expected is None:
             problems.append(f"scopedResults {sid}: sourceId does not reference a "
-                            "backendEvidence record")
-        else:
-            if src_rec.get("kind") != "semanticCountermodel" or \
-                    src_rec.get("status") != "backendChecked":
-                problems.append(f"scopedResults {sid}: source record must be a "
-                                "backendChecked semanticCountermodel")
-            data = src_rec.get("data", {})
-            if (sr.get("kind"), sr.get("modelClass"), sr.get("theory"),
-                    sr.get("sentence")) != ("semanticCountermodel",
-                    data.get("modelClass"), data.get("theory"), data.get("sentence")):
-                problems.append(f"scopedResults {sid}: semantic key disagrees with "
-                                "the source record's data")
-    for q in qualifying:
-        n = sids.count(q["id"])
+                            "qualifying backendChecked record")
+            continue
+        actual = (sr.get("scope"), sr.get("kind"), sr.get("qualifierTag"),
+                  sr.get("qualifierId"), sr.get("theory"), sr.get("sentence"))
+        if actual != expected:
+            problems.append(f"scopedResults {sid}: typed semantic key disagrees with "
+                            "the source record's data")
+    for qid in qualifying:
+        n = sids.count(qid)
         if n != 1:
-            problems.append(f"backendChecked semanticCountermodel {q['id']!r} has "
+            problems.append(f"qualifying backendChecked record {qid!r} has "
                             f"{n} scoped results (exactly one required — omission "
                             "and duplication both fail)")
-    sr_keys = [(x.get("kind"), x.get("modelClass"), x.get("theory"), x.get("sentence"))
-               for x in srs]
+    sr_keys = [(x.get("kind"), x.get("qualifierTag"), x.get("qualifierId"),
+                x.get("theory"), x.get("sentence")) for x in srs]
     if len(sr_keys) != len(set(sr_keys)):
         problems.append("duplicate semantic keys in scopedResults")
     return problems
@@ -1828,25 +1896,58 @@ def check_scoped_results(catalog: dict) -> list[str]:
 def selftest_scoped_results() -> list[str]:
     """Omission/tamper fixtures: each mutation of a minimal valid catalog must be
     reported by check_scoped_results. Returns fixtures that wrongly passed."""
-    rec = {"id": "cm.1", "kind": "semanticCountermodel", "status": "backendChecked",
-           "data": {"modelClass": "foundationStruc2General", "theory": "T",
-                    "sentence": "S"}}
-    sr = {"sourceId": "cm.1", "scope": "allModels", "verification": "backendChecked",
-          "kind": "semanticCountermodel", "modelClass": "foundationStruc2General",
-          "theory": "T", "sentence": "S"}
-    good = {"backendEvidence": [rec], "scopedResults": [sr]}
+    cm = {"id": "cm.1", "kind": "semanticCountermodel", "status": "backendChecked",
+          "data": {"modelClass": "foundationStruc2General", "theory": "T",
+                   "sentence": "S"}}
+    stdc = {"id": "calc.std", "kind": "standardCalculusIdentity",
+            "status": "backendChecked",
+            "data": {"calculusId": "stdLK.v1", "sortAssumption": "nonemptySetSort",
+                     "source": "doc"}}
+    nd = {"id": "nd.1", "kind": "calculusNonderivability", "status": "backendChecked",
+          "data": {"calculusRecord": "calc.std", "calculusId": "stdLK.v1",
+                   "theory": "T", "sentence": "S"}}
+    sr_cm = {"sourceId": "cm.1", "scope": "allModels",
+             "verification": "backendChecked", "kind": "semanticCountermodel",
+             "qualifierTag": "modelClass", "qualifierId": "foundationStruc2General",
+             "theory": "T", "sentence": "S"}
+    sr_nd = {"sourceId": "nd.1", "scope": "provability",
+             "verification": "backendChecked", "kind": "calculusNonderivability",
+             "qualifierTag": "calculus", "qualifierId": "stdLK.v1",
+             "theory": "T", "sentence": "S"}
+    recs = [cm, stdc, nd]
+    good = {"backendEvidence": recs, "scopedResults": [sr_cm, sr_nd]}
     if check_scoped_results(good):
         return ["minimal valid catalog wrongly rejected"]
     bad = {
-        "whole family deleted": {"backendEvidence": [rec]},
-        "sole entry deleted": {"backendEvidence": [rec], "scopedResults": []},
-        "entry duplicated": {"backendEvidence": [rec], "scopedResults": [sr, sr]},
-        "semantic key tampered": {"backendEvidence": [rec], "scopedResults":
-            [{**sr, "sentence": "S2"}]},
-        "verification tampered": {"backendEvidence": [rec], "scopedResults":
-            [{**sr, "verification": "kernelChecked"}]},
-        "dangling sourceId": {"backendEvidence": [rec], "scopedResults":
-            [sr, {**sr, "sourceId": "cm.2"}]},
+        "whole family deleted": {"backendEvidence": recs},
+        "all-model entry deleted": {"backendEvidence": recs,
+                                    "scopedResults": [sr_nd]},
+        "syntactic entry deleted": {"backendEvidence": recs,
+                                    "scopedResults": [sr_cm]},
+        "entry duplicated": {"backendEvidence": recs,
+                             "scopedResults": [sr_cm, sr_cm, sr_nd]},
+        "semantic key tampered": {"backendEvidence": recs,
+                                  "scopedResults": [{**sr_cm, "sentence": "S2"},
+                                                    sr_nd]},
+        "qualifier tag swapped": {"backendEvidence": recs,
+                                  "scopedResults": [sr_cm,
+                                      {**sr_nd, "qualifierTag": "modelClass"}]},
+        "verification tampered": {"backendEvidence": recs,
+                                  "scopedResults": [{**sr_cm,
+                                      "verification": "kernelChecked"}, sr_nd]},
+        "dangling sourceId": {"backendEvidence": recs,
+                              "scopedResults": [{**sr_cm, "sourceId": "cm.0"},
+                                                sr_nd]},
+        "scoreboard smuggling via the henkin record": {
+            "backendEvidence": [cm, stdc, nd,
+                {"id": "nd.henkin", "kind": "calculusNonderivability",
+                 "status": "backendChecked",
+                 "data": {"calculusRecord": "calc.other",
+                          "calculusId": "henkinSafeV1",
+                          "theory": "T", "sentence": "S"}}],
+            "scopedResults": [sr_cm, sr_nd,
+                {**sr_nd, "sourceId": "nd.henkin",
+                 "qualifierId": "henkinSafeV1"}]},
     }
     return [name for name, cat in bad.items() if not check_scoped_results(cat)]
 
@@ -2311,6 +2412,13 @@ def cmd_build(args: argparse.Namespace) -> None:
                    "canonical direct-only graphs and every certified count"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
+    for retired in ("standard-calculus comparison remains pending",
+                    "standard-calculus comparison still pending",
+                    "standard-calculus comparison remain"):
+        if retired in page:
+            sys.exit(f"rmlib-zoo build: retired claim present: {retired!r} — the "
+                     "comparison is recorded (independent soundness, no embedding, "
+                     "no derivability transfer)")
     legend_count = page.count('<div class="legend"')
     if legend_count != 1:
         sys.exit(f"rmlib-zoo build: expected exactly one legend placement (under the "

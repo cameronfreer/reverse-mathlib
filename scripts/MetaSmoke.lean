@@ -869,10 +869,10 @@ renders its honest verdict. -/
 -- countableHall family), the injection-graph disjoint-range separationω ⇔ WKLω
 -- equivalence, and the RCA₀-core ⊭ω WKL
 -- separation — plus the one backend-qualified all-model scoped result (the bridge's
--- countermodel record) and zero syntactic. The Hall claim is an upper implication
+-- countermodel record) and the one backend-qualified syntactic scoped result (the bridge's standard-calculus nonderivability). The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 5; variants: 10; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 5; variants: 10; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1002,7 +1002,7 @@ namespaces (7):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
-  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/2): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
+  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -1284,7 +1284,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 6; variants: 12; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 12; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1635,7 +1635,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 6; variants: 14; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 14; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1891,15 +1891,15 @@ info: facts (15):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   disjointRangeSeparationWklOmega [equivalence | theory rca0 omegaModels] disjointRangeSeparation.injectionGraphs.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.disjointRangeSeparation_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the four named frozen theorems: weakKonigAt_of_disjointRangeSeparationAt (separation → WKL, the independent tree-to-injections calibration) and matching_separates ∘ twoRegularPerfectMatchingAt_of_efilcAt ∘ efilcAt_of_weakKonigAt (WKL → separation); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.efilc_hall_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem countableHallAt_of_efilcAt; its route architecture and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
   fixEqFact [equivalence | theory fixRca0 omegaModels] smokeModelVarP <=> smokeModelVarPAlt — CERTIFIED
@@ -1921,15 +1921,15 @@ info: facts (15):
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
       note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: nonimplication (countermodel) kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: nonimplication (countermodel) kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the four named route theorems: matching_separates then weakKonigAt_of_disjointRangeSeparationAt (the reversal, through the bridge-local unregistered disjoint-range separation interface), and efilcAt_of_weakKonigAt then twoRegularPerfectMatchingAt_of_efilcAt (the forward, through the frozen EFILC bridge); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters; converse context adequacy remains pending, and the backend calculus's standard-calculus comparison remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
 -/
 #guard_msgs in
 #revmath_facts
@@ -1938,7 +1938,7 @@ info: facts (15):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2041,7 +2041,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2138,13 +2138,13 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
 
 /-! ### Backend-evidence ingestion: encoder vectors, production artifact, fail-closed
-fixtures (schema `rmlib-bridge-evidence/2`) -/
+fixtures (schema `rmlib-bridge-evidence/4`) -/
 
 def _root_.ReverseMathlib.SmokeFixtures.encVecId : Nat → Nat := fun n => n
 
@@ -2164,14 +2164,14 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
     pinned verbatim"
 
 -- The production artifact is the main cross-implementation conformance fixture: all
--- seven records ingested (by `Ports.FoundationBridge`) as `backendChecked` — matching
+-- ten records ingested (by `Ports.FoundationBridge`) as `backendChecked` — matching
 -- toolchain, matching mathlib, complete checking coordinates, and an exactly-matching
 -- locally recomputed interface manifest.
 #eval show CoreM Unit from do
   let env ← getEnv
   let entries := backendEvidenceExt.getState env
   let prod := entries.filter (·.repository == "cameronfreer/reverse-mathlib-foundation")
-  check (prod.size == 7) "production artifact: exactly seven records"
+  check (prod.size == 10) "production artifact: exactly ten records"
   for e in prod do
     let why := e.downgraded?.getD "none"
     check (e.status == .backendChecked)
@@ -2182,18 +2182,35 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
     "three statement adapters"
   check ((prod.filter (·.data.kindTag == "calculusIdentity")).size == 1)
     "one calculus identity"
-  check ((prod.filter (·.data.kindTag == "calculusNonderivability")).size == 1)
-    "one calculus-relative nonderivability"
-  -- scope-safe rendering: the nonderivability rendering carries its calculus id and
-  -- the pending qualifier, generated from the typed fields
+  check ((prod.filter (·.data.kindTag == "standardCalculusIdentity")).size == 1)
+    "one pinned standard-calculus identity"
+  check ((prod.filter (·.data.kindTag == "calculusComparison")).size == 1)
+    "one typed calculus comparison"
+  check ((prod.filter (·.data.kindTag == "calculusNonderivability")).size == 2)
+    "two calculus-relative nonderivability records (henkinSafeV1 and the pinned \
+      standard calculus)"
+  -- scope-safe rendering: each nonderivability rendering carries its calculus id;
+  -- the comparison rendering carries its embedding-free relation
   for e in prod do
     if let .calculusNonderivability _ _ calculusId _ _ := e.data then
       check ((e.render.splitOn calculusId).length > 1)
         "nonderivability rendering names its calculus"
-      check ((e.render.splitOn "pending").length > 1)
-        "nonderivability rendering carries the pending comparison qualifier"
+      check ((e.render.splitOn "never an unqualified").length > 1)
+        "nonderivability rendering refuses the unqualified reading"
+    if let .calculusComparison _ _ _ stdId cmpId := e.data then
+      check ((e.render.splitOn stdId).length > 1 &&
+          (e.render.splitOn cmpId).length > 1)
+        "comparison rendering names both calculi"
+      check ((e.render.splitOn
+          "carries no embedding and licenses no derivability transfer").length > 1)
+        "comparison rendering states exactly the approved embedding-free relation"
+    if let .standardCalculusIdentity _ _ _ _ equalityRules _ := e.data then
+      check ((e.render.splitOn equalityRules).length > 1 &&
+          (e.render.splitOn "equality-correct").length > 1)
+        "standard-calculus rendering carries the equality rules and the \
+          equality-correct qualification"
 
-/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/3' (this reader accepts 'rmlib-bridge-evidence/2'); schema changes are versioned, never silently reinterpreted -/
+/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/5' (this reader accepts 'rmlib-bridge-evidence/4'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
@@ -2237,7 +2254,10 @@ rm_ingest_bridge_evidence "fixtures/backend/coverage_mismatch.json" artifactRevi
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/unknown_tag.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
-/-- error: backend evidence: record 'fix.refkind': calculusRecord 'fix.adapterA' has kind 'statementAdapter', not calculusIdentity -/
+/--
+
+error: backend evidence: record 'fix.refkind': calculusRecord 'fix.adapterA' has kind 'statementAdapter', not a calculus identity (calculusIdentity or standardCalculusIdentity)
+-/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/ref_kind_mismatch.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
@@ -2279,9 +2299,9 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
   let prodEntries := entries.filter
     (·.repository == "cameronfreer/reverse-mathlib-foundation")
   for e in prodEntries do
-    check (e.revision == "d3bf116b5b87e81cd3cdbc98062205eb50727ece")
+    check (e.revision == "ffcebe521227125582ea93768cecfa5de0d8beab")
       "production export/check revision is the artifact's embedded revision"
-    check (e.artifactRevision == "020b7a85212b1d873fa3e33ff65a3f21db5d5952")
+    check (e.artifactRevision == "13b9b6b379712a63ba8c8bb9f6bcf9775adadf3b")
       "production artifact-publishing revision is stored distinctly"
     check (e.foundationRevision == "9800e78127294798496adc6e37c8b9ded637d93a")
       "Foundation pin preserved through ingestion"
@@ -2304,14 +2324,42 @@ error: backend evidence: record 'fix.cmclass': unknown modelClass 'fullPowerset'
 rm_ingest_bridge_evidence "fixtures/backend/countermodel_unknown_modelclass.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /--
-error: backend evidence: record 'fix.cmdup': duplicate semantic payload — a checked scoped result with key (semanticCountermodel, foundationStruc2General, RMFoundationBridge.Rca0Theory, RMFoundationBridge.wklSentence) already exists; duplicate semantic payloads fail hard, never silently deduplicate
+error: backend evidence: record 'fix.cmdup': duplicate semantic payload — a checked scoped result with key (semanticCountermodel, modelClass, foundationStruc2General, RMFoundationBridge.Rca0Theory, RMFoundationBridge.wklSentence) already exists; duplicate semantic payloads fail hard, never silently deduplicate
 -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/countermodel_duplicate_payload.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
--- The scoped-result surface holds EXACTLY the production countermodel — one entry,
--- backendChecked, at the exact semantic key; every fixture ingestion above (hard
--- errors and downgrades alike) contributed nothing.
+-- Standard-calculus trust boundary: an unknown sort assumption fails hard (closed
+-- tags), a comparison whose standard reference is not a standardCalculusIdentity
+-- fails hard, and a duplicate syntactic payload fails hard.
+/--
+error: backend evidence: record 'fix3.calculus.l2VarWitnessLK.v1': unknown sortAssumption 'emptySortsAllowed' (only 'nonemptySetSort' exists — the standard calculus's theory-level soundness consumes a nonempty designated part)
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/stdcalc_unknown_sortassumption.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/--
+error: backend evidence: record 'fix3.calculus.l2VarWitnessLK.v1': unknown equalityRules 'reflexivityOnly' (only 'reflAndSubstitution' exists — Simpson's logical equality, sound against equality-correct structures)
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/stdcalc_unknown_equalityrules.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/--
+error: backend evidence: record 'fix3.calculus.comparison.l2VarWitnessLK.henkinSafeV1': standardCalculusRecord 'fix3.calculus.henkinSafeV1' has kind 'calculusIdentity', not standardCalculusIdentity
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/comparison_wrong_kind.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/--
+error: backend evidence: record 'fix3.nonderivability.rca0.wkl.l2VarWitnessLK.v1': duplicate semantic payload — a checked scoped result with key (calculusNonderivability, calculus, l2VarWitnessLK.v1, RMFoundationBridge.Rca0Theory, RMFoundationBridge.wklSentence) already exists; duplicate semantic payloads fail hard, never silently deduplicate
+-/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/syntactic_duplicate_payload.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+-- The scoped-result surface holds EXACTLY the production countermodel and the
+-- production standard-calculus nonderivability — one entry per column, both
+-- backendChecked, at the exact typed semantic keys; every fixture ingestion above
+-- (hard errors and downgrades alike) contributed nothing.
 #eval show CoreM Unit from do
   let env ← getEnv
   let scopedRes := scopedResultExt.getState env
@@ -2320,17 +2368,29 @@ rm_ingest_bridge_evidence "fixtures/backend/countermodel_duplicate_payload.json"
   let some e := allM[0]? | throwError "missing scoped result"
   check (e.verification == .backendChecked) "scoped result is backendChecked"
   check (e.kind == "semanticCountermodel" &&
-    e.modelClass == "foundationStruc2General" &&
+    e.qualifierTag == "modelClass" &&
+    e.qualifierId == "foundationStruc2General" &&
     e.theory == "RMFoundationBridge.Rca0Theory" &&
     e.sentence == "RMFoundationBridge.wklSentence") "exact semantic key"
   check (e.sourceId == "countermodel.rca0.wkl.allModels") "provenance id preserved"
+  let syn := scopedResultsAt scopedRes .provability
+  check (syn.size == 1) "exactly one syntactic scoped result"
+  let some s := syn[0]? | throwError "missing syntactic scoped result"
+  check (s.verification == .backendChecked) "syntactic scoped result is backendChecked"
+  check (s.kind == "calculusNonderivability" &&
+    s.qualifierTag == "calculus" &&
+    s.qualifierId == "l2VarWitnessLK.v1" &&
+    s.theory == "RMFoundationBridge.Rca0Theory" &&
+    s.sentence == "RMFoundationBridge.wklSentence") "exact syntactic semantic key"
+  check (s.sourceId == "nonderivability.rca0.wkl.l2VarWitnessLK.v1")
+    "syntactic provenance id preserved"
 
 -- Backend ingestion (production + fixtures) adds no LOCAL certified fact — the
 -- certified-facts counts are byte-identical to the pre-ingestion check above; the
 -- validated semantic-countermodel record contributes exactly the explicitly
 -- backend-qualified all-model scoped result, and nothing else.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 0
+info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats

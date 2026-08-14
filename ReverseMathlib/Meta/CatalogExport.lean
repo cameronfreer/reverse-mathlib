@@ -12,7 +12,7 @@ import ReverseMathlib.Meta.BackendEvidence
 # Deterministic catalog export
 
 `#rm_export_catalog "path"` writes the canonical direct-catalog JSON
-(`reverse-mathlib.catalog/v6`) extracted from the **elaborated environment's persistent
+(`reverse-mathlib.catalog/v7`) extracted from the **elaborated environment's persistent
 extension state** — never by parsing Lean source or scraping human-readable command output.
 The persistent extensions have already resolved names and validated certificates; they are the
 right extraction point.
@@ -32,7 +32,11 @@ by backend evidence — explicitly verification-tagged, deduplicated by semantic
 counted only on the scoped-results scoreboard, never among the certified facts); `v6` adds
 the required concept `statement` field — the informal definition of what each conceptual
 family asserts, distinct from the scoping `description`, so every displayed item is
-defined, not merely scoped.
+defined, not merely scoped; `v7` types the scoped-result qualifier — the `modelClass`
+field becomes the (`qualifierTag`, `qualifierId`) pair, closed per claim kind
+(`modelClass` for semantic claims, `calculus` for syntactic ones) and part of the
+semantic key — and admits the `standardCalculusIdentity` and `calculusComparison`
+backend record kinds.
 
 Canonical-file properties:
 
@@ -430,7 +434,7 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
        ("contextDecl", nameJson c.contextDecl),
        ("description", Json.str c.description)]
   Json.mkObj
-    [("schema", Json.str "reverse-mathlib.catalog/v6"),
+    [("schema", Json.str "reverse-mathlib.catalog/v7"),
      ("dependencies", Json.mkObj
        [("leanVersion", Json.str provenance.leanVersion),
         ("mathlibRevision", Json.str provenance.mathlibRevision)]),
@@ -514,6 +518,23 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
                 ("modelClass", Json.str modelClass),
                 ("witnessProvenance", Json.str witnessProvenance),
                 ("witnessBase", Json.str witnessBase)]
+           | .standardCalculusIdentity calculusId derivability soundness
+               sortAssumption equalityRules source =>
+             Json.mkObj
+               [("calculusId", Json.str calculusId),
+                ("derivability", Json.str derivability),
+                ("soundness", Json.str soundness),
+                ("sortAssumption", Json.str sortAssumption),
+                ("equalityRules", Json.str equalityRules),
+                ("source", Json.str source)]
+           | .calculusComparison standardCalculusRecord comparedCalculusRecord
+               relation standardCalculusId comparedCalculusId =>
+             Json.mkObj
+               [("standardCalculusRecord", Json.str standardCalculusRecord),
+                ("comparedCalculusRecord", Json.str comparedCalculusRecord),
+                ("relation", Json.str relation),
+                ("standardCalculusId", Json.str standardCalculusId),
+                ("comparedCalculusId", Json.str comparedCalculusId)]
          Json.mkObj
            [("id", Json.str r.id),
             ("kind", Json.str r.data.kindTag),
@@ -544,7 +565,8 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
            [("scope", Json.str r.scope.tag),
             ("verification", Json.str r.verification.tag),
             ("kind", Json.str r.kind),
-            ("modelClass", Json.str r.modelClass),
+            ("qualifierTag", Json.str r.qualifierTag),
+            ("qualifierId", Json.str r.qualifierId),
             ("theory", Json.str r.theory),
             ("sentence", Json.str r.sentence),
             ("sourceId", Json.str r.sourceId)])),

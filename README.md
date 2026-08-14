@@ -12,8 +12,12 @@ preserve the proof, and never confuse the two.*
 [Roadmap](ROADMAP.md)
 
 > **Scoreboard — checked scoped results: ω-model: 6 (kernelChecked); all-model: 1
-> (backendChecked); syntactic: 0.** The all-model entry is the exact backend-checked
-> `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂ structures — never an
+> (backendChecked); syntactic: 1 (backendChecked).** The all-model entry is the exact
+> backend-checked `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂
+> structures; the syntactic entry is the exact backend-checked
+> `Rca0Theory ⊬ wklSentence in l2VarWitnessLK.v1` (the bridge's pinned standard
+> calculus — a fully specified LK presentation of the two-sorted logic assumed in
+> Simpson §I.2, with direct soundness and no completeness claim). Neither is ever an
 > unqualified conventional-RCA₀ claim.
 > No unqualified `RCA₀ ⊢ …` or `RCA₀ ⊬ …` turnstile claim exists at any scope; scopes and
 > presentations are never promoted, and derived closure results are computed, never
@@ -64,12 +68,15 @@ Kept permanently distinct from the certified scoreboard:
   external checked bridge to
   [FormalizedFormalLogic/Foundation](https://github.com/FormalizedFormalLogic/Foundation):
   checked forward context realization and exact statement adapters for ŴKL/EFILC/Hall,
-  plus a calculus-relative nonderivability, ingested as pinned versioned JSON with
-  interface fingerprints recomputed locally; **converse context adequacy** and the
-  **standard-calculus comparison** remain pending. Backend evidence never adds a local
-  certified fact, graph edge, port, or closure edge — but the validated all-model
-  countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the ω-structure over
-  REC) contributes the one explicitly backend-qualified scoped result above.
+  plus calculus-relative nonderivability in the Henkin-safe calculus AND in the
+  bridge's pinned standard calculus `l2VarWitnessLK.v1` (with logical equality; a
+  typed comparison record states both calculi are independently sound and carries no
+  embedding); **converse context adequacy** remains pending. Backend evidence never
+  adds a local certified fact, graph edge, port, or closure edge — but the validated
+  all-model countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the
+  ω-structure over REC) and the validated standard-calculus nonderivability record
+  (`Rca0Theory ⊬ wklSentence in l2VarWitnessLK.v1`) contribute the two explicitly
+  backend-qualified scoped results above.
 - **A quantitative pilot**: Kohlenbach's metastability of bounded monotone sequences with
   an executable rational realizer — bounds, not rates
   ([docs/quantitative-pilot.md](docs/quantitative-pilot.md)).
