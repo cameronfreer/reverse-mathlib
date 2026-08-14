@@ -1126,11 +1126,14 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             "interface fingerprints recomputed locally at ingestion. Kept distinct: "
             "checked forward context realization (one-way — never unrestricted "
             "semantic RCA₀ claims); checked unconditional statement adapters; "
-            "converse context adequacy still pending; the nonderivability is "
-            "calculus-relative with the standard-calculus comparison still pending. "
+            "converse context adequacy still pending; each nonderivability is "
+            "calculus-relative (Henkin-safe and the pinned standard calculus "
+            "l2VarWitnessLK.v1, independently sound — the typed comparison record "
+            "carries no embedding and licenses no derivability transfer). "
             "No local certified fact, no graph edge, no port, no closure edge; the "
-            "validated semantic-countermodel record contributes exactly the "
-            "backend-qualified all-model scoped result.</em></p>\n")
+            "validated semantic-countermodel and standard-calculus nonderivability "
+            "records contribute exactly the backend-qualified all-model and "
+            "syntactic scoped results.</em></p>\n")
 
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
@@ -1289,8 +1292,10 @@ literature-backed. The <em>backend</em> records come from the external checked
 realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on
 ω-structures) and exact statement adapters for ŴKL/EFILC/Hall are <strong>checked</strong>
 at pinned revisions with interface fingerprints recomputed locally, while converse
-context adequacy and the backend calculus's standard-calculus comparison remain
-pending. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
+context adequacy remains pending; nonderivability is recorded in both the Henkin-safe
+calculus and the pinned standard calculus l2VarWitnessLK.v1, independently sound, with
+a typed comparison record that carries no embedding and licenses no derivability
+transfer. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
 machine-model repository at pinned revisions and ingested as external evidence, never
 axioms. The <em>corpus</em> holds reported literature findings at pinned snapshots, with
 missing presentation bridges named explicitly; an absence finding means not found in
@@ -2407,6 +2412,13 @@ def cmd_build(args: argparse.Namespace) -> None:
                    "canonical direct-only graphs and every certified count"):
         if marker not in page:
             sys.exit(f"rmlib-zoo build: graph/filter marker missing: {marker!r}")
+    for retired in ("standard-calculus comparison remains pending",
+                    "standard-calculus comparison still pending",
+                    "standard-calculus comparison remain"):
+        if retired in page:
+            sys.exit(f"rmlib-zoo build: retired claim present: {retired!r} — the "
+                     "comparison is recorded (independent soundness, no embedding, "
+                     "no derivability transfer)")
     legend_count = page.count('<div class="legend"')
     if legend_count != 1:
         sys.exit(f"rmlib-zoo build: expected exactly one legend placement (under the "
