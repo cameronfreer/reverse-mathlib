@@ -2369,12 +2369,13 @@ def view_dot(name: str, view: dict) -> str:
         if n in clusters:
             continue
         lines.append(f'  "{n}";')
+    base_nodes: set[str] = set()
     if bottom_up:
-        base = [n for n in view.get("baseContextConcepts", [])
-                if n in view["nodes"] and n not in clusters]
-        if base:
+        base_nodes = {n for n in view.get("baseContextConcepts", [])
+                      if n in view["nodes"] and n not in clusters}
+        if base_nodes:
             lines.append('  {rank=min; '
-                         + '; '.join(f'"{n}"' for n in sorted(base)) + ';}')
+                         + '; '.join(f'"{n}"' for n in sorted(base_nodes)) + ';}')
     for e in view["edges"]:
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
@@ -2413,6 +2414,11 @@ def view_dot(name: str, view: dict) -> str:
             # ordinary centered label: the relation holds along the whole separation
             # edge; the tee alone marks the blocked direction. Crowding is a
             # spacing/routing concern, never solved by attaching the symbol to the tee.
+            # A separation out of a base-context node spans extra ranks so the base
+            # sits substantially below the blob it fails to reach.
+            src_concept = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
+            if src_concept in base_nodes:
+                extra += ", minlen=3"
             lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
