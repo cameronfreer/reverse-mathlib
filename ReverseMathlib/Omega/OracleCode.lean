@@ -574,6 +574,450 @@ theorem exists_code {f : ℕ →. ℕ} {o : ℕ →. ℕ} :
     funext n
     simp [eval, Seq.seq, pure, PFun.pure, Part.map_id']
 
+/-! ### The bounded evaluator is primitive recursive (table form)
+
+The strong recursion is over encoded fuel–code pairs, consulting only genuinely
+earlier rows; the dispatch on the raw code encoding is deliberately **flat** (a list
+lookup for the five base constructors, an offset subtraction for the composites), so
+elaboration stays linear and no `recOn` classifier is needed. `evaln_table` closes
+the table/oracle agreement through `evaln_congr`. -/
+
+section evalnPrimrec
+
+open Encodable Denumerable
+
+private def lup (L : List (List (Option ℕ))) (p : ℕ × OracleCode) (n : ℕ) : Option ℕ := do
+  let l ← L[Encodable.encode p]?
+  let o ← l[n]?
+  o
+
+/-- The per-entry dispatch of the row builder, by pattern match on the **raw
+encoding** of the code (five base branches at `0`-`4`, then the parity decomposition
+of the composite offset `5`) — one-level arithmetic case analysis with proper
+equation lemmas, no code recursion, so no `recOn` classifier is needed. The
+composite self-references (`prec`/`rfind'` at smaller fuel) go through the decoded
+code `ofNat OracleCode ec`. -/
+private def GbranchComposite (_σt : List ℕ) (L : List (List (Option ℕ)))
+    (k' n e : ℕ) : Option ℕ :=
+  let m := e.div2.div2
+  cond e.bodd
+    (cond e.div2.bodd
+      -- rfind'
+      (do
+        let x ← lup L (k' + 1, ofNat OracleCode m) (Nat.pair n.unpair.1 n.unpair.2)
+        x.casesOn (some n.unpair.2) fun _ =>
+          lup L (k', ofNat OracleCode (e + 5))
+            (Nat.pair n.unpair.1 (n.unpair.2 + 1)))
+      -- prec
+      (n.unpair.2.casesOn
+        (lup L (k' + 1, ofNat OracleCode m.unpair.1) n.unpair.1) fun y => do
+        let i ← lup L (k', ofNat OracleCode (e + 5)) (Nat.pair n.unpair.1 y)
+        lup L (k' + 1, ofNat OracleCode m.unpair.2)
+          (Nat.pair n.unpair.1 (Nat.pair y i))))
+    (cond e.div2.bodd
+      -- comp
+      (do
+        let x ← lup L (k' + 1, ofNat OracleCode m.unpair.2) n
+        lup L (k' + 1, ofNat OracleCode m.unpair.1) x)
+      -- pair
+      (do
+        let x ← lup L (k' + 1, ofNat OracleCode m.unpair.1) n
+        let y ← lup L (k' + 1, ofNat OracleCode m.unpair.2) n
+        some (Nat.pair x y)))
+
+/-- The per-entry dispatch of the row builder: a **flat** case analysis on the raw
+encoding — the five base branches by list lookup, the composite branch by offset
+subtraction — with proper equation behavior and no nested case analysis, so both the
+equation proofs and the primitive-recursiveness proof stay linear. -/
+private def Gbranch (σt : List ℕ) (L : List (List (Option ℕ))) (k' n : ℕ)
+    (ec : ℕ) : Option ℕ :=
+  if ec < 5 then
+    [some 0, some n.succ, some n.unpair.1, some n.unpair.2,
+      some (σt.getD n 0)].getD ec none
+  else
+    GbranchComposite σt L k' n (ec - 5)
+
+/-- The row builder for the strong recursion: row `L.length` decodes to a fuel–code
+pair `(k, c)`; each entry `n < k` is computed from earlier rows through `lup`. -/
+private def G (σt : List ℕ) (L : List (List (Option ℕ))) : Option (List (Option ℕ)) :=
+  Option.some <|
+    let a := ofNat (ℕ × OracleCode) L.length
+    let k := a.1
+    let c := a.2
+    (List.range k).map fun n =>
+      k.casesOn Option.none fun k' =>
+        Gbranch σt L k' n (Encodable.encode c)
+
+private theorem evaln_map (χ : ℕ → ℕ) (k c n) :
+    ((List.range k)[n]?.bind fun a => evaln χ k c a) = evaln χ k c n := by
+  by_cases kn : n < k
+  · simp [List.getElem?_range kn]
+  · rw [List.getElem?_eq_none]
+    · cases e : evaln χ k c n
+      · rfl
+      exact kn.elim (evaln_bound e)
+    simpa using kn
+
+private theorem Gbranch_zero (σt L k' n) :
+    Gbranch σt L k' n (Encodable.encode zero) = some 0 := rfl
+
+private theorem Gbranch_succ (σt L k' n) :
+    Gbranch σt L k' n (Encodable.encode succ) = some n.succ := rfl
+
+private theorem Gbranch_left (σt L k' n) :
+    Gbranch σt L k' n (Encodable.encode left) = some n.unpair.1 := rfl
+
+private theorem Gbranch_right (σt L k' n) :
+    Gbranch σt L k' n (Encodable.encode right) = some n.unpair.2 := rfl
+
+private theorem Gbranch_oracle (σt L k' n) :
+    Gbranch σt L k' n (Encodable.encode oracle) = some (σt.getD n 0) := rfl
+
+private theorem Gbranch_of_composite (σt L k' n) (e : ℕ) :
+    Gbranch σt L k' n (e + 5) = GbranchComposite σt L k' n e := by
+  simp [Gbranch]
+
+private theorem Gbranch_pair (σt L k' n) (cf cg : OracleCode) :
+    Gbranch σt L k' n (Encodable.encode (pair cf cg)) = (do
+      let x ← lup L (k' + 1, cf) n
+      let y ← lup L (k' + 1, cg) n
+      some (Nat.pair x y)) := by
+  have he : Encodable.encode (pair cf cg) =
+      Nat.bit false (Nat.bit false (Nat.pair cf.encodeCode cg.encodeCode)) + 5 := by
+    simp [encodeCode_eq, encodeCode, Nat.bit_val]
+  rw [he, Gbranch_of_composite]
+  simp [GbranchComposite, ← encodeCode_eq]
+
+private theorem Gbranch_comp (σt L k' n) (cf cg : OracleCode) :
+    Gbranch σt L k' n (Encodable.encode (comp cf cg)) = (do
+      let x ← lup L (k' + 1, cg) n
+      lup L (k' + 1, cf) x) := by
+  have he : Encodable.encode (comp cf cg) =
+      Nat.bit false (Nat.bit true (Nat.pair cf.encodeCode cg.encodeCode)) + 5 := by
+    simp [encodeCode_eq, encodeCode, Nat.bit_val]
+  rw [he, Gbranch_of_composite]
+  simp [GbranchComposite, ← encodeCode_eq]
+
+private theorem Gbranch_prec (σt L k' n) (cf cg : OracleCode) :
+    Gbranch σt L k' n (Encodable.encode (prec cf cg)) =
+      (n.unpair.2.casesOn (lup L (k' + 1, cf) n.unpair.1) fun y => do
+        let i ← lup L (k', prec cf cg) (Nat.pair n.unpair.1 y)
+        lup L (k' + 1, cg) (Nat.pair n.unpair.1 (Nat.pair y i))) := by
+  have he : Encodable.encode (prec cf cg) =
+      Nat.bit true (Nat.bit false (Nat.pair cf.encodeCode cg.encodeCode)) + 5 := by
+    simp [encodeCode_eq, encodeCode, Nat.bit_val]
+  rw [he, Gbranch_of_composite]
+  simp only [GbranchComposite, Nat.bodd_bit, Nat.div2_bit, cond_true]
+  have hb : Nat.bit true (Nat.bit false (Nat.pair cf.encodeCode cg.encodeCode)) + 5 =
+      Encodable.encode (prec cf cg) := he.symm
+  rw [hb]
+  simp [← encodeCode_eq]
+
+private theorem Gbranch_rfind' (σt L k' n) (cf : OracleCode) :
+    Gbranch σt L k' n (Encodable.encode (rfind' cf)) = (do
+      let x ← lup L (k' + 1, cf) (Nat.pair n.unpair.1 n.unpair.2)
+      x.casesOn (some n.unpair.2) fun _ =>
+        lup L (k', rfind' cf) (Nat.pair n.unpair.1 (n.unpair.2 + 1))) := by
+  have he : Encodable.encode (rfind' cf) =
+      Nat.bit true (Nat.bit true cf.encodeCode) + 5 := by
+    simp [encodeCode_eq, encodeCode, Nat.bit_val]
+  rw [he, Gbranch_of_composite]
+  simp only [GbranchComposite, Nat.bodd_bit, Nat.div2_bit, cond_true]
+  have hb : Nat.bit true (Nat.bit true cf.encodeCode) + 5 =
+      Encodable.encode (rfind' cf) := he.symm
+  rw [hb]
+  simp [← encodeCode_eq]
+
+set_option linter.flexible false in -- template-mirroring case scripts
+/-- The strong-recursion equation: `G` computes the next evaluation row from the
+earlier rows. The oracle function is abstract (tied to the table only through `hχ`),
+so the proof scripts never depend on the syntactic form of the table lookup. -/
+private theorem G_correct (σt : List ℕ) (χ : ℕ → ℕ) (hχ : ∀ n, σt.getD n 0 = χ n)
+    (p : ℕ) :
+    G σt ((List.range p).map fun q =>
+      (List.range (ofNat (ℕ × OracleCode) q).1).map
+        (evaln χ (ofNat (ℕ × OracleCode) q).1 (ofNat (ℕ × OracleCode) q).2)) =
+    some ((List.range (ofNat (ℕ × OracleCode) p).1).map
+      (evaln χ (ofNat (ℕ × OracleCode) p).1 (ofNat (ℕ × OracleCode) p).2)) := by
+  simp only [G, List.length_map, List.length_range, Option.some_inj]
+  refine List.map_congr_left fun n hn => ?_
+  have hp : List.range p = List.range (Nat.pair (ofNat (ℕ × OracleCode) p).1
+      (Encodable.encode (ofNat (ℕ × OracleCode) p).2)) := by
+    simp
+  rw [hp]
+  generalize (ofNat (ℕ × OracleCode) p).1 = k at hn ⊢
+  generalize (ofNat (ℕ × OracleCode) p).2 = c at *
+  simp only [List.mem_range] at hn
+  rcases k with - | k'
+  · simp at hn
+  have nk : n ≤ k' := Nat.lt_succ_iff.mp hn
+  have hg : ∀ {k₁ : ℕ} {c₁ : OracleCode} {n₁ : ℕ},
+      Nat.pair k₁ (Encodable.encode c₁) < Nat.pair (k' + 1) (Encodable.encode c) →
+      lup ((List.range (Nat.pair (k' + 1) (Encodable.encode c))).map fun q =>
+          (List.range (Nat.unpair q).1).map
+            (evaln χ (Nat.unpair q).1 (ofNat OracleCode (Nat.unpair q).2)))
+        (k₁, c₁) n₁ =
+        evaln χ k₁ c₁ n₁ := by
+    intro k₁ c₁ n₁ hl
+    have he : Encodable.encode (k₁, c₁) = Nat.pair k₁ (Encodable.encode c₁) := rfl
+    simp [lup, he, List.getElem?_range hl, evaln_map, Bind.bind, Option.bind_map]
+  change Gbranch σt _ k' n (Encodable.encode c) = evaln χ (k' + 1) c n
+  obtain - | - | - | - | - | ⟨cf, cg⟩ | ⟨cf, cg⟩ | ⟨cf, cg⟩ | cf := c
+  · rw [Gbranch_zero]; simp [evaln, nk]
+  · rw [Gbranch_succ]; simp [evaln, nk]
+  · rw [Gbranch_left]; simp [evaln, nk]
+  · rw [Gbranch_right]; simp [evaln, nk]
+  · rw [Gbranch_oracle, hχ]; simp [evaln, nk]
+  · -- pair
+    rw [Gbranch_pair]
+    simp [evaln, nk, Bind.bind, Functor.map, Seq.seq, pure]
+    obtain ⟨lf, lg⟩ := encode_lt_pair cf cg
+    rw [hg (Nat.pair_lt_pair_right _ lf), hg (Nat.pair_lt_pair_right _ lg)]
+    cases evaln χ (k' + 1) cf n
+    · rfl
+    cases evaln χ (k' + 1) cg n <;> rfl
+  · -- comp
+    rw [Gbranch_comp]
+    simp [evaln, nk, Bind.bind, pure]
+    obtain ⟨lf, lg⟩ := encode_lt_comp cf cg
+    rw [hg (Nat.pair_lt_pair_right _ lg)]
+    cases evaln χ (k' + 1) cg n
+    · rfl
+    simp [hg (Nat.pair_lt_pair_right _ lf)]
+  · -- prec
+    rw [Gbranch_prec]
+    simp [evaln, nk, Bind.bind, pure]
+    obtain ⟨lf, lg⟩ := encode_lt_prec cf cg
+    rw [hg (Nat.pair_lt_pair_right _ lf)]
+    cases n.unpair.2
+    · rfl
+    simp only []
+    rw [hg (Nat.pair_lt_pair_left _ k'.lt_succ_self)]
+    cases evaln χ k' (prec cf cg) _
+    · rfl
+    simp [hg (Nat.pair_lt_pair_right _ lg)]
+  · -- rfind'
+    rw [Gbranch_rfind']
+    simp [evaln, nk, Bind.bind, pure]
+    have lf := encode_lt_rfind' cf
+    rw [hg (Nat.pair_lt_pair_right _ lf)]
+    rcases evaln χ (k' + 1) cf n with - | x
+    · rfl
+    cases x <;> simp
+    rw [hg (Nat.pair_lt_pair_left _ k'.lt_succ_self)]
+
+section hG
+
+open Primrec
+
+private theorem hlup : Primrec fun p : List (List (Option ℕ)) × (ℕ × OracleCode) × ℕ =>
+    lup p.1 p.2.1 p.2.2 :=
+  Primrec.option_bind
+    (Primrec.list_getElem?.comp Primrec.fst
+      (Primrec.encode.comp <| Primrec.fst.comp Primrec.snd))
+    (Primrec.option_bind (Primrec.list_getElem?.comp Primrec.snd <| Primrec.snd.comp <|
+      Primrec.snd.comp Primrec.fst) Primrec.snd)
+
+/-- Shared accessor bundle for the branch combinators: the argument tuple is
+`((table, rows), fuel-predecessor, entry) × composite-tag`. -/
+private abbrev BTup : Type := ((List ℕ × List (List (Option ℕ))) × ℕ × ℕ) × ℕ
+
+section branchCombinators
+
+open Primrec
+
+private theorem hσt : Primrec fun p : BTup => p.1.1.1 :=
+  Primrec.fst.comp (Primrec.fst.comp Primrec.fst)
+private theorem hL : Primrec fun p : BTup => p.1.1.2 :=
+  Primrec.snd.comp (Primrec.fst.comp Primrec.fst)
+private theorem hk' : Primrec fun p : BTup => p.1.2.1 :=
+  Primrec.fst.comp (Primrec.snd.comp Primrec.fst)
+private theorem hn : Primrec fun p : BTup => p.1.2.2 :=
+  Primrec.snd.comp (Primrec.snd.comp Primrec.fst)
+private theorem hec : Primrec fun p : BTup => p.2 := Primrec.snd
+private theorem hm : Primrec fun p : BTup => p.2.div2.div2 :=
+  (nat_div2.comp nat_div2).comp hec
+private theorem hm₁ : Primrec fun p : BTup => p.2.div2.div2.unpair.1 :=
+  Primrec.fst.comp (Primrec.unpair.comp hm)
+private theorem hm₂ : Primrec fun p : BTup => p.2.div2.div2.unpair.2 :=
+  Primrec.snd.comp (Primrec.unpair.comp hm)
+private theorem hn₁ : Primrec fun p : BTup => p.1.2.2.unpair.1 :=
+  Primrec.fst.comp (Primrec.unpair.comp hn)
+private theorem hn₂ : Primrec fun p : BTup => p.1.2.2.unpair.2 :=
+  Primrec.snd.comp (Primrec.unpair.comp hn)
+private theorem hkfuel : Primrec fun p : BTup => p.1.2.1 + 1 :=
+  _root_.Primrec.succ.comp hk'
+private theorem hcself : Primrec fun p : BTup => ofNat OracleCode (p.2 + 5) :=
+  (Primrec.ofNat OracleCode).comp (_root_.Primrec.succ.comp <|
+    _root_.Primrec.succ.comp <| _root_.Primrec.succ.comp <|
+    _root_.Primrec.succ.comp <| _root_.Primrec.succ.comp hec)
+
+private theorem hrf : Primrec fun p : BTup =>
+    (do
+      let x ← lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2)
+        (Nat.pair p.1.2.2.unpair.1 p.1.2.2.unpair.2)
+      x.casesOn (some p.1.2.2.unpair.2) fun _ =>
+        lup p.1.1.2 (p.1.2.1, ofNat OracleCode (p.2 + 5))
+          (Nat.pair p.1.2.2.unpair.1 (p.1.2.2.unpair.2 + 1)) : Option ℕ) := by
+  refine Primrec.option_bind
+    (hlup.comp <| hL.pair <| (hkfuel.pair ((Primrec.ofNat OracleCode).comp hm)).pair
+      (Primrec₂.natPair.comp hn₁ hn₂)) ?_
+  refine Primrec.nat_casesOn Primrec.snd
+    (Primrec.option_some.comp (hn₂.comp Primrec.fst)) ?_
+  exact ((hlup.comp <| (hL.comp Primrec.fst).pair <|
+    ((hk'.comp Primrec.fst).pair (hcself.comp Primrec.fst)).pair
+      (Primrec₂.natPair.comp (hn₁.comp Primrec.fst)
+        (_root_.Primrec.succ.comp (hn₂.comp Primrec.fst)))).comp Primrec.fst).to₂
+
+private theorem hpr : Primrec fun p : BTup =>
+    (p.1.2.2.unpair.2.casesOn
+      (lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.1)
+        p.1.2.2.unpair.1) fun y => do
+      let i ← lup p.1.1.2 (p.1.2.1, ofNat OracleCode (p.2 + 5))
+        (Nat.pair p.1.2.2.unpair.1 y)
+      lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.2)
+        (Nat.pair p.1.2.2.unpair.1 (Nat.pair y i)) : Option ℕ) := by
+  exact Primrec.nat_casesOn hn₂
+    (hlup.comp <| hL.pair <|
+      (hkfuel.pair ((Primrec.ofNat OracleCode).comp hm₁)).pair hn₁)
+    ((Primrec.option_bind
+      (hlup.comp <| (hL.comp Primrec.fst).pair <|
+        ((hk'.comp Primrec.fst).pair (hcself.comp Primrec.fst)).pair
+          (Primrec₂.natPair.comp (hn₁.comp Primrec.fst) Primrec.snd))
+      ((hlup.comp <| ((hL.comp Primrec.fst).comp Primrec.fst).pair <|
+        (((hkfuel.comp Primrec.fst).comp Primrec.fst).pair
+          ((Primrec.ofNat OracleCode).comp <|
+            (hm₂.comp Primrec.fst).comp Primrec.fst)).pair <|
+        Primrec₂.natPair.comp ((hn₁.comp Primrec.fst).comp Primrec.fst)
+          (Primrec₂.natPair.comp (Primrec.snd.comp Primrec.fst)
+            Primrec.snd)).to₂)).to₂)
+
+private theorem hco : Primrec fun p : BTup =>
+    (do
+      let x ← lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.2)
+        p.1.2.2
+      lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.1) x :
+      Option ℕ) := by
+  refine Primrec.option_bind
+    (hlup.comp <| hL.pair <|
+      (hkfuel.pair ((Primrec.ofNat OracleCode).comp hm₂)).pair hn) ?_
+  exact (hlup.comp <| (hL.comp Primrec.fst).pair <|
+    ((hkfuel.comp Primrec.fst).pair
+      ((Primrec.ofNat OracleCode).comp (hm₁.comp Primrec.fst))).pair
+    Primrec.snd).to₂
+
+private theorem hpa : Primrec fun p : BTup =>
+    (do
+      let x ← lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.1)
+        p.1.2.2
+      let y ← lup p.1.1.2 (p.1.2.1 + 1, ofNat OracleCode p.2.div2.div2.unpair.2)
+        p.1.2.2
+      some (Nat.pair x y) : Option ℕ) := by
+  exact Primrec.option_bind
+    (hlup.comp <| hL.pair <|
+      (hkfuel.pair ((Primrec.ofNat OracleCode).comp hm₁)).pair hn)
+    ((Primrec.option_bind
+      ((hlup.comp <| hL.pair <|
+        (hkfuel.pair ((Primrec.ofNat OracleCode).comp hm₂)).pair hn).comp
+          Primrec.fst)
+      ((Primrec.option_some.comp
+        (Primrec₂.natPair.comp (Primrec.snd.comp Primrec.fst)
+          Primrec.snd)).to₂)).to₂)
+
+private theorem hcomposite : Primrec fun p : BTup =>
+    GbranchComposite p.1.1.1 p.1.1.2 p.1.2.1 p.1.2.2 p.2 := by
+  have := Primrec.cond (nat_bodd.comp hec)
+    (Primrec.cond (nat_bodd.comp (nat_div2.comp hec)) hrf hpr)
+    (Primrec.cond (nat_bodd.comp (nat_div2.comp hec)) hco hpa)
+  exact this.of_eq fun p => rfl
+
+end branchCombinators
+
+/-- `Gbranch` is primitive recursive in all five arguments — the flat dispatch keeps
+this a single `ite` over a literal list lookup and the composite offset. -/
+private theorem hGbranch :
+    Primrec fun p : BTup => Gbranch p.1.1.1 p.1.1.2 p.1.2.1 p.1.2.2 p.2 := by
+  have hbase : Primrec fun p : BTup =>
+      ([some 0, some p.1.2.2.succ, some p.1.2.2.unpair.1, some p.1.2.2.unpair.2,
+        some (p.1.1.1.getD p.1.2.2 0)] : List (Option ℕ)).getD p.2 none := by
+    refine (Primrec.list_getD (none : Option ℕ)).comp ?_ hec
+    refine Primrec.list_cons.comp (Primrec.option_some.comp (_root_.Primrec.const 0)) ?_
+    refine Primrec.list_cons.comp
+      (Primrec.option_some.comp (_root_.Primrec.succ.comp hn)) ?_
+    refine Primrec.list_cons.comp
+      (Primrec.option_some.comp (Primrec.fst.comp (Primrec.unpair.comp hn))) ?_
+    refine Primrec.list_cons.comp
+      (Primrec.option_some.comp (Primrec.snd.comp (Primrec.unpair.comp hn))) ?_
+    refine Primrec.list_cons.comp
+      (Primrec.option_some.comp
+        ((Primrec.list_getD (0 : ℕ)).comp hσt hn)) ?_
+    exact _root_.Primrec.const []
+  have hsub : Primrec fun p : BTup => ((p.1, p.2 - 5) : BTup) :=
+    Primrec.fst.pair (nat_sub.comp hec (_root_.Primrec.const 5))
+  have := Primrec.ite (nat_lt.comp hec (_root_.Primrec.const 5))
+    hbase (hcomposite.comp hsub)
+  exact this.of_eq fun p => rfl
+
+end hG
+
+section assembly
+
+open Primrec
+
+/-- `G` is primitive recursive (uncurried), with the table as the first component. -/
+private theorem hG :
+    Primrec fun p : List ℕ × List (List (Option ℕ)) => G p.1 p.2 := by
+  have a : Primrec fun p : List ℕ × List (List (Option ℕ)) =>
+      ofNat (ℕ × OracleCode) p.2.length :=
+    (Primrec.ofNat (ℕ × OracleCode)).comp (Primrec.list_length.comp Primrec.snd)
+  have k := Primrec.fst.comp a
+  refine (Primrec.option_some.comp (Primrec.list_map (Primrec.list_range.comp k)
+    ?_)).of_eq fun p => rfl
+  refine .mk (Primrec.nat_casesOn (k.comp Primrec.fst)
+    (_root_.Primrec.const Option.none) (.mk ?_))
+  exact hGbranch.comp <|
+    ((((Primrec.fst.comp (Primrec.fst.comp Primrec.fst)).pair
+        (Primrec.snd.comp (Primrec.fst.comp Primrec.fst))).pair
+      (Primrec.snd.pair (Primrec.snd.comp Primrec.fst))).pair
+    (Primrec.encode.comp <| Primrec.snd.comp <|
+      a.comp <| Primrec.fst.comp Primrec.fst))
+
+/-- **The bounded table-oracle evaluator is primitive recursive**, with the table as
+an explicit parameter: the strong recursion is over the encoded fuel–code pair, using
+only genuinely earlier rows through `lup`. -/
+theorem primrec_evaln_getD :
+    Primrec fun q : (List ℕ × ℕ × ℕ) × ℕ =>
+      evaln (q.1.1.getD · 0) q.1.2.1 (ofNat OracleCode q.1.2.2) q.2 := by
+  have hstrong :
+      Primrec₂ fun (σt : List ℕ) (q : ℕ) =>
+        (List.range (ofNat (ℕ × OracleCode) q).1).map
+          (evaln (σt.getD · 0) (ofNat (ℕ × OracleCode) q).1
+            (ofNat (ℕ × OracleCode) q).2) :=
+    Primrec.nat_strong_rec _ hG.to₂ fun σt q => G_correct σt _ (fun _ => rfl) q
+  have hrow : Primrec fun q : (List ℕ × ℕ × ℕ) × ℕ =>
+      (List.range q.1.2.1).map
+        (evaln (q.1.1.getD · 0) q.1.2.1 (ofNat OracleCode q.1.2.2)) := by
+    refine (hstrong.comp
+      (Primrec.fst.comp Primrec.fst)
+      (Primrec₂.natPair.comp (Primrec.fst.comp (Primrec.snd.comp Primrec.fst))
+        (Primrec.snd.comp (Primrec.snd.comp Primrec.fst)))).of_eq fun q => ?_
+    simp
+  refine (Primrec.option_bind (Primrec.list_getElem?.comp hrow Primrec.snd)
+    Primrec.snd.to₂).of_eq fun q => ?_
+  simp [evaln_map, Option.bind_map]
+
+/-- **Table/oracle agreement through `evaln_congr`**: evaluating against the
+length-`k` table of `χ` is evaluating against `χ` itself — the fuel bounds every
+possible query. -/
+theorem evaln_table (χ : ℕ → ℕ) (k : ℕ) (c : OracleCode) (n : ℕ) :
+    evaln (((List.range k).map χ).getD · 0) k c n = evaln χ k c n :=
+  evaln_congr fun m hm => by
+    simp [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hm]
+
+end assembly
+
+end evalnPrimrec
+
 end OracleCode
 
 end ReverseMathlib.Omega

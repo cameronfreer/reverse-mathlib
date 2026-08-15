@@ -16,6 +16,7 @@ import ReverseMathlib.Quantitative.FiniteConvergence
 import ReverseMathlib.Quantitative.RationalSearch
 import ReverseMathlib.Omega.Computability
 import ReverseMathlib.Omega.OracleCode
+import ReverseMathlib.Omega.Jump
 import ReverseMathlib.Omega.InternalSet
 import ReverseMathlib.Omega.Coding
 import ReverseMathlib.Omega.RadixCoding
