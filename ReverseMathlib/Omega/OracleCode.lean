@@ -152,6 +152,36 @@ def eval (o : ℕ →. ℕ) : OracleCode → ℕ →. ℕ
     Nat.unpaired fun a m =>
       (Nat.rfind fun n => (fun m => m = 0) <$> eval o cf (Nat.pair a (n + m))).map (· + m)
 
+theorem encode_lt_pair (cf cg : OracleCode) :
+    Encodable.encode cf < Encodable.encode (pair cf cg) ∧
+      Encodable.encode cg < Encodable.encode (pair cf cg) := by
+  simp only [encodeCode_eq, encodeCode]
+  have := Nat.mul_le_mul_right (Nat.pair cf.encodeCode cg.encodeCode)
+    (by decide : 1 ≤ 2 * 2)
+  rw [one_mul, mul_assoc] at this
+  have := lt_of_le_of_lt this (lt_add_of_pos_right _ (by decide : 0 < 5))
+  exact ⟨lt_of_le_of_lt (Nat.left_le_pair _ _) this,
+    lt_of_le_of_lt (Nat.right_le_pair _ _) this⟩
+
+theorem encode_lt_comp (cf cg : OracleCode) :
+    Encodable.encode cf < Encodable.encode (comp cf cg) ∧
+      Encodable.encode cg < Encodable.encode (comp cf cg) := by
+  have : Encodable.encode (pair cf cg) < Encodable.encode (comp cf cg) := by
+    simp [encodeCode_eq, encodeCode]
+  exact (encode_lt_pair cf cg).imp (fun h => lt_trans h this) fun h => lt_trans h this
+
+theorem encode_lt_prec (cf cg : OracleCode) :
+    Encodable.encode cf < Encodable.encode (prec cf cg) ∧
+      Encodable.encode cg < Encodable.encode (prec cf cg) := by
+  have : Encodable.encode (pair cf cg) < Encodable.encode (prec cf cg) := by
+    simp [encodeCode_eq, encodeCode]
+  exact (encode_lt_pair cf cg).imp (fun h => lt_trans h this) fun h => lt_trans h this
+
+theorem encode_lt_rfind' (cf : OracleCode) :
+    Encodable.encode cf < Encodable.encode (rfind' cf) := by
+  simp only [encodeCode_eq, encodeCode]
+  lia
+
 theorem const_inj : ∀ {n₁ n₂}, OracleCode.const n₁ = OracleCode.const n₂ → n₁ = n₂
   | 0, 0, _ => by simp
   | n₁ + 1, n₂ + 1, h => by
@@ -315,6 +345,29 @@ theorem evaln_mono {χ : ℕ → ℕ} :
       refine h.imp fun x => And.imp (hf _ _) ?_
       by_cases x0 : x = 0 <;> simp [x0]
       exact evaln_mono hl'
+
+/-- **Table/oracle agreement whenever the fuel bounds every possible query**: two
+oracles agreeing below the fuel produce identical bounded evaluations — every oracle
+query inside `evaln χ k` is guarded to an argument `< k`. -/
+theorem evaln_congr : ∀ {k c n} {χ χ' : ℕ → ℕ},
+    (∀ m, m < k → χ m = χ' m) → evaln χ k c n = evaln χ' k c n
+  | 0, c, n, χ, χ', _ => by simp [evaln]
+  | k + 1, c, n, χ, χ', hag => by
+    induction c generalizing n with rw [evaln, evaln]
+    | oracle =>
+      by_cases hn : n ≤ k
+      · simp [hn, hag n (Nat.lt_succ_of_le hn)]
+      · simp [hn]
+    | pair cf cg hf hg => simp only [hf, hg]
+    | comp cf cg hf hg => simp only [hf, hg]
+    | prec cf cg hf hg =>
+      have hrec : ∀ n, evaln χ k (prec cf cg) n = evaln χ' k (prec cf cg) n := fun n =>
+        evaln_congr fun m hm => hag m (Nat.lt_succ_of_lt hm)
+      simp only [hf, hg, hrec]
+    | rfind' cf hf =>
+      have hrec : ∀ n, evaln χ k (rfind' cf) n = evaln χ' k (rfind' cf) n := fun n =>
+        evaln_congr fun m hm => hag m (Nat.lt_succ_of_lt hm)
+      simp only [hf, hrec]
 
 set_option linter.flexible false in -- mirrors the template's exemption
 theorem evaln_sound {χ : ℕ → ℕ} : ∀ {k c n x}, x ∈ evaln χ k c n → x ∈ eval (↑χ) c n
