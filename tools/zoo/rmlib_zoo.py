@@ -438,6 +438,8 @@ def cmd_check(args: argparse.Namespace) -> None:
     problems.extend(check_scoped_results(catalog))
     for name in selftest_base_context():
         problems.append(f"base-context classifier selftest failed: {name}")
+    for name in selftest_projection_layout():
+        problems.append(f"projection-layout selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -2337,6 +2339,34 @@ def selftest_base_context() -> list[str]:
     return bad
 
 
+def selftest_projection_layout() -> list[str]:
+    """The visual-spacing rule is frozen, not merely present: in a synthetic
+    projection view (no production names), a separation out of a typed
+    base-context concept must receive the extra rank span (minlen) and the
+    bottom-rank pin, while an ordinary separation between principles must
+    not. Returns the scenarios that wrongly passed."""
+    view = {
+        "view": "concept-projection", "family": "mixed-direct-only",
+        "baseContextConcepts": ["baseNode"],
+        "nodes": ["baseNode", "p", "q", "r"],
+        "edges": [
+            {"family": "certifiedOmegaFact", "kind": "nonImplication",
+             "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "q"},
+            {"family": "certifiedOmegaFact", "kind": "nonImplication",
+             "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"}],
+    }
+    dot = view_dot("concept-projection", view)
+    lines = [ln.strip() for ln in dot.splitlines()]
+    bad = []
+    if not any(ln.startswith('"baseNode" ->') and "minlen=3" in ln for ln in lines):
+        bad.append("base-context separation lacks the extra rank span")
+    if any(ln.startswith('"p" ->') and "minlen" in ln for ln in lines):
+        bad.append("ordinary separation wrongly received the extra rank span")
+    if '{rank=min; "baseNode";}' not in dot:
+        bad.append("base rank pin missing")
+    return bad
+
+
 def view_dot(name: str, view: dict) -> str:
     # The concept projection reads bottom-up: base-context concepts — identified
     # by typed data (base_context_concepts), never by edge shape — sit on the
@@ -2369,12 +2399,13 @@ def view_dot(name: str, view: dict) -> str:
         if n in clusters:
             continue
         lines.append(f'  "{n}";')
+    base_nodes: set[str] = set()
     if bottom_up:
-        base = [n for n in view.get("baseContextConcepts", [])
-                if n in view["nodes"] and n not in clusters]
-        if base:
+        base_nodes = {n for n in view.get("baseContextConcepts", [])
+                      if n in view["nodes"] and n not in clusters}
+        if base_nodes:
             lines.append('  {rank=min; '
-                         + '; '.join(f'"{n}"' for n in sorted(base)) + ';}')
+                         + '; '.join(f'"{n}"' for n in sorted(base_nodes)) + ';}')
     for e in view["edges"]:
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
@@ -2413,6 +2444,11 @@ def view_dot(name: str, view: dict) -> str:
             # ordinary centered label: the relation holds along the whole separation
             # edge; the tee alone marks the blocked direction. Crowding is a
             # spacing/routing concern, never solved by attaching the symbol to the tee.
+            # A separation out of a base-context node spans extra ranks so the base
+            # sits substantially below the blob it fails to reach.
+            src_concept = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
+            if src_concept in base_nodes:
+                extra += ", minlen=3"
             lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
