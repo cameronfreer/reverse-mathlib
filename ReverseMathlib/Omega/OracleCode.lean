@@ -152,6 +152,70 @@ def eval (o : ℕ →. ℕ) : OracleCode → ℕ →. ℕ
     Nat.unpaired fun a m =>
       (Nat.rfind fun n => (fun m => m = 0) <$> eval o cf (Nat.pair a (n + m))).map (· + m)
 
+theorem const_inj : ∀ {n₁ n₂}, OracleCode.const n₁ = OracleCode.const n₂ → n₁ = n₂
+  | 0, 0, _ => by simp
+  | n₁ + 1, n₂ + 1, h => by
+    dsimp [OracleCode.const] at h
+    injection h with h₁ h₂
+    simp only [const_inj h₂]
+
+section primrecConstructors
+
+open Primrec
+
+theorem primrec₂_pair : Primrec₂ pair :=
+  Primrec₂.ofNat_iff.2 <|
+    Primrec₂.encode_iff.1 <|
+      nat_add.comp
+        (nat_double.comp <|
+          nat_double.comp <|
+            Primrec₂.natPair.comp
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.fst)
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.snd))
+        (Primrec₂.const 5)
+
+theorem primrec₂_comp : Primrec₂ comp :=
+  Primrec₂.ofNat_iff.2 <|
+    Primrec₂.encode_iff.1 <|
+      nat_add.comp
+        (nat_double.comp <|
+          nat_double_succ.comp <|
+            Primrec₂.natPair.comp
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.fst)
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.snd))
+        (Primrec₂.const 5)
+
+theorem primrec₂_prec : Primrec₂ prec :=
+  Primrec₂.ofNat_iff.2 <|
+    Primrec₂.encode_iff.1 <|
+      nat_add.comp
+        (nat_double_succ.comp <|
+          nat_double.comp <|
+            Primrec₂.natPair.comp
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.fst)
+              (Primrec.encode_iff.2 <| (Primrec.ofNat OracleCode).comp Primrec.snd))
+        (Primrec₂.const 5)
+
+theorem primrec_rfind' : Primrec rfind' :=
+  Primrec.ofNat_iff.2 <|
+    Primrec.encode_iff.1 <|
+      nat_add.comp
+        (nat_double_succ.comp <| nat_double_succ.comp <|
+          Primrec.encode_iff.2 <| Primrec.ofNat OracleCode)
+        (Primrec.const 5)
+
+theorem primrec_const : Primrec OracleCode.const :=
+  (_root_.Primrec.id.nat_iterate (_root_.Primrec.const zero)
+    (primrec₂_comp.comp (_root_.Primrec.const succ) Primrec.snd).to₂).of_eq
+    fun n => by simp; induction n <;>
+      simp [*, OracleCode.const, Function.iterate_succ', -Function.iterate_succ]
+
+theorem primrec₂_curry : Primrec₂ curry :=
+  primrec₂_comp.comp Primrec.fst <| primrec₂_pair.comp (primrec_const.comp Primrec.snd)
+    (_root_.Primrec.const OracleCode.id)
+
+end primrecConstructors
+
 @[simp]
 theorem eval_const (o : ℕ →. ℕ) : ∀ n m, eval o (OracleCode.const n) m = Part.some n
   | 0, _ => rfl
