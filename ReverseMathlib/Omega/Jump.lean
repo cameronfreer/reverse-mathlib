@@ -226,12 +226,6 @@ theorem table_recursiveIn {o : ℕ →. ℕ} {g : ℕ → ℕ}
       Part.some (g q.unpair.2.unpair.1) := by
     refine (Nat.RecursiveIn.comp hg hy.recursiveIn).of_eq fun q => ?_
     simp
-  -- previous-table code, repackaged for the append step
-  have hprev : Nat.RecursiveIn {o} fun q : ℕ =>
-      Part.some q.unpair.2.unpair.2 := by
-    refine Nat.Partrec.recursiveIn ?_
-    apply Nat.Partrec.of_primrec
-    exact Nat.Primrec.right.comp (Nat.Primrec.right.comp Nat.Primrec.id)
   -- the paired input (g y, (0, i)) for the append step
   have hpre : Nat.RecursiveIn {o} fun q : ℕ =>
       Part.some (Nat.pair (g q.unpair.2.unpair.1)

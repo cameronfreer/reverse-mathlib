@@ -24,7 +24,8 @@ reverse-mathematics claim at any scope, and nothing registers in the catalog. It
 first deliverable pair of the #49 feasibility gate (coded bounded oracle evaluation with
 monotonicity; soundness/completeness against singleton-oracle `Nat.RecursiveIn`); the
 jump set, the range-to-jump reduction, and the total injective jump enumeration build on
-it in later slices, subject to that gate.
+it in `ReverseMathlib.Omega.Jump`, each independently route-gated in
+`scripts/MetaSmoke.lean`.
 
 The proofs mirror `Mathlib/Computability/PartrecCode.lean` deliberately — same case
 structure, same guard lemmas — so the relativization is auditable against its
