@@ -2360,6 +2360,10 @@ def selftest_projection_layout() -> list[str]:
     bad = []
     if not any(ln.startswith('"baseNode" ->') and "minlen=3" in ln for ln in lines):
         bad.append("base-context separation lacks the extra rank span")
+    if not any(ln.startswith('"baseNode" ->') and "weight=10" in ln for ln in lines):
+        bad.append("base-context separation lacks the straight-up weight")
+    if any(ln.startswith('"p" ->') and "weight" in ln for ln in lines):
+        bad.append("ordinary separation wrongly received the straight-up weight")
     if any(ln.startswith('"p" ->') and "minlen" in ln for ln in lines):
         bad.append("ordinary separation wrongly received the extra rank span")
     if '{rank=min; "baseNode";}' not in dot:
@@ -2445,10 +2449,12 @@ def view_dot(name: str, view: dict) -> str:
             # edge; the tee alone marks the blocked direction. Crowding is a
             # spacing/routing concern, never solved by attaching the symbol to the tee.
             # A separation out of a base-context node spans extra ranks so the base
-            # sits substantially below the blob it fails to reach.
+            # sits substantially below the blob it fails to reach, and carries a
+            # high weight so dot aligns the base directly beneath its target and
+            # routes the edge straight up instead of around the blob.
             src_concept = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
             if src_concept in base_nodes:
-                extra += ", minlen=3"
+                extra += ", minlen=3, weight=10"
             lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
