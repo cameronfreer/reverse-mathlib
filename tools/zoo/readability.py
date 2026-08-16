@@ -79,37 +79,65 @@ UPPER_ALLOWED = {"WKL", "ACA", "RCA", "REC", "EFILC", "SOSOA", "DOT", "JSON",
 
 
 class _Extract(HTMLParser):
-    """Pull reader-visible text out of built HTML, tracking for each fragment
-    whether it is visible by default and whether it sits inside a code element.
+    """Pull reader-visible text out of built HTML as **blocks**, tracking for each
+    block whether it is visible by default.
+
+    Text is accumulated across inline markup and flushed at block boundaries, so
+    a sentence interrupted by ``<strong>`` or a link stays one sentence. Without
+    this, every emphasised number would split its own sentence, inflating the
+    sentence count and making a fragment look like a repeated disclaimer.
 
     A ``<details>`` without ``open`` hides its content but still shows its
     ``<summary>``, so summaries count as default-open text while the body they
-    guard does not. Nesting is tracked, since a closed ancestor hides everything
-    below it regardless of the descendant's own ``open`` attribute.
+    guard does not. Nesting is tracked, since a collapsed ancestor hides
+    everything below it regardless of the descendant's own ``open`` attribute.
+
+    Text inside ``<code>`` or a lookup chip is identifier data, not prose. It is
+    recorded separately and excluded from prose measurement.
     """
 
     SKIP = {"script", "style", "head"}
+    INLINE = {"a", "strong", "em", "b", "i", "span", "code", "small", "sup",
+              "sub", "abbr", "cite", "kbd", "samp", "var", "u", "s", "mark",
+              "time", "q", "br", "wbr", "img"}
 
     def __init__(self) -> None:
         super().__init__(convert_charrefs=True)
-        self.segments: list[dict] = []
+        self.blocks: list[dict] = []
+        self._buf: list[str] = []
+        self._buf_code: list[str] = []
         self.images: list[dict] = []
         self.links: list[dict] = []
         self.anchors: set[str] = set()
         self._closed_depth = 0          # enclosing <details> that are collapsed
         self._details_stack: list[bool] = []
+        self._chip_stack: list[str] = []
         self._code_depth = 0
         self._skip_depth = 0
         self._in_summary = False
+        self._block_open = True
         self._heading: str | None = None
         self.headings: list[dict] = []
 
     # -- structure -------------------------------------------------------
+    def _flush(self) -> None:
+        """End the current block: what was accumulated becomes one unit of prose."""
+        text = re.sub(r"\s+", " ", "".join(self._buf)).strip()
+        code = re.sub(r"\s+", " ", " ".join(self._buf_code)).strip()
+        if text or code:
+            self.blocks.append({"text": text, "code": code, "open": self._block_open})
+        self._buf, self._buf_code = [], []
+        self._block_open = self.is_open()
+
     def handle_starttag(self, tag: str, attrs: list) -> None:
         a = dict(attrs)
         if tag in self.SKIP:
             self._skip_depth += 1
             return
+        if tag not in self.INLINE:
+            self._flush()
+        elif tag in ("br", "img"):
+            self._buf.append(" ")   # a line break separates words, never joins them
         if tag == "details":
             collapsed = "open" not in a
             self._details_stack.append(collapsed)
@@ -128,18 +156,21 @@ class _Extract(HTMLParser):
         if a.get("id"):
             self.anchors.add(a["id"])
         if a.get("class") and "chip" in a["class"].split():
-            # a lookup chip is an identifier presented as data, like <code>
+            # a lookup chip is an identifier presented as data, like <code>;
+            # remember the tag that opened it so the matching end tag closes it
             self._code_depth += 1
-            self._details_stack.append(None)  # sentinel: chip, closed on </span>
+            self._chip_stack.append(tag)
 
     def handle_endtag(self, tag: str) -> None:
         if tag in self.SKIP:
             self._skip_depth = max(0, self._skip_depth - 1)
             return
+        if tag not in self.INLINE:
+            self._flush()
+        if self._chip_stack and self._chip_stack[-1] == tag:
+            self._chip_stack.pop()
+            self._code_depth = max(0, self._code_depth - 1)
         if tag == "details" and self._details_stack:
-            while self._details_stack and self._details_stack[-1] is None:
-                self._details_stack.pop()
-                self._code_depth = max(0, self._code_depth - 1)
             if self._details_stack:
                 collapsed = self._details_stack.pop()
                 if collapsed:
@@ -147,9 +178,6 @@ class _Extract(HTMLParser):
         elif tag == "summary":
             self._in_summary = False
         elif tag in ("code", "kbd", "samp"):
-            self._code_depth = max(0, self._code_depth - 1)
-        elif tag == "span" and self._details_stack and self._details_stack[-1] is None:
-            self._details_stack.pop()
             self._code_depth = max(0, self._code_depth - 1)
         elif tag in ("h1", "h2", "h3", "h4"):
             self._heading = None
@@ -161,11 +189,27 @@ class _Extract(HTMLParser):
     def handle_data(self, data: str) -> None:
         if self._skip_depth or not data.strip():
             return
-        seg = {"text": data, "open": self.is_open(),
-               "code": self._code_depth > 0}
-        self.segments.append(seg)
+        if not self._buf and not self._buf_code:
+            self._block_open = self.is_open()
+        if self._code_depth > 0:
+            self._buf_code.append(data)
+            self._buf.append(" ")          # a chip is a word gap, not a word
+        else:
+            self._buf.append(data)
         if self._heading:
             self.headings.append({"level": self._heading, "text": data.strip()})
+
+    def close(self) -> None:                # flush the tail block
+        super().close()
+        self._flush()
+
+
+def parse(html_text: str) -> _Extract:
+    """Parse and close, so the final block is always flushed."""
+    parser = _Extract()
+    parser.feed(html_text)
+    parser.close()
+    return parser
 
 
 def _words(text: str) -> int:
@@ -181,14 +225,13 @@ def _normalize_sentence(s: str) -> str:
 
 def measure_surface(path: Path, role: str) -> dict:
     """Measure one built HTML file. Returns hard findings and advisory metrics."""
-    parser = _Extract()
-    parser.feed(path.read_text(encoding="utf-8"))
+    parser = parse(path.read_text(encoding="utf-8"))
 
-    prose_open = " ".join(s["text"] for s in parser.segments
-                          if s["open"] and not s["code"])
-    prose_all = " ".join(s["text"] for s in parser.segments if not s["code"])
-    text_open = " ".join(s["text"] for s in parser.segments if s["open"])
-    text_all = " ".join(s["text"] for s in parser.segments)
+    prose_open = " ".join(b["text"] for b in parser.blocks if b["open"])
+    prose_all = " ".join(b["text"] for b in parser.blocks)
+    text_open = " ".join(b["text"] + " " + b["code"]
+                         for b in parser.blocks if b["open"])
+    text_all = " ".join(b["text"] + " " + b["code"] for b in parser.blocks)
 
     # -- hard rules ------------------------------------------------------
     leaks: list[dict] = []
@@ -212,8 +255,8 @@ def measure_surface(path: Path, role: str) -> dict:
     # boundaries: two adjacent paragraphs are two sentences even when the second
     # starts lowercase, and joining them first would both inflate sentence length
     # and hide a disclaimer that is repeated once per card.
-    sentences = [s for seg in parser.segments if not seg["code"]
-                 for s in SENTENCE_SPLIT.split(seg["text"]) if _words(s) >= 6]
+    sentences = [s for b in parser.blocks
+                 for s in SENTENCE_SPLIT.split(b["text"]) if _words(s) >= 6]
     counts: dict[str, int] = {}
     for s in sentences:
         key = _normalize_sentence(s)
@@ -278,14 +321,12 @@ def public_text(site: Path) -> str:
         p = site / name
         if not p.exists():
             continue
-        parser = _Extract()
-        parser.feed(p.read_text(encoding="utf-8"))
+        parser = parse(p.read_text(encoding="utf-8"))
         out.append(f"=== {name} ({role}) ===")
-        for seg in parser.segments:
-            t = re.sub(r"[ \t ]+", " ", seg["text"]).strip()
-            if t:
-                mark = "  " if seg["open"] else "· "
-                out.append(f"{mark}{t}")
+        for b in parser.blocks:
+            line = b["text"] + (f"  [{b['code']}]" if b["code"] else "")
+            if line.strip():
+                out.append(("  " if b["open"] else "· ") + line.strip())
         out.append("")
     return "\n".join(out) + "\n"
 
@@ -376,16 +417,18 @@ def selftest_extraction() -> list[str]:
     reader sees, every budget built on it is meaningless. Returns the scenarios
     that wrongly passed."""
     bad: list[str] = []
-    html_doc = """<h2>Head</h2><p>Alpha beta gamma delta epsilon zeta.</p>
+    doc = """<h2>Head</h2><p>Alpha beta gamma delta epsilon zeta.</p>
 <details><summary>Sum one</summary><p>Hidden words here now.</p></details>
 <details open><summary>Sum two</summary><p>Shown words here now.</p>
 <details><summary>Inner</summary><p>Nested hidden text.</p></details></details>
 <p>Identifier <code>turingIdealOmega</code> in a chip, kernelChecked in prose.</p>
+<p>A chip <a class="chip" href="r.html#x"><code>someIdentifier</code></a> then
+plain words continue afterwards in prose.</p>
 <img src="a.svg" alt="x"/><img src="b.svg"/>"""
-    p = _Extract()
-    p.feed(html_doc)
-    op = " ".join(s["text"] for s in p.segments if s["open"])
-    cl = " ".join(s["text"] for s in p.segments if not s["open"])
+    p = parse(doc)
+    op = " ".join(b["text"] for b in p.blocks if b["open"])
+    cl = " ".join(b["text"] for b in p.blocks if not b["open"])
+    prose = " ".join(b["text"] for b in p.blocks)
     if "Hidden words" in op:
         bad.append("collapsed details counted as default-open")
     if "Sum one" not in op:
@@ -396,31 +439,50 @@ def selftest_extraction() -> list[str]:
         bad.append("details nested in an open details ignored its own collapsed state")
     if "Hidden words" not in cl:
         bad.append("collapsed text vanished from the measurement entirely")
-    prose = " ".join(s["text"] for s in p.segments if not s["code"])
     if "turingIdealOmega" in prose:
         bad.append("an identifier inside <code> counted as prose")
+    if "someIdentifier" in prose:
+        bad.append("an identifier inside a lookup chip counted as prose")
+    if "plain words continue" not in prose:
+        bad.append("prose after a lookup chip was swallowed by the chip")
     if "kernelChecked" not in prose:
         bad.append("an enum value in a sentence escaped the prose measurement")
-    imgs = measure_images(p)
-    if imgs != ["b.svg"]:
+    if measure_images(p) != ["b.svg"]:
         bad.append("missing alternative text not detected")
-    # sentences must not run together across elements: three separate paragraphs
-    # ending in a period are three sentences, however the next one begins
+
+    # A sentence interrupted by inline markup is still one sentence. Without
+    # this, an emphasised number would split its own sentence, and the tail
+    # fragment would look like a disclaimer repeated once per item.
+    inline = ("<li>Countermodels over general structures: <strong>1</strong>, "
+              "checked in the pinned external bridge.</li>"
+              "<li>Nonderivability relative to a calculus: <strong>1</strong>, "
+              "checked in the pinned external bridge.</li>")
+    glued = parse("<p><strong>Weak Kőnig's lemma</strong><br/>Over every ideal.</p>")
+    if "lemmaOver" in " ".join(b["text"] for b in glued.blocks):
+        bad.append("a line break glued two words into a false identifier")
+
+    q = parse(inline)
+    if len(q.blocks) != 2:
+        bad.append(f"inline markup split a block ({len(q.blocks)} of 2)")
+    if not all(b["text"].endswith("bridge.") for b in q.blocks):
+        bad.append("a sentence interrupted by inline markup was truncated")
+
+    # Two block-level copies of one sentence are two sentences, however the
+    # next block begins.
     twin = ("<p>One whole disclaimer sentence that is repeated below.</p>"
             "<p>filler words that keep the two copies apart here</p>"
             "<p>One whole disclaimer sentence that is repeated below.</p>")
-    q = _Extract()
-    q.feed(twin)
-    sents = [s for seg in q.segments if not seg["code"]
-             for s in SENTENCE_SPLIT.split(seg["text"]) if _words(s) >= 6]
+    t = parse(twin)
+    sents = [x for b in t.blocks
+             for x in SENTENCE_SPLIT.split(b["text"]) if _words(x) >= 6]
     if len(sents) != 3:
-        bad.append(f"sentences merged across element boundaries ({len(sents)} of 3)")
-    keys = {}
-    for s in sents:
-        k = _normalize_sentence(s)
+        bad.append(f"sentences merged across block boundaries ({len(sents)} of 3)")
+    keys: dict[str, int] = {}
+    for x in sents:
+        k = _normalize_sentence(x)
         keys[k] = keys.get(k, 0) + 1
     if max(keys.values()) != 2:
-        bad.append("a disclaimer repeated in two separate elements was not detected")
+        bad.append("a disclaimer repeated in two separate blocks was not detected")
     return bad
 
 
