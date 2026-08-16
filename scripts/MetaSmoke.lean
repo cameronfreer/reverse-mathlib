@@ -275,7 +275,9 @@ silently acquire an explicit selection route. -/
   for t in [``ReverseMathlib.Omega.WeakKonigAt, ``ReverseMathlib.Omega.EFILCAt,
       ``ReverseMathlib.Omega.CountableHallAt, ``ReverseMathlib.Omega.BoundedKonigAt,
       ``ReverseMathlib.Omega.TwoRegularPerfectMatchingAt,
-      ``ReverseMathlib.Omega.DisjointRangeSeparationAt] do
+      ``ReverseMathlib.Omega.DisjointRangeSeparationAt,
+      ``ReverseMathlib.Omega.InjectionRangeExistenceAt,
+      ``ReverseMathlib.Omega.JumpClosedAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
     check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
@@ -987,7 +989,7 @@ info: concepts (7):
     variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
     problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
   reverse-mathlib:injectionRangeExistence — Injection-range existence: every injective function has a range — for every injection f there is a set containing exactly the values of f
-    scoping: Injection-range existence as a conceptual family (Hirst thesis Theorem 1.4, statement verified verbatim in the primary source; its proof is deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). The registered presentation is the exact injection-graph form; formula-coded, arbitrary-function, and enumeration presentations join only once their adapters are proved. No ACA label: no arithmetical-comprehension adapter is proved
+    scoping: Injection-range existence as a conceptual family (Hirst thesis Theorem 1.4, statement verified verbatim in the primary source; its proof is deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). The registered presentation is the exact injection-graph form; formula-coded, arbitrary-function, and enumeration presentations join only once their adapters are proved. No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved
     variant reverse-mathlib:injectionRangeExistence.injectionGraphs.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.InjectionRangeExistenceAt⟩
   reverse-mathlib:jumpClosure — Jump closure: the Turing jump of every set in the collection is again in the collection — a semantic closure property of second-order parts, distinguishing the jump ideals among the Turing ideals
     scoping: A semantic closure-property node, not a theorem-strength principle: it names the closure condition the equivalence calibrates against, so the fact has an honest typed endpoint. Hirst thesis §1.4 identifies the set domains of ACA₀'s ω-models as the jump ideals — that identification stays literature-backed; it carries no external crosswalk
@@ -1436,7 +1438,7 @@ info: facts (11):
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
   injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — recorded, no evidence linked
-    note: The seventh production ω fact, and the first whose endpoints sit above the WKL circle: injection-range existence at the exact injection-graph presentation and jump closure are equivalent at the Turing-ideal ω layer. Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA label anywhere: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a reading, never a registered claim
+    note: The seventh production ω fact, and the first whose endpoints are literature-positioned above the WKL circle (no certified comparison edge to WKL exists): injection-range existence at the exact injection-graph presentation and jump closure are equivalent at the Turing-ideal ω layer. Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
@@ -1947,8 +1949,8 @@ info: facts (16):
 #guard_msgs in
 #revmath_facts
 
--- The headline counts UNIQUE certified facts: the two fixture ω facts plus the one
--- production ω fact, despite multiple ports carrying semantic evidence for the same
+-- The headline counts UNIQUE certified facts: the three fixture ω facts plus the seven
+-- production ω facts, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
 info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
@@ -2114,17 +2116,21 @@ info: corpus sources (4):
   hirstThesisPdf @ sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4 — Verified download of the scanned thesis PDF; statement-level anchor only — the theorem statements of Chapter 1 were read verbatim from the scan, and their proofs are deferred there to Simpson [50], which stays literature-backed
   rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
   simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
-presentation families (6):
+presentation families (7):
   injectionRangeFormulation — Injection-range formulations: an injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis Chapter 1 notation, functions in Simpson's set-of-pairs coding
+  omegaModelSemantics — ω-model semantic characterizations: the corpus describes classes of second-order set domains (Turing ideals, jump ideals) rather than a problem formulation; only closure-property-level claims can be transcribed
   oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
   perfectMatchingFormulation — Perfect-matching formulations: matchings exhausting one or both sides of a bipartite system, Simpson X.3-style
   sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
   twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
-corpus claims (5) — all reported; concept-level, never facts, never evidence:
-  hirstInjectionRangeAca [hirstThesisPdf:"p. 7, Theorem 1.4" | injectionRangeFormulation] concepts: injectionRangeExistence, jumpClosure
-    wording (verbatim): Theorem 1.4: (RCA_0) The following are equivalent: i) ACA_0. ii) If f : N -> N is an injection, then the set Ran(f) = {y in N : exists x, f(x) = y} exists.
-    normalized: The classical ACA₀ calibration of injection-range existence, read verbatim from the verified scan (transliterated to ASCII). The thesis defers the proof to Simpson [50] (cf. [Sim09] III.1.3, literature-backed), and §1.4 identifies ACA₀'s ω-model set domains as the jump ideals — the registered ω-fact calibrates exactly the internal injection-graph presentation against the jump-closure property; no ACA-labeled object is registered.
+corpus claims (6) — all reported; concept-level, never facts, never evidence:
+  hirstInjectionRangeAca [hirstThesisPdf:"p. 7, Theorem 1.4" | injectionRangeFormulation] concepts: injectionRangeExistence
+    wording (verbatim): Theorem 1.4: (RCA₀) The following are equivalent: i) ACA₀. ii) If f : N → N is an injection, then the set Ran(f) = {y ∈ N : ∃x f(x) = y} exists.
+    normalized: The classical ACA₀ calibration of injection-range existence, read verbatim from the verified scan (source symbols preserved; only spacing normalized). The thesis defers the proof to Simpson [50] (cf. [Sim09] III.1.3, literature-backed). The registered ω-fact calibrates exactly the internal injection-graph presentation against the jump-closure property; no ACA-labeled endpoint or fact is registered.
+  hirstJumpIdealOmegaModels [hirstThesisPdf:"p. 8, §1.4 (ω-models)" | omegaModelSemantics] concepts: jumpClosure
+    wording (verbatim): The set domains of ω-models of ACA₀ are called jump ideals. A jump ideal is a Turing ideal closed under the jump operation. Thus every ω-model of ACA₀ contains every finite jump of 0.
+    normalized: The jump-ideal characterization of ACA₀'s ω-model set domains, read verbatim from the verified scan (source symbols preserved; only spacing normalized). This is the literature reading behind the registered jump-closure concept's positioning; it stays a reading — no ACA-labeled endpoint or fact and no crosswalk is registered, and the registered fact's endpoints are the injection-range and jump-closure capabilities only.
   hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
     wording: (not captured; locator only)
     normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
@@ -2476,7 +2482,9 @@ goes through its own reduction spine and never through the opposite direction. -
   ReverseMathlib.Omega.range_le_jump
 #rm_assert_not_proof_depends ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt
   [ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt,
-   ReverseMathlib.Omega.jumpEnum_recursiveIn]
+   ReverseMathlib.Omega.jumpEnum_recursiveIn,
+   ReverseMathlib.Omega.jumpEnumGraph_le,
+   ReverseMathlib.Omega.range_jumpEnum]
 
 #rm_assert_proof_depends ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
   ReverseMathlib.Omega.jumpEnumGraph_le

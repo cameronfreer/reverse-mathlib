@@ -30,9 +30,11 @@ Both directions are over the Turing-ideal closure conditions:
   `InternalFunction`, and its internal range **is** the jump set (`range_jumpEnum`).
 
 Route discipline (gated in `scripts/MetaSmoke.lean`): each direction goes through its
-own reduction spine and never through the opposite direction theorem. No "ACA" label
-appears anywhere: no arithmetical-comprehension adapter is proved, and the
-identification of jump ideals with ACA₀'s ω-models stays a literature-backed reading.
+own reduction spine and never through the opposite direction theorem. No ACA-labeled
+endpoint or fact: no arithmetical-comprehension adapter is proved, and the
+identification of jump ideals with ACA₀'s ω-models stays a literature-backed reading
+(the corpus claim and this prose necessarily mention ACA₀; nothing registered carries
+the label).
 -/
 
 namespace ReverseMathlib.Omega

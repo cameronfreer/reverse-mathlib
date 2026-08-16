@@ -11,17 +11,20 @@ import ReverseMathlib.Ports.Omega.Catalog
 # The seventh production ω fact: injection-range existenceω ⇔ jump closureω
 (issue #49)
 
-The **atomic registration** of the first fact above the WKL circle: over every
+The **atomic registration** of the first fact literature-positioned above the WKL
+circle (no certified comparison edge to WKL exists): over every
 Turing ideal, every internal graph-coded injection has an internal range iff the
 part is closed under the Turing jump.
 
 **Presentation discipline** (pinned in review): the range side is the **exact
 injection-graph presentation** of `InternalFunction` — the presentation the sixth
 certified fact froze — never formula-coded range existence. The jump side is a
-**semantic closure property**, never a theorem-strength principle. **No "ACA" label
-appears anywhere**: no arithmetical-comprehension adapter is proved, and the
+**semantic closure property**, never a theorem-strength principle. **No ACA-labeled
+endpoint or fact**: no arithmetical-comprehension adapter is proved, and the
 identification of jump ideals with ACA₀'s ω-models stays a literature-backed
-reading (Hirst thesis §1.4, consulted in the verified primary source).
+reading (Hirst thesis §1.4, consulted in the verified primary source; the corpus
+claims and this prose necessarily mention ACA₀ — nothing registered carries the
+label).
 
 Routes, each through its own reduction spine (gated in `scripts/MetaSmoke.lean`,
 including the negative gates: neither direction reaches the other):
@@ -45,8 +48,8 @@ rm_concept injectionRangeExistence where
     deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). The \
     registered presentation is the exact injection-graph form; formula-coded, \
     arbitrary-function, and enumeration presentations join only once their \
-    adapters are proved. No ACA label: no arithmetical-comprehension adapter is \
-    proved"
+    adapters are proved. No ACA-labeled endpoint or fact: no \
+    arithmetical-comprehension adapter is proved"
 
 rm_concept jumpClosure where
   statement := "Jump closure: the Turing jump of every set in the collection is \
@@ -96,14 +99,15 @@ rm_fact injectionRangeExistenceJumpOmega equivalence where
   scope := omegaModels
   lhs := [injectionRangeExistence.injectionGraphs.turingIdealOmega]
   rhs := [jumpClosure.turingIdealClosure.turingIdealOmega]
-  note := "The seventh production ω fact, and the first whose endpoints sit above \
-    the WKL circle: injection-range existence at the exact injection-graph \
+  note := "The seventh production ω fact, and the first whose endpoints are \
+    literature-positioned above the WKL circle (no certified comparison edge to \
+    WKL exists): injection-range existence at the exact injection-graph \
     presentation and jump closure are equivalent at the Turing-ideal ω layer. \
     Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the \
     pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, \
-    literature-backed). No ACA label anywhere: no arithmetical-comprehension \
-    adapter is proved, and the jump-ideal identification stays a reading, never a \
-    registered claim"
+    literature-backed). No ACA-labeled endpoint or fact: no \
+    arithmetical-comprehension adapter is proved, and the jump-ideal \
+    identification stays a corpus-recorded reading, never a registered crosswalk"
 
 revmath_certify_fact injectionRangeExistenceJumpOmega where
   context := rca0.turingIdealOmega

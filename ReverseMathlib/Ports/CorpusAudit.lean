@@ -89,6 +89,11 @@ rm_presentation_family injectionRangeFormulation "Injection-range formulations: 
   injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis \
   Chapter 1 notation, functions in Simpson's set-of-pairs coding"
 
+rm_presentation_family omegaModelSemantics "ω-model semantic characterizations: the \
+  corpus describes classes of second-order set domains (Turing ideals, jump ideals) \
+  rather than a problem formulation; only closure-property-level claims can be \
+  transcribed"
+
 rm_presentation_family unrepresentedFormulation "No formulation present: the corpus \
   contains no principle for this concept at the pinned revision"
 
@@ -129,16 +134,30 @@ rm_corpus_claim hirstMarriageCalibrations where
 rm_corpus_claim hirstInjectionRangeAca where
   source := hirstThesisPdf "p. 7, Theorem 1.4"
   family := injectionRangeFormulation
-  concepts := [injectionRangeExistence, jumpClosure]
-  wording := verbatim "Theorem 1.4: (RCA_0) The following are equivalent: i) ACA_0. \
-    ii) If f : N -> N is an injection, then the set Ran(f) = {y in N : exists x, \
-    f(x) = y} exists."
+  concepts := [injectionRangeExistence]
+  wording := verbatim "Theorem 1.4: (RCA₀) The following are equivalent: i) ACA₀. \
+    ii) If f : N → N is an injection, then the set Ran(f) = {y ∈ N : ∃x f(x) = y} \
+    exists."
   claim := "The classical ACA₀ calibration of injection-range existence, read \
-    verbatim from the verified scan (transliterated to ASCII). The thesis defers \
-    the proof to Simpson [50] (cf. [Sim09] III.1.3, literature-backed), and §1.4 \
-    identifies ACA₀'s ω-model set domains as the jump ideals — the registered \
-    ω-fact calibrates exactly the internal injection-graph presentation against \
-    the jump-closure property; no ACA-labeled object is registered."
+    verbatim from the verified scan (source symbols preserved; only spacing \
+    normalized). The thesis defers the proof to Simpson [50] (cf. [Sim09] \
+    III.1.3, literature-backed). The registered ω-fact calibrates exactly the \
+    internal injection-graph presentation against the jump-closure property; no \
+    ACA-labeled endpoint or fact is registered."
+
+rm_corpus_claim hirstJumpIdealOmegaModels where
+  source := hirstThesisPdf "p. 8, §1.4 (ω-models)"
+  family := omegaModelSemantics
+  concepts := [jumpClosure]
+  wording := verbatim "The set domains of ω-models of ACA₀ are called jump ideals. \
+    A jump ideal is a Turing ideal closed under the jump operation. Thus every \
+    ω-model of ACA₀ contains every finite jump of 0."
+  claim := "The jump-ideal characterization of ACA₀'s ω-model set domains, read \
+    verbatim from the verified scan (source symbols preserved; only spacing \
+    normalized). This is the literature reading behind the registered jump-closure \
+    concept's positioning; it stays a reading — no ACA-labeled endpoint or fact and \
+    no crosswalk is registered, and the registered fact's endpoints are the \
+    injection-range and jump-closure capabilities only."
 
 rm_presentation_bridge twoSidedToOneSidedEnumerated where
   family := twoSidedMarriageSystem
