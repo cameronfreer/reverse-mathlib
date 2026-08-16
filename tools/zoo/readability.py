@@ -116,6 +116,8 @@ class _Extract(HTMLParser):
         self._skip_depth = 0
         self._in_summary = False
         self._block_open = True
+        self._block_label = False
+        self._label_depth = 0
         self._heading: str | None = None
         self.headings: list[dict] = []
 
@@ -125,9 +127,11 @@ class _Extract(HTMLParser):
         text = re.sub(r"\s+", " ", "".join(self._buf)).strip()
         code = re.sub(r"\s+", " ", " ".join(self._buf_code)).strip()
         if text or code:
-            self.blocks.append({"text": text, "code": code, "open": self._block_open})
+            self.blocks.append({"text": text, "code": code, "open": self._block_open,
+                                "label": self._block_label})
         self._buf, self._buf_code = [], []
         self._block_open = self.is_open()
+        self._block_label = self._in_label()
 
     def handle_starttag(self, tag: str, attrs: list) -> None:
         a = dict(attrs)
@@ -145,6 +149,8 @@ class _Extract(HTMLParser):
                 self._closed_depth += 1
         elif tag == "summary":
             self._in_summary = True
+        elif tag in ("dt", "th", "dd", "td"):
+            self._label_depth += 1   # field name or field value: data, not narrative
         elif tag in ("code", "kbd", "samp"):
             self._code_depth += 1
         elif tag == "img":
@@ -177,10 +183,17 @@ class _Extract(HTMLParser):
                     self._closed_depth = max(0, self._closed_depth - 1)
         elif tag == "summary":
             self._in_summary = False
+        elif tag in ("dt", "th", "dd", "td"):
+            self._label_depth = max(0, self._label_depth - 1)
         elif tag in ("code", "kbd", "samp"):
             self._code_depth = max(0, self._code_depth - 1)
         elif tag in ("h1", "h2", "h3", "h4"):
             self._heading = None
+
+    def _in_label(self) -> bool:
+        """A control, a heading or a field name: text that labels rather than
+        states. Repeating it on every card is navigation, not a disclaimer."""
+        return self._in_summary or self._heading is not None or self._label_depth > 0
 
     def is_open(self) -> bool:
         """Visible without the reader expanding anything."""
@@ -191,6 +204,7 @@ class _Extract(HTMLParser):
             return
         if not self._buf and not self._buf_code:
             self._block_open = self.is_open()
+            self._block_label = self._in_label()
         if self._code_depth > 0:
             self._buf_code.append(data)
             self._buf.append(" ")          # a chip is a word gap, not a word
@@ -257,8 +271,10 @@ def measure_surface(path: Path, role: str) -> dict:
     # and hide a disclaimer that is repeated once per card.
     sentences = [s for b in parser.blocks
                  for s in SENTENCE_SPLIT.split(b["text"]) if _words(s) >= 6]
+    body_sentences = [s for b in parser.blocks if not b.get("label")
+                      for s in SENTENCE_SPLIT.split(b["text"]) if _words(s) >= 6]
     counts: dict[str, int] = {}
-    for s in sentences:
+    for s in body_sentences:
         key = _normalize_sentence(s)
         if len(key) >= 40:
             counts[key] = counts.get(key, 0) + 1
@@ -466,6 +482,17 @@ plain words continue afterwards in prose.</p>
         bad.append(f"inline markup split a block ({len(q.blocks)} of 2)")
     if not all(b["text"].endswith("bridge.") for b in q.blocks):
         bad.append("a sentence interrupted by inline markup was truncated")
+
+    # A control label repeated on every card is navigation, not a disclaimer.
+    labels = parse("<details><summary>base, context and note</summary><p>one</p>"
+                   "</details><details><summary>base, context and note</summary>"
+                   "<p>two</p></details>")
+    if not all(b.get("label") for b in labels.blocks if "base, context" in b["text"]):
+        bad.append("a summary control was not marked as a label")
+    fields = parse("<dl><dt>revision</dt><dd>checked in a pinned development</dd></dl>"
+                   "<dl><dt>revision</dt><dd>checked in a pinned development</dd></dl>")
+    if not all(b.get("label") for b in fields.blocks):
+        bad.append("a repeated field name or value was counted as narrative prose")
 
     # Two block-level copies of one sentence are two sentences, however the
     # next block begins.
