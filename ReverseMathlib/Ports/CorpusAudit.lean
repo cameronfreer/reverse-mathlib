@@ -145,6 +145,22 @@ rm_corpus_claim hirstInjectionRangeAca where
     internal injection-graph presentation against the jump-closure property; no \
     ACA-labeled endpoint or fact is registered."
 
+rm_corpus_claim hirstLowWklOmegaModel where
+  source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"
+  family := omegaModelSemantics
+  concepts := [wkl, jumpClosure]
+  wording := verbatim "Theorem 1.6: There is an ω-model of WKL₀ in which every \
+    set is of low degree, i.e. for each set X in the model, if a = deg(X), then \
+    a′ ≤ 0′."
+  claim := "A low ω-model of WKL₀, read verbatim from the verified scan (source \
+    symbols preserved; only spacing normalized; the thesis credits the \
+    Shoenfield–Kreisel low basis theorem). Read against the jump-ideal claim on \
+    the same page: no jump ideal is low, since it contains 0′, so a WKL₀ ω-model \
+    need not be jump closed. This is the recorded literature basis for the \
+    atlas's vertical placement of the jump-closure band above the WKL circle; \
+    the converse direction stays literature-backed and uncertified, and no \
+    comparison edge is registered."
+
 rm_corpus_claim hirstJumpIdealOmegaModels where
   source := hirstThesisPdf "p. 8, §1.4 (ω-models)"
   family := omegaModelSemantics

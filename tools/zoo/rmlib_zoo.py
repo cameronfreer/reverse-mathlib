@@ -936,9 +936,17 @@ reduction: open head (pinned, external)</span>
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
             "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
             open_=True)
+        # vertical placement is geometry, so it must never be the only provenance:
+        # every literature band states what positions it, and that nothing is certified
+        bands = "".join(
+            f'<p><strong>{e(", ".join(b["concepts"]))}</strong> drawn above '
+            f'<strong>{e(b["above"])}</strong> — literature placement only, no '
+            f'certified comparison edge. Corpus claim '
+            f'<code>{e(b["order"]["claim"])}</code>: {e(b["order"]["reading"])}.</p>'
+            for b in v.get("literatureBands", []))
         fine_print = (f'<details class="fineprint"><summary>Projection fine print '
                       f'(exact merge and enclosure rules)</summary>'
-                      f'<p>{e(v["comment"])}</p></details>')
+                      f'<p>{e(v["comment"])}</p>{bands}</details>')
         return (f'<h2 id="overview">Concept overview — a noncanonical, lossy, '
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
@@ -2435,6 +2443,8 @@ def selftest_projection_layout() -> list[str]:
              "bidirectional": True, "lhsConcept": "mutM", "rhsConcept": "blob"},
             {"family": "ambientFactorization", "label": "ambient",
              "lhsConcept": "blob", "rhsConcept": "mutM"},
+            {"family": "computedClosureUnused", "label": "third",
+             "lhsConcept": "mutM", "rhsConcept": "blob"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "ordE", "rhsConcept": "blob"},
             {"family": "ambientFactorization", "label": "ambient",
@@ -2475,9 +2485,23 @@ def selftest_projection_layout() -> list[str]:
                    "(left-side seating)")
     mut = [ln for ln in lines if ln.startswith(('"mutM" -> "blob.bottom"',
                                                 '"blob.bottom" -> "mutM"'))]
-    if not (len(mut) == 2 and all("minlen=0" in ln and "tailport=" in ln
+    if not (len(mut) == 3 and all("minlen=0" in ln and "tailport=" in ln
                                   and "headport=" in ln for ln in mut)):
         bad.append("mutual lateral pair misses flat anchoring with fanned lanes")
+    lanes = {(re.search(r"tailport=(\w+)", ln).group(1),
+              re.search(r"headport=(\w+)", ln).group(1)) for ln in mut
+             if "tailport=" in ln and "headport=" in ln}
+    if len(lanes) != 3:
+        bad.append("three parallel lateral edges did not get three distinct lanes")
+    over = dict(view)
+    over["edges"] = view["edges"] + [
+        {"family": "importedReduction", "label": "≤W",
+         "lhsConcept": "mutM", "rhsConcept": "blob"}]
+    try:
+        view_dot("concept-projection", over)
+        bad.append("a fourth parallel lateral edge was routed instead of rejected")
+    except ValueError:
+        pass
     if any(ln.startswith(('"mutM" -> "blob.top"', '"blob.top" -> "mutM"',
                           '"flatP" -> "blob.top"')) for ln in lines):
         bad.append("lateral pair wrongly anchored at a higher enclosure member")
@@ -2492,30 +2516,56 @@ def selftest_projection_layout() -> list[str]:
                    "enclosure's top member")
     fake_catalog = {"corpus": {"claims": [
         {"id": "goodClaim", "concepts": ["ns:injectionRangeExistence",
-                                         "ns:jumpClosure"]}]}}
+                                         "ns:jumpClosure"]},
+        {"id": "orderClaim", "concepts": ["ns:wkl", "ns:jumpClosure"]},
+        {"id": "targetOnlyClaim", "concepts": ["ns:wkl"]}]}}
+    ok_order = {"claim": "orderClaim", "reading": "r"}
     saved = list(LITERATURE_BANDS)
     try:
-        LITERATURE_BANDS[:] = [{"concepts": ["injectionRangeExistence"],
-                                "above": "wkl", "claims": ["missingClaim"]}]
         for scenario, band in [
-                ("unregistered claim", {"concepts": ["injectionRangeExistence"],
-                                        "above": "wkl",
-                                        "claims": ["missingClaim"]}),
+                ("unregistered claim", {"concepts": ["jumpClosure"], "above": "wkl",
+                                        "claims": ["missingClaim"],
+                                        "order": ok_order}),
                 ("untagged concept", {"concepts": ["untaggedConcept"],
-                                      "above": "wkl", "claims": ["goodClaim"]}),
-                ("non-enclosure target", {"concepts": ["injectionRangeExistence"],
+                                      "above": "wkl", "claims": ["goodClaim"],
+                                      "order": ok_order}),
+                ("non-enclosure target", {"concepts": ["jumpClosure"],
                                           "above": "notACluster",
-                                          "claims": ["goodClaim"]})]:
+                                          "claims": ["goodClaim"],
+                                          "order": ok_order}),
+                ("missing order record", {"concepts": ["jumpClosure"],
+                                          "above": "wkl",
+                                          "claims": ["goodClaim"]}),
+                ("empty order reading", {"concepts": ["jumpClosure"], "above": "wkl",
+                                         "claims": ["goodClaim"],
+                                         "order": {"claim": "orderClaim",
+                                                   "reading": "  "}}),
+                ("unregistered order claim", {"concepts": ["jumpClosure"],
+                                              "above": "wkl",
+                                              "claims": ["goodClaim"],
+                                              "order": {"claim": "nope",
+                                                        "reading": "r"}}),
+                # the finding this gate exists for: a claim that identifies the
+                # band's own concepts but says nothing about the target
+                ("order claim unrelated to the target",
+                 {"concepts": ["jumpClosure"], "above": "wkl",
+                  "claims": ["goodClaim"],
+                  "order": {"claim": "goodClaim", "reading": "r"}}),
+                ("order claim unrelated to the band",
+                 {"concepts": ["jumpClosure"], "above": "wkl",
+                  "claims": ["goodClaim"],
+                  "order": {"claim": "targetOnlyClaim", "reading": "r"}})]:
             LITERATURE_BANDS[:] = [band]
             try:
                 literature_bands(fake_catalog, {"wkl"})
                 bad.append(f"literature-band validation passed a {scenario}")
             except ValueError:
                 pass
-        LITERATURE_BANDS[:] = [{"concepts": ["injectionRangeExistence"],
-                                "above": "wkl", "claims": ["goodClaim"]}]
+        LITERATURE_BANDS[:] = [{"concepts": ["jumpClosure"], "above": "wkl",
+                                "claims": ["goodClaim"], "order": ok_order}]
         if literature_bands(fake_catalog, {"wkl"}) != [
-                {"concepts": ["injectionRangeExistence"], "above": "wkl"}]:
+                {"concepts": ["jumpClosure"], "above": "wkl",
+                 "order": {"claim": "orderClaim", "reading": "r"}}]:
             bad.append("literature-band validation mangled a valid band")
     finally:
         LITERATURE_BANDS[:] = saved
@@ -2536,29 +2586,50 @@ def _edge_label(label: str) -> str:
 
 # Literature positioning: strength reads upward even where no certified
 # comparison edge exists. Each band places concepts strictly above a named
-# enclosure — placement only, never an edge — justified by registered corpus
-# claims. Validated fail-closed by literature_bands().
+# enclosure — placement only, never an edge. Identifying the band's concepts
+# is not enough to justify the *ordering*, so every band carries an `order`
+# record naming the registered corpus claim that relates the band to the
+# target, plus the reading it licenses. Validated fail-closed by
+# literature_bands().
 LITERATURE_BANDS = [
     {"concepts": ["injectionRangeExistence", "jumpClosure"], "above": "wkl",
-     "claims": ["hirstInjectionRangeAca", "hirstJumpIdealOmegaModels"]},
+     "claims": ["hirstInjectionRangeAca", "hirstJumpIdealOmegaModels"],
+     "order": {
+         "claim": "hirstLowWklOmegaModel",
+         "reading": "The cited claim exhibits an ω-model of WKL₀ all of whose "
+                    "sets are low; no jump ideal is low (a jump ideal contains "
+                    "0', which is not low), so a WKL₀ ω-model need not be jump "
+                    "closed. That is the literature basis for placing the "
+                    "jump-closure band above the WKL circle. The converse "
+                    "direction (jump closure gives WKL) is textbook ACA₀ ⇒ "
+                    "WKL₀, literature-backed and NOT certified here; no "
+                    "comparison edge is drawn, and this record licenses "
+                    "placement only"}},
 ]
 
 
 def literature_bands(catalog: dict, cluster_names: set) -> list:
-    """Validate LITERATURE_BANDS against the pinned corpus, fail-closed: every
-    cited claim must be registered, every band concept must be tagged by at
-    least one cited claim, and the target must render as an enclosure. Returns
-    the validated bands (claims dropped — the view carries placement only)."""
+    """Validate LITERATURE_BANDS against the pinned corpus, fail-closed. Every
+    cited claim must be registered; every band concept must be tagged by a
+    cited claim; the target must render as an enclosure; and — the part that
+    justifies the *above* relation rather than mere identification — the band's
+    `order` record must name a registered claim that itself tags the target and
+    at least one band concept, with a nonempty reading. Returns the validated
+    bands with placement plus the order record (the view never carries a drawn
+    edge for a band)."""
     claims = {c["id"]: c for c in catalog.get("corpus", {}).get("claims", [])}
+
+    def tags(cid: str, why: str) -> set:
+        if cid not in claims:
+            raise ValueError(
+                f"literature band cites unregistered corpus claim {cid} ({why})")
+        return {x.split(":", 1)[-1] for x in claims[cid].get("concepts", [])}
+
     out = []
     for band in LITERATURE_BANDS:
-        tagged = set()
+        tagged: set = set()
         for cid in band["claims"]:
-            if cid not in claims:
-                raise ValueError(
-                    f"literature band cites unregistered corpus claim {cid}")
-            tagged.update(x.split(":", 1)[-1]
-                          for x in claims[cid].get("concepts", []))
+            tagged |= tags(cid, "concept identification")
         for c in band["concepts"]:
             if c not in tagged:
                 raise ValueError(
@@ -2566,7 +2637,25 @@ def literature_bands(catalog: dict, cluster_names: set) -> list:
         if band["above"] not in cluster_names:
             raise ValueError(
                 f"literature band target {band['above']} does not render as an enclosure")
-        out.append({"concepts": sorted(band["concepts"]), "above": band["above"]})
+        order = band.get("order") or {}
+        if not order.get("claim") or not (order.get("reading") or "").strip():
+            raise ValueError(
+                f"literature band above {band['above']} carries no order record: "
+                "a band must name the claim relating it to the target, and the "
+                "reading that claim licenses")
+        otags = tags(order["claim"], "order justification")
+        if band["above"] not in otags:
+            raise ValueError(
+                f"literature band order claim {order['claim']} does not relate to "
+                f"the target concept {band['above']} — identification of the band's "
+                "own concepts never justifies an ordering")
+        if not otags & set(band["concepts"]):
+            raise ValueError(
+                f"literature band order claim {order['claim']} does not relate to "
+                "any band concept")
+        out.append({"concepts": sorted(band["concepts"]), "above": band["above"],
+                    "order": {"claim": order["claim"],
+                              "reading": order["reading"]}})
     return out
 
 
@@ -2660,10 +2749,16 @@ def view_dot(name: str, view: dict) -> str:
                      == frozenset((x, c))),
                     key=lambda i: (view["edges"][i].get("family", ""),
                                    view["edges"][i].get("label", "")))
+        if len(es) > len(_FLAT_LANES):
+            # fail closed rather than wrap: a fourth parallel edge would reuse the
+            # first lane's ports and silently draw two edges on top of each other
+            raise ValueError(
+                f"lateral pair {x} <-> {c} has {len(es)} parallel edges but only "
+                f"{len(_FLAT_LANES)} distinct routing lanes exist")
         for k, i in enumerate(es):
             attr = ", minlen=0"
             if len(es) > 1:
-                xp, mp = _FLAT_LANES[k % len(_FLAT_LANES)]
+                xp, mp = _FLAT_LANES[k]
                 if side == "left":
                     xp, mp = mp, xp
                 if _edge_concept(view["edges"][i], "t") == x:
