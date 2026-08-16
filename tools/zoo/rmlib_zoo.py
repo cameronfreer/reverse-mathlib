@@ -440,6 +440,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"base-context classifier selftest failed: {name}")
     for name in selftest_projection_layout():
         problems.append(f"projection-layout selftest failed: {name}")
+    for name in selftest_flat_label_recenter():
+        problems.append(f"flat-label recenter selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -682,6 +684,57 @@ def to_dot(catalog: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def recenter_flat_edge_labels(svg: str) -> str:
+    """Graphviz pins a flat edge's label to the midpoint of the *unclipped*
+    node gap, so when the edge is clipped at an enclosure boundary the label
+    can stray off the visible arrow (no dot-language attribute moves it —
+    label, xlabel, head/tail labels, and ports all land on the same spot).
+    Deterministic post-pass on the exact failure signature, general across
+    views: inside each edge group whose path is horizontal (flat), a label
+    sitting outside the path's x-extent is recentered onto it. Well-placed
+    labels and non-flat edges are untouched."""
+
+    def fix_group(m: "re.Match[str]") -> str:
+        g = m.group(0)
+        path = re.search(r'<path[^>]*\bd="([^"]+)"', g)
+        text = re.search(r'(<text[^>]*\bx=")([\d.eE+-]+)(")', g)
+        if not path or not text:
+            return g
+        pts = re.findall(r'([\d.eE+-]+),([\d.eE+-]+)', path.group(1))
+        xs = [float(x) for x, _ in pts]
+        ys = [float(y) for _, y in pts]
+        if not xs or max(ys) - min(ys) > 1.0:
+            return g
+        if min(xs) <= float(text.group(2)) <= max(xs):
+            return g
+        mid = (min(xs) + max(xs)) / 2
+        return g.replace(text.group(0), f'{text.group(1)}{mid:.2f}{text.group(3)}', 1)
+
+    return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
+
+
+def selftest_flat_label_recenter() -> list[str]:
+    """The flat-clipped-label post-pass is frozen on its exact firing
+    condition: a stray label on a flat edge is recentered onto the visible
+    span; in-span labels and non-flat edges stay untouched. Returns the
+    scenarios that wrongly passed."""
+    def group(path: str, x: str) -> str:
+        return ('<g id="edge1" class="edge">\n<title>a&#45;&gt;b</title>\n'
+                f'<path fill="none" d="{path}"/>\n'
+                f'<text text-anchor="middle" x="{x}" y="-275.8">L</text>\n</g>')
+    bad = []
+    flat = "M626,-291.4C632,-291.4 638,-291.4 644,-291.4"
+    out = recenter_flat_edge_labels(group(flat, "614.5"))
+    if 'x="635.00"' not in out:
+        bad.append("stray flat label not recentered onto the visible span")
+    if recenter_flat_edge_labels(group(flat, "630")) != group(flat, "630"):
+        bad.append("in-span flat label wrongly moved")
+    steep = "M626,-291.4C632,-260.1 638,-240.2 644,-215.9"
+    if recenter_flat_edge_labels(group(steep, "614.5")) != group(steep, "614.5"):
+        bad.append("non-flat edge label wrongly moved")
+    return bad
+
+
 def render_svg(dot_path: Path, svg_path: Path) -> bool:
     dot = shutil.which("dot")
     if dot is None:
@@ -691,6 +744,8 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     if res.returncode != 0:
         # Graphviz being absent and Graphviz erroring are different outcomes: the latter fails.
         sys.exit("rmlib-zoo: graphviz `dot` failed")
+    svg_path.write_text(recenter_flat_edge_labels(svg_path.read_text(encoding="utf-8")),
+                        encoding="utf-8")
     return True
 
 
