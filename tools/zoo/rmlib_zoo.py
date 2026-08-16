@@ -2373,9 +2373,12 @@ def selftest_projection_layout() -> list[str]:
                and "weight=10" in ln for ln in lines):
         bad.append("non-enclosure base separation lacks the rank span with the "
                    "straight-up weight on the same edge")
-    if not any(ln.startswith('"baseNode" -> "q"') and f'label="{SEP_LABEL_PAD}⊭ω"' in ln
+    if not any(ln.startswith('"baseNode" -> "q"') and f'label="{TURNSTILE_PAD}⊭ω"' in ln
                for ln in lines):
         bad.append("separation label lacks the turnstile offset pad")
+    if not any(ln.startswith('"blob.bottom" -> "blob.top"')
+               and f'label="{TURNSTILE_PAD}⊨ω"' in ln for ln in lines):
+        bad.append("equivalence label lacks the turnstile offset pad")
     if any(ln.startswith('"p" ->') and "weight" in ln for ln in lines):
         bad.append("ordinary separation wrongly received the straight-up weight")
     if any(ln.startswith('"p" ->') and "minlen" in ln for ln in lines):
@@ -2393,15 +2396,16 @@ def selftest_projection_layout() -> list[str]:
     return bad
 
 
-# Leading en-spaces (U+2002) push a separation label's glyphs right of the edge
-# line so the turnstile's vertical stroke never blends with the arrow. En-spaces,
-# not ASCII spaces: graphviz emits SVG text without xml:space="preserve", so
-# ASCII leading spaces collapse at render time.
-SEP_LABEL_PAD = "   "
+# A leading en-space (U+2002) pushes a turnstile label's glyphs right of the
+# edge line so the turnstile's left vertical stroke never blends with the
+# arrow — ⊨ and ⊭ alike, in every view: general rule, no per-edge tweaking. An
+# en-space, not an ASCII space: graphviz emits SVG text without
+# xml:space="preserve", so ASCII leading spaces collapse at render time.
+TURNSTILE_PAD = " "
 
 
-def _sep_label(label: str) -> str:
-    return SEP_LABEL_PAD + label if label else label
+def _edge_label(label: str) -> str:
+    return TURNSTILE_PAD + label if label.startswith(("⊨", "⊭")) else label
 
 
 def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
@@ -2451,12 +2455,10 @@ def view_dot(name: str, view: dict) -> str:
             for e in cl["edges"]:
                 st = STYLE.get(e.get("family", ""), "style=solid")
                 ex = ", dir=both" if e.get("bidirectional") else ""
-                lbl = e.get("label", "")
                 if e.get("kind") == "nonImplication":
                     ex += ", arrowhead=tee"
-                    lbl = _sep_label(lbl)
                 lines.append(f'    "{e["exactLhs"]}" -> "{e["exactRhs"]}" '
-                             f'[label="{lbl}", {st}{ex}];')
+                             f'[label="{_edge_label(e.get("label", ""))}", {st}{ex}];')
             lines.append('  }')
     for n in view["nodes"]:
         if n in clusters:
@@ -2489,9 +2491,7 @@ def view_dot(name: str, view: dict) -> str:
             # derived implications/reductions; the tee marks a derived separation's
             # blocked direction, exactly as on direct separation edges.
             hd = "tee" if e.get("relation") == "nonImplication" else "onormal"
-            lbl = f'{e.get("label", "")} [{e["derivationText"]}]'
-            if hd == "tee":
-                lbl = _sep_label(lbl)
+            lbl = _edge_label(f'{e.get("label", "")} [{e["derivationText"]}]')
             lines.append(f'  "{src}" -> "{tgt}" [label="{lbl}", '
                          f'{style}, arrowhead={hd}];')
             continue
@@ -2529,10 +2529,10 @@ def view_dot(name: str, view: dict) -> str:
                     tgt, height, _tag = base_anchors[tgt_concept]
                     span = max(1, 3 - height)
                 extra += f", minlen={span}, weight=10"
-            lines.append(f'  "{src}" -> "{tgt}" [label="{_sep_label(e.get("label", ""))}", '
+            lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
-        lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
+        lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                      f'{style}{extra}];')
     lines.append('}')
     return "\n".join(lines) + "\n"
