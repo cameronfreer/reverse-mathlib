@@ -555,7 +555,11 @@ def cmd_check(args: argparse.Namespace) -> None:
                                 for vn in cl["variants"]})
         drawn_nodes = (len(view["nodes"]) - len(view.get("clusters", {}))
                        + cl_variant_count)
-        if dot.count(" -> ") != len(view["edges"]) + cl_edge_count:
+        # literature bands add invisible placement constraints to the DOT —
+        # never drawn edges, so they count in the DOT and never in the SVG
+        band_count = sum(len(b["concepts"])
+                         for b in view.get("literatureBands", []))
+        if dot.count(" -> ") != len(view["edges"]) + cl_edge_count + band_count:
             problems.append(f"view {vname} DOT/JSON edge counts disagree")
         # every DOT edge endpoint must be a declared node — otherwise Graphviz would
         # invent nodes and the rendered SVG would disagree with the canonical JSON
@@ -2322,12 +2326,15 @@ def build_family_views(catalog: dict) -> dict:
                        "missing bridges and unary form claims never render as edges. "
                        "An intra-concept calibration never renders as a concept "
                        "self-loop: its concept renders as an enclosure containing the "
-                       "exact variant nodes, with the fact drawn between them",
+                       "exact variant nodes, with the fact drawn between them. "
+                       "Literature bands are corpus-backed vertical placement only — "
+                       "no certified comparison edge exists where none is drawn",
             "nodes": sorted({c["id"].split(":", 1)[-1]
                              for c in catalog.get("concepts", [])}),
             "clusters": {c: {"variants": sorted(cl["variants"]),
                              "edges": cl["edges"]}
                          for c, cl in sorted(proj_clusters.items())},
+            "literatureBands": literature_bands(catalog, set(proj_clusters)),
             "edges": proj_edges},
         "computed-closure": build_computed_closure(catalog),
     }
@@ -2407,7 +2414,9 @@ def selftest_projection_layout() -> list[str]:
     view = {
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
-        "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM"],
+        "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
+                  "bandC"],
+        "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
                      "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
@@ -2425,7 +2434,11 @@ def selftest_projection_layout() -> list[str]:
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "mutM", "rhsConcept": "blob"},
             {"family": "ambientFactorization", "label": "ambient",
-             "lhsConcept": "blob", "rhsConcept": "mutM"}],
+             "lhsConcept": "blob", "rhsConcept": "mutM"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "ordE", "rhsConcept": "blob"},
+            {"family": "ambientFactorization", "label": "ambient",
+             "lhsConcept": "p", "rhsConcept": "ordE"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
@@ -2468,6 +2481,44 @@ def selftest_projection_layout() -> list[str]:
     if any(ln.startswith(('"mutM" -> "blob.top"', '"blob.top" -> "mutM"',
                           '"flatP" -> "blob.top"')) for ln in lines):
         bad.append("lateral pair wrongly anchored at a higher enclosure member")
+    if not any(ln.startswith('"ordE" -> "blob.top"') and "weight=0" in ln
+               for ln in lines):
+        bad.append("ordinary enclosure attachment misses the alignment-yield "
+                   "weight")
+    if any(ln.startswith('"baseNode" ->') and "weight=0" in ln for ln in lines):
+        bad.append("base separation wrongly received the alignment-yield weight")
+    if '"blob.top" -> "bandC" [style=invis, minlen=1];' not in dot:
+        bad.append("literature band misses the invisible lift above the "
+                   "enclosure's top member")
+    fake_catalog = {"corpus": {"claims": [
+        {"id": "goodClaim", "concepts": ["ns:injectionRangeExistence",
+                                         "ns:jumpClosure"]}]}}
+    saved = list(LITERATURE_BANDS)
+    try:
+        LITERATURE_BANDS[:] = [{"concepts": ["injectionRangeExistence"],
+                                "above": "wkl", "claims": ["missingClaim"]}]
+        for scenario, band in [
+                ("unregistered claim", {"concepts": ["injectionRangeExistence"],
+                                        "above": "wkl",
+                                        "claims": ["missingClaim"]}),
+                ("untagged concept", {"concepts": ["untaggedConcept"],
+                                      "above": "wkl", "claims": ["goodClaim"]}),
+                ("non-enclosure target", {"concepts": ["injectionRangeExistence"],
+                                          "above": "notACluster",
+                                          "claims": ["goodClaim"]})]:
+            LITERATURE_BANDS[:] = [band]
+            try:
+                literature_bands(fake_catalog, {"wkl"})
+                bad.append(f"literature-band validation passed a {scenario}")
+            except ValueError:
+                pass
+        LITERATURE_BANDS[:] = [{"concepts": ["injectionRangeExistence"],
+                                "above": "wkl", "claims": ["goodClaim"]}]
+        if literature_bands(fake_catalog, {"wkl"}) != [
+                {"concepts": ["injectionRangeExistence"], "above": "wkl"}]:
+            bad.append("literature-band validation mangled a valid band")
+    finally:
+        LITERATURE_BANDS[:] = saved
     return bad
 
 
@@ -2481,6 +2532,50 @@ TURNSTILE_PAD = " "
 
 def _edge_label(label: str) -> str:
     return TURNSTILE_PAD + label if label.startswith(("⊨", "⊭")) else label
+
+
+# Literature positioning: strength reads upward even where no certified
+# comparison edge exists. Each band places concepts strictly above a named
+# enclosure — placement only, never an edge — justified by registered corpus
+# claims. Validated fail-closed by literature_bands().
+LITERATURE_BANDS = [
+    {"concepts": ["injectionRangeExistence", "jumpClosure"], "above": "wkl",
+     "claims": ["hirstInjectionRangeAca", "hirstJumpIdealOmegaModels"]},
+]
+
+
+def literature_bands(catalog: dict, cluster_names: set) -> list:
+    """Validate LITERATURE_BANDS against the pinned corpus, fail-closed: every
+    cited claim must be registered, every band concept must be tagged by at
+    least one cited claim, and the target must render as an enclosure. Returns
+    the validated bands (claims dropped — the view carries placement only)."""
+    claims = {c["id"]: c for c in catalog.get("corpus", {}).get("claims", [])}
+    out = []
+    for band in LITERATURE_BANDS:
+        tagged = set()
+        for cid in band["claims"]:
+            if cid not in claims:
+                raise ValueError(
+                    f"literature band cites unregistered corpus claim {cid}")
+            tagged.update(x.split(":", 1)[-1]
+                          for x in claims[cid].get("concepts", []))
+        for c in band["concepts"]:
+            if c not in tagged:
+                raise ValueError(
+                    f"literature band concept {c} is not tagged by its cited claims")
+        if band["above"] not in cluster_names:
+            raise ValueError(
+                f"literature band target {band['above']} does not render as an enclosure")
+        out.append({"concepts": sorted(band["concepts"]), "above": band["above"]})
+    return out
+
+
+def _cluster_top_anchor(cl: dict) -> str:
+    """The enclosure member a literature band lifts from: the rank-top member
+    (tails no intra-cluster edge in the rendered direction; ties sorted)."""
+    tails = {e["exactLhs"] for e in cl["edges"]}
+    tops = sorted(v for v in cl["variants"] if v not in tails)
+    return tops[0] if tops else cl["variants"][0]
 
 
 def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
@@ -2629,14 +2724,23 @@ def view_dot(name: str, view: dict) -> str:
                 tgt = node
             extra += lat_edge[ei]
         else:
+            enclosure_touch = False
             if src in anchors:
                 node, tag = anchors[src]
                 extra += f', ltail="{tag}"'
                 src = node
+                enclosure_touch = True
             if tgt in anchors:
                 node, tag = anchors[tgt]
                 extra += f', lhead="{tag}"'
                 tgt = node
+                enclosure_touch = True
+            if enclosure_touch and e.get("kind") != "nonImplication":
+                # ordinary enclosure attachments yield x-alignment priority
+                # (weight=0): they never fight the straightness of plain-node
+                # chains, so a node stays vertically over its feeders instead
+                # of being dragged toward the enclosure
+                extra += ", weight=0"
         if e.get("family") == "computedClosure":
             # derived, never certified: dotted, and the rule name travels with the
             # edge so the geometry is never the only provenance. Open head for
@@ -2686,6 +2790,15 @@ def view_dot(name: str, view: dict) -> str:
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                      f'{style}{extra}];')
+    for band in view.get("literatureBands", []):
+        cl = clusters.get(band["above"])
+        if not cl:
+            continue
+        top = _cluster_top_anchor(cl)
+        for c in band["concepts"]:
+            # placement only, never an edge: the invisible constraint lifts the
+            # literature-positioned band strictly above the enclosure's top rank
+            lines.append(f'  "{top}" -> "{c}" [style=invis, minlen=1];')
     lines.append('}')
     return "\n".join(lines) + "\n"
 
