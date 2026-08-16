@@ -6,6 +6,7 @@ Authors: Cameron Freer
 import ReverseMathlib.Meta.Corpus
 import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.Omega.HallEfilc
+import ReverseMathlib.Ports.Omega.JumpClosureFact
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -60,6 +61,18 @@ rm_corpus_source hirst "1987 thesis; 1990 paper in Contemp. Math. 106"
   "Marriage-theorem calibrations; bibliographic citations only — the texts were not \
    re-consulted verbatim for this audit"
 
+rm_namespace hirstThesisPdf "Jeffry Hirst — Combinatorics in Subsystems of Second \
+  Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at \
+  hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 consulted directly (Theorems \
+  1.1-1.5 and §1.4 ω-models) — a verified source, distinct from the \
+  bibliographic-only hirst namespace"
+
+rm_corpus_source hirstThesisPdf
+  "sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4"
+  "Verified download of the scanned thesis PDF; statement-level anchor only — the \
+   theorem statements of Chapter 1 were read verbatim from the scan, and their \
+   proofs are deferred there to Simpson [50], which stays literature-backed"
+
 rm_presentation_family oneSidedEnumeratedFamily "One-sided families: an ℕ-indexed family \
   of finite candidate sets, transversal injective into the candidates; presentation \
   supplies the candidate relation and/or an explicit enumerator (this catalog's exact \
@@ -71,6 +84,10 @@ rm_presentation_family twoSidedMarriageSystem "Two-sided marriage systems (socie
 
 rm_presentation_family perfectMatchingFormulation "Perfect-matching formulations: \
   matchings exhausting one or both sides of a bipartite system, Simpson X.3-style"
+
+rm_presentation_family injectionRangeFormulation "Injection-range formulations: an \
+  injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis \
+  Chapter 1 notation, functions in Simpson's set-of-pairs coding"
 
 rm_presentation_family unrepresentedFormulation "No formulation present: the corpus \
   contains no principle for this concept at the pinned revision"
@@ -108,6 +125,20 @@ rm_corpus_claim hirstMarriageCalibrations where
     the one-sided relation-plus-enumerator problem; nothing verified verbatim in this \
     audit; no classification is transcribed, and none transfers without the recorded \
     bridge."
+
+rm_corpus_claim hirstInjectionRangeAca where
+  source := hirstThesisPdf "p. 7, Theorem 1.4"
+  family := injectionRangeFormulation
+  concepts := [injectionRangeExistence, jumpClosure]
+  wording := verbatim "Theorem 1.4: (RCA_0) The following are equivalent: i) ACA_0. \
+    ii) If f : N -> N is an injection, then the set Ran(f) = {y in N : exists x, \
+    f(x) = y} exists."
+  claim := "The classical ACA₀ calibration of injection-range existence, read \
+    verbatim from the verified scan (transliterated to ASCII). The thesis defers \
+    the proof to Simpson [50] (cf. [Sim09] III.1.3, literature-backed), and §1.4 \
+    identifies ACA₀'s ω-model set domains as the jump ideals — the registered \
+    ω-fact calibrates exactly the internal injection-graph presentation against \
+    the jump-closure property; no ACA-labeled object is registered."
 
 rm_presentation_bridge twoSidedToOneSidedEnumerated where
   family := twoSidedMarriageSystem

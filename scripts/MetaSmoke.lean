@@ -872,7 +872,7 @@ renders its honest verdict. -/
 -- countermodel record) and the one backend-qualified syntactic scoped result (the bridge's standard-calculus nonderivability). The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 5; variants: 10; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 7; variants: 12; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -969,7 +969,7 @@ rejected; punctuated external keys survive. The cross-module collision tests (si
 that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
-info: concepts (5):
+info: concepts (7):
   reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; the family's registered perfect-matching form asserts that every countable bipartite graph that is 2-regular on both sides has a perfect matching
     scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
@@ -986,6 +986,12 @@ info: concepts (5):
     variant reverse-mathlib:efilc.explicitSequential.ambient [ambient] ⟨ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness⟩
     variant reverse-mathlib:efilc.explicitSequential.enumeratedFibers.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.EFILCAt⟩
     problem reverse-mathlib:efilc.streamCodedFiberBonds [single]
+  reverse-mathlib:injectionRangeExistence — Injection-range existence: every injective function has a range — for every injection f there is a set containing exactly the values of f
+    scoping: Injection-range existence as a conceptual family (Hirst thesis Theorem 1.4, statement verified verbatim in the primary source; its proof is deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). The registered presentation is the exact injection-graph form; formula-coded, arbitrary-function, and enumeration presentations join only once their adapters are proved. No ACA label: no arithmetical-comprehension adapter is proved
+    variant reverse-mathlib:injectionRangeExistence.injectionGraphs.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.InjectionRangeExistenceAt⟩
+  reverse-mathlib:jumpClosure — Jump closure: the Turing jump of every set in the collection is again in the collection — a semantic closure property of second-order parts, distinguishing the jump ideals among the Turing ideals
+    scoping: A semantic closure-property node, not a theorem-strength principle: it names the closure condition the equivalence calibrates against, so the fact has an honest typed endpoint. Hirst thesis §1.4 identifies the set domains of ACA₀'s ω-models as the jump ideals — that identification stays literature-backed; it carries no external crosswalk
+    variant reverse-mathlib:jumpClosure.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.JumpClosedAt⟩
   reverse-mathlib:rca0Core — RCA₀ core (Turing-ideal presentation): a second-order part is nonempty, downward closed under Turing reducibility, and closed under recursive join. The atlas uses this as its base-context condition at the ω layer
     scoping: A base-context node, not a theorem-strength principle; it gives ω-scope separations an explicit typed left endpoint. Its identification with conventional RCA₀ ω-models remains literature-backed, with converse context adequacy pending. It carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
@@ -998,10 +1004,11 @@ info: concepts (5):
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
-namespaces (7):
+namespaces (8):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
+  hirstThesisPdf — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 consulted directly (Theorems 1.1-1.5 and §1.4 ω-models) — a verified source, distinct from the bibliographic-only hirst namespace
   rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
@@ -1284,7 +1291,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 6; variants: 12; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 14; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1416,7 +1423,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (10):
+info: facts (11):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The fourth production ω fact: the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   disjointRangeSeparationWklOmega [equivalence | theory rca0 omegaModels] disjointRangeSeparation.injectionGraphs.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
@@ -1428,6 +1435,8 @@ info: facts (10):
   fixImp [implication | theory fixRca0 provability] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — recorded, no evidence linked
+    note: The seventh production ω fact, and the first whose endpoints sit above the WKL circle: injection-range existence at the exact injection-graph presentation and jump closure are equivalent at the Turing-ideal ω layer. Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA label anywhere: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a reading, never a registered claim
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
@@ -1635,7 +1644,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 6; variants: 14; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 6 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 16; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1887,7 +1896,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (15):
+info: facts (16):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1918,6 +1927,10 @@ info: facts (15):
       note: fixture certification
       realization: implication kernel-checked over 'RMSmoke.SmokeBaseCtx'; context status: fixture ω-model context
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
+  injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.injectionRange_jumpClosure_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the two named direction theorems: injectionRangeExistenceAt_of_jumpClosedAt (jump closure → range existence, through range_le_jump and ideal downward closure) and jumpClosedAt_of_injectionRangeExistenceAt (range existence → jump closure, through jumpEnumGraph_le, the total injective packaging, and range_jumpEnum); both route spines and their mutual exclusion are pinned by dependency gates in scripts/MetaSmoke.lean
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
       note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1938,7 +1951,7 @@ info: facts (15):
 -- production ω fact, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2041,7 +2054,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2096,17 +2109,22 @@ rm_presentation_bridge badBridge where
   requires := "nothing"
 
 /--
-info: corpus sources (3):
+info: corpus sources (4):
   hirst @ 1987 thesis; 1990 paper in Contemp. Math. 106 — Marriage-theorem calibrations; bibliographic citations only — the texts were not re-consulted verbatim for this audit
+  hirstThesisPdf @ sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4 — Verified download of the scanned thesis PDF; statement-level anchor only — the theorem statements of Chapter 1 were read verbatim from the scan, and their proofs are deferred there to Simpson [50], which stays literature-backed
   rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
   simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
-presentation families (5):
+presentation families (6):
+  injectionRangeFormulation — Injection-range formulations: an injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis Chapter 1 notation, functions in Simpson's set-of-pairs coding
   oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
   perfectMatchingFormulation — Perfect-matching formulations: matchings exhausting one or both sides of a bipartite system, Simpson X.3-style
   sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
   twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
-corpus claims (4) — all reported; concept-level, never facts, never evidence:
+corpus claims (5) — all reported; concept-level, never facts, never evidence:
+  hirstInjectionRangeAca [hirstThesisPdf:"p. 7, Theorem 1.4" | injectionRangeFormulation] concepts: injectionRangeExistence, jumpClosure
+    wording (verbatim): Theorem 1.4: (RCA_0) The following are equivalent: i) ACA_0. ii) If f : N -> N is an injection, then the set Ran(f) = {y in N : exists x, f(x) = y} exists.
+    normalized: The classical ACA₀ calibration of injection-range existence, read verbatim from the verified scan (transliterated to ASCII). The thesis defers the proof to Simpson [50] (cf. [Sim09] III.1.3, literature-backed), and §1.4 identifies ACA₀'s ω-model set domains as the jump ideals — the registered ω-fact calibrates exactly the internal injection-graph presentation against the jump-closure property; no ACA-labeled object is registered.
   hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
     wording: (not captured; locator only)
     normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
@@ -2138,7 +2156,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2390,7 +2408,7 @@ rm_ingest_bridge_evidence "fixtures/backend/syntactic_duplicate_payload.json" ar
 -- validated semantic-countermodel record contributes exactly the explicitly
 -- backend-qualified all-model scoped result, and nothing else.
 /--
-info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2443,5 +2461,29 @@ the proof term stays clear; it never claims no alternate route exists):
   ReverseMathlib.Omega.jumpSet_infinite
 #rm_assert_proof_depends ReverseMathlib.Omega.range_jumpEnum
   ReverseMathlib.Omega.exists_newAccept
+
+/-! ### The seventh fact's route gates (issue #49)
+
+The equivalence certificate reaches both named direction theorems; each direction
+goes through its own reduction spine and never through the opposite direction. -/
+
+#rm_assert_proof_depends ReverseMathlib.Ports.injectionRange_jumpClosure_omega_equivalence
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt
+#rm_assert_proof_depends ReverseMathlib.Ports.injectionRange_jumpClosure_omega_equivalence
+  ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
+
+#rm_assert_proof_depends ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt
+  ReverseMathlib.Omega.range_le_jump
+#rm_assert_not_proof_depends ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt
+  [ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt,
+   ReverseMathlib.Omega.jumpEnum_recursiveIn]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
+  ReverseMathlib.Omega.jumpEnumGraph_le
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
+  ReverseMathlib.Omega.range_jumpEnum
+#rm_assert_not_proof_depends ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
+  [ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt,
+   ReverseMathlib.Omega.range_le_jump]
 
 end RMSmoke
