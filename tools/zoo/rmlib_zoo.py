@@ -2352,7 +2352,7 @@ def selftest_projection_layout() -> list[str]:
     view = {
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
-        "nodes": ["baseNode", "p", "q", "r", "blob"],
+        "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM"],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
                      "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
@@ -2364,7 +2364,13 @@ def selftest_projection_layout() -> list[str]:
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
              "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "blob"},
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
-             "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"}],
+             "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "flatP", "rhsConcept": "blob"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "mutM", "rhsConcept": "blob"},
+            {"family": "ambientFactorization", "label": "ambient",
+             "lhsConcept": "blob", "rhsConcept": "mutM"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
@@ -2393,6 +2399,20 @@ def selftest_projection_layout() -> list[str]:
                    "anchor with height-adjusted span")
     if any(ln.startswith('"baseNode" -> "blob.top"') for ln in lines):
         bad.append("base separation wrongly anchored at a higher enclosure member")
+    if not any(ln.startswith('"flatP" -> "blob.bottom"') and "minlen=0" in ln
+               and 'lhead="cluster_0"' in ln and "port" not in ln for ln in lines):
+        bad.append("pendant equivalence misses the flat rank-minimal anchor")
+    if dot.index('"flatP";') > dot.index("subgraph"):
+        bad.append("pendant lateral node not declared before the enclosure "
+                   "(left-side seating)")
+    mut = [ln for ln in lines if ln.startswith(('"mutM" -> "blob.bottom"',
+                                                '"blob.bottom" -> "mutM"'))]
+    if not (len(mut) == 2 and all("minlen=0" in ln and "tailport=" in ln
+                                  and "headport=" in ln for ln in mut)):
+        bad.append("mutual lateral pair misses flat anchoring with fanned lanes")
+    if any(ln.startswith(('"mutM" -> "blob.top"', '"blob.top" -> "mutM"',
+                          '"flatP" -> "blob.top"')) for ln in lines):
+        bad.append("lateral pair wrongly anchored at a higher enclosure member")
     return bad
 
 
@@ -2430,6 +2450,48 @@ def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
     return bottom, height(bottom)
 
 
+def _edge_concept(e: dict, end: str) -> str:
+    if end == "t":
+        return e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
+    return e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+
+
+# Facing-side compass lanes for fanning a lateral pair's parallel flat edges
+# (external-node port, member port), top lane first.
+_FLAT_LANES = [("nw", "ne"), ("w", "e"), ("sw", "se")]
+
+
+def _lateral_pairs(view: dict, clusters: dict) -> dict[tuple[str, str], str]:
+    """The lateral-pair rule, general and typed on view structure: an external
+    concept X and an enclosure C sit side by side — every {X, C} edge anchors at
+    C's rank-minimal member with minlen=0, keeping lhead/ltail clipping — when
+    the pair has no consistent vertical order. That is exactly when (a) X's only
+    view edge is a single bidirectional equivalence with C (a pendant
+    equivalence: symmetric, and nothing else places X), or (b) the pair carries
+    edges in both emitted directions (a drawn 2-cycle). Pendants are declared
+    before the cluster so dot's initial ordering seats them on the enclosure's
+    left; mutual pairs stay on the right. Separation edges never participate —
+    they keep the rising-lane rule."""
+    deg: dict[str, int] = {}
+    pair: dict[tuple[str, str], list[dict]] = {}
+    for e in view["edges"]:
+        s, t = _edge_concept(e, "t"), _edge_concept(e, "h")
+        deg[s] = deg.get(s, 0) + 1
+        deg[t] = deg.get(t, 0) + 1
+        if (s in clusters) != (t in clusters):
+            x, c = (t, s) if s in clusters else (s, t)
+            pair.setdefault((x, c), []).append(e)
+    lateral: dict[tuple[str, str], str] = {}
+    for (x, c), es in pair.items():
+        if any(e.get("kind") == "nonImplication" for e in es):
+            continue
+        if len(es) == 1 and deg[x] == 1 and es[0].get("bidirectional"):
+            lateral[(x, c)] = "left"
+        elif len({_edge_concept(e, "t") == x for e in es}) == 2:
+            lateral[(x, c)] = "right"
+    return lateral
+
+
 def view_dot(name: str, view: dict) -> str:
     # The concept projection reads bottom-up: base-context concepts — identified
     # by typed data (base_context_concepts), never by edge shape — sit on the
@@ -2440,6 +2502,28 @@ def view_dot(name: str, view: dict) -> str:
     clusters = view.get("clusters", {})
     anchors = {}
     base_anchors = {}
+    lateral = _lateral_pairs(view, clusters) if clusters else {}
+    lat_edge: dict[int, str] = {}
+    for (x, c), side in lateral.items():
+        es = sorted((i for i, e in enumerate(view["edges"])
+                     if frozenset((_edge_concept(e, "t"), _edge_concept(e, "h")))
+                     == frozenset((x, c))),
+                    key=lambda i: (view["edges"][i].get("family", ""),
+                                   view["edges"][i].get("label", "")))
+        for k, i in enumerate(es):
+            attr = ", minlen=0"
+            if len(es) > 1:
+                xp, mp = _FLAT_LANES[k % len(_FLAT_LANES)]
+                if side == "left":
+                    xp, mp = mp, xp
+                if _edge_concept(view["edges"][i], "t") == x:
+                    attr += f", tailport={xp}, headport={mp}"
+                else:
+                    attr += f", tailport={mp}, headport={xp}"
+            lat_edge[i] = attr
+    left_nodes = {x for (x, c), side in lateral.items() if side == "left"}
+    for n in sorted(left_nodes):
+        lines.append(f'  "{n}";')
     if clusters:
         # compound lets an external concept-level arrow clip at the enclosure
         # boundary instead of pointing at any particular internal variant
@@ -2461,7 +2545,7 @@ def view_dot(name: str, view: dict) -> str:
                              f'[label="{_edge_label(e.get("label", ""))}", {st}{ex}];')
             lines.append('  }')
     for n in view["nodes"]:
-        if n in clusters:
+        if n in clusters or n in left_nodes:
             continue
         lines.append(f'  "{n}";')
     base_nodes: set[str] = set()
@@ -2471,20 +2555,33 @@ def view_dot(name: str, view: dict) -> str:
         if base_nodes:
             lines.append('  {rank=min; '
                          + '; '.join(f'"{n}"' for n in sorted(base_nodes)) + ';}')
-    for e in view["edges"]:
+    for ei, e in enumerate(view["edges"]):
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
-        src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
-        tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+        src = _edge_concept(e, "t")
+        tgt = _edge_concept(e, "h")
         extra = ", dir=both" if e.get("bidirectional") else ""
-        if src in anchors:
-            node, tag = anchors[src]
-            extra += f', ltail="{tag}"'
-            src = node
-        if tgt in anchors:
-            node, tag = anchors[tgt]
-            extra += f', lhead="{tag}"'
-            tgt = node
+        if ei in lat_edge:
+            # lateral pair: flat edge into the rank-minimal member, clipped at
+            # the enclosure boundary; fanned across compass lanes when parallel
+            if src in anchors:
+                node, _h, tag = base_anchors[src]
+                extra += f', ltail="{tag}"'
+                src = node
+            if tgt in anchors:
+                node, _h, tag = base_anchors[tgt]
+                extra += f', lhead="{tag}"'
+                tgt = node
+            extra += lat_edge[ei]
+        else:
+            if src in anchors:
+                node, tag = anchors[src]
+                extra += f', ltail="{tag}"'
+                src = node
+            if tgt in anchors:
+                node, tag = anchors[tgt]
+                extra += f', lhead="{tag}"'
+                tgt = node
         if e.get("family") == "computedClosure":
             # derived, never certified: dotted, and the rule name travels with the
             # edge so the geometry is never the only provenance. Open head for
