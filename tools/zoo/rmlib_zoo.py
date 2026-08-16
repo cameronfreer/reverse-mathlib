@@ -2344,21 +2344,33 @@ def selftest_projection_layout() -> list[str]:
     projection view (no production names), a separation out of a typed
     base-context concept must receive the extra rank span (minlen) and the
     bottom-rank pin, while an ordinary separation between principles must
-    not. Returns the scenarios that wrongly passed."""
+    not; and a base separation into an enclosure must anchor at the
+    enclosure's rank-minimal member with the internal height taken off the
+    span (dot cannot place virtual nodes inside a cluster, so any other
+    anchor routes the edge around the side). Returns the scenarios that
+    wrongly passed."""
     view = {
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
-        "nodes": ["baseNode", "p", "q", "r"],
+        "nodes": ["baseNode", "p", "q", "r", "blob"],
+        "clusters": {
+            "blob": {"variants": ["blob.top", "blob.bottom"],
+                     "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
+                                "bidirectional": True, "exactLhs": "blob.bottom",
+                                "exactRhs": "blob.top"}]}},
         "edges": [
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
              "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "q"},
+            {"family": "certifiedOmegaFact", "kind": "nonImplication",
+             "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "blob"},
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
              "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
     bad = []
-    if not any(ln.startswith('"baseNode" ->') and "minlen=3" in ln for ln in lines):
+    if not any(ln.startswith('"baseNode" -> "q"') and "minlen=3" in ln
+               for ln in lines):
         bad.append("base-context separation lacks the extra rank span")
     if not any(ln.startswith('"baseNode" ->') and "weight=10" in ln for ln in lines):
         bad.append("base-context separation lacks the straight-up weight")
@@ -2368,7 +2380,37 @@ def selftest_projection_layout() -> list[str]:
         bad.append("ordinary separation wrongly received the extra rank span")
     if '{rank=min; "baseNode";}' not in dot:
         bad.append("base rank pin missing")
+    enclosure = [ln for ln in lines
+                 if ln.startswith('"baseNode" -> "blob.bottom"')]
+    if not any('lhead="cluster_0"' in ln and "minlen=2" in ln and "weight=10" in ln
+               for ln in enclosure):
+        bad.append("base separation into an enclosure misses the rank-minimal "
+                   "anchor with height-adjusted span")
+    if any(ln.startswith('"baseNode" -> "blob.top"') for ln in lines):
+        bad.append("base separation wrongly anchored at a higher enclosure member")
     return bad
+
+
+def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
+    """The enclosure member a rising base-context edge anchors at, with the
+    enclosure's internal rank height above it: the rank-minimal member is one
+    that heads no intra-cluster edge (in the rendered direction; ties resolved
+    by sorted order), and the height is the longest intra-cluster chain rising
+    from it. Purely geometric: `lhead` clips the arrow at the enclosure
+    boundary either way, so the anchor never changes what the arrow points at."""
+    heads = {e["exactRhs"] for e in cl["edges"]}
+    bottoms = sorted(v for v in cl["variants"] if v not in heads)
+    bottom = bottoms[0] if bottoms else cl["variants"][0]
+    adj: dict[str, list[str]] = {}
+    for e in cl["edges"]:
+        adj.setdefault(e["exactLhs"], []).append(e["exactRhs"])
+
+    def height(v: str, seen: tuple = ()) -> int:
+        if v in seen:
+            return 0
+        return max((1 + height(w, seen + (v,)) for w in adj.get(v, [])), default=0)
+
+    return bottom, height(bottom)
 
 
 def view_dot(name: str, view: dict) -> str:
@@ -2380,6 +2422,7 @@ def view_dot(name: str, view: dict) -> str:
              f'  rankdir={"BT" if bottom_up else "LR"};', '  node [shape=box];']
     clusters = view.get("clusters", {})
     anchors = {}
+    base_anchors = {}
     if clusters:
         # compound lets an external concept-level arrow clip at the enclosure
         # boundary instead of pointing at any particular internal variant
@@ -2387,6 +2430,7 @@ def view_dot(name: str, view: dict) -> str:
         for ci, (cname, cl) in enumerate(sorted(clusters.items())):
             tag = f"cluster_{ci}"
             anchors[cname] = (cl["variants"][0], tag)
+            base_anchors[cname] = _cluster_base_anchor(cl) + (tag,)
             lines.append(f'  subgraph "{tag}" {{')
             lines.append(f'    label="{cname} (concept)"; style=rounded;')
             for vn in cl["variants"]:
@@ -2451,10 +2495,22 @@ def view_dot(name: str, view: dict) -> str:
             # A separation out of a base-context node spans extra ranks so the base
             # sits substantially below the blob it fails to reach, and carries a
             # high weight so dot aligns the base directly beneath its target and
-            # routes the edge straight up instead of around the blob.
+            # routes the edge straight up instead of around the blob. When the target
+            # is an enclosure, the rising edge anchors at the enclosure's
+            # rank-minimal member: dot cannot place an edge's virtual nodes inside a
+            # cluster, so an edge into a higher internal rank is forced around the
+            # side regardless of weight. lhead still clips the arrow at the
+            # enclosure boundary — the anchor is pure geometry — and the enclosure's
+            # internal height comes off minlen so the base stays the same total
+            # span below the enclosure's top member.
             src_concept = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
             if src_concept in base_nodes:
-                extra += ", minlen=3, weight=10"
+                tgt_concept = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+                span = 3
+                if tgt_concept in base_anchors:
+                    tgt, height, _tag = base_anchors[tgt_concept]
+                    span = max(1, 3 - height)
+                extra += f", minlen={span}, weight=10"
             lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
