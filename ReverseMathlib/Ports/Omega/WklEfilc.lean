@@ -53,7 +53,7 @@ rm_fact wklEfilcOmega equivalence where
   scope := omegaModels
   lhs := [wkl.binaryTree.turingIdealOmega]
   rhs := [efilc.explicitSequential.enumeratedFibers.turingIdealOmega]
-  note := "The first production ω fact: the presentation-explicit binary-tree WKL and \
+  note := "Over every Turing ideal, the binary-tree formulation of weak Kőnig's lemma and \
     enumerated-fiber EFILC variants are equivalent at the Turing-ideal ω layer"
 
 revmath_certify_fact wklEfilcOmega where

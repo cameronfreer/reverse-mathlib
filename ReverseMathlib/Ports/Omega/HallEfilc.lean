@@ -60,7 +60,7 @@ rm_fact efilcHallOmega implication where
   scope := omegaModels
   lhs := [efilc.explicitSequential.enumeratedFibers.turingIdealOmega]
   rhs := [countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega]
-  note := "The Hall ω walking slice: an upper implication only — countable Hall's exact \
+  note := "An upper bound only: countable Hall's exact \
     classification at ω scope stays open (no lower bound is claimed)"
 
 revmath_certify_fact efilcHallOmega where

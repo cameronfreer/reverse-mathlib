@@ -262,8 +262,9 @@ def measure_surface(path: Path, role: str) -> dict:
 
     low = prose_all.lower()
     project_hits = [w for w in PROJECT_VOCABULARY if w in low]
+    # whole words only: "enumerated fibers" is mathematics, not an enum
     impl_hits = [w for w in IMPLEMENTATION_VOCABULARY
-                 if re.search(rf"\b{re.escape(w)}", low)]
+                 if re.search(rf"\b{re.escape(w)}(?:s|es|ed|ing)?\b", low)]
 
     # Sentences are split *within* each text segment, never across element
     # boundaries: two adjacent paragraphs are two sentences even when the second
@@ -303,6 +304,7 @@ def measure_surface(path: Path, role: str) -> dict:
         "images": {"count": len(parser.images),
                    "missingAlt": [i["src"] for i in parser.images if not i["alt"]]},
         "links": {"count": len(parser.links),
+                  "all": sorted({l["href"] for l in parser.links}),
                   "internal": sorted({l["href"] for l in parser.links
                                       if l["href"].startswith("#")})},
         "anchors": sorted(parser.anchors),
@@ -360,43 +362,81 @@ def build_report(site: Path, budgets: dict | None = None) -> dict:
 
 def check_budgets(surfaces: dict, budgets: dict | None) -> list[str]:
     """Hard rules only. Advisory metrics are reported, never enforced: brittle
-    limits on em dashes or compounds would fight good prose instead of bad."""
+    limits on em dashes or compounds would fight good prose instead of bad.
+
+    Ratchets (``max…``) hold a surface at the level it has reached, so a number
+    that has been driven down cannot drift back up, while a surface that is
+    already clean is held at zero by the corresponding boolean rule.
+    """
     if not budgets:
         return []
     bad: list[str] = []
-    for name, s in surfaces.items():
+    for name, s in sorted(surfaces.items()):
         role = s["role"]
         b = {**budgets.get("all", {}), **budgets.get(role, {})}
-        if b.get("noIdentifierLeaks") and s["identifierLeaks"]:
-            shown = ", ".join(sorted({x["token"] for x in s["identifierLeaks"]})[:6])
-            bad.append(f"{name}: identifiers in prose rather than lookup chips: {shown}")
+        leaks = sorted({x["token"] for x in s["identifierLeaks"]})
+        if b.get("noIdentifierLeaks") and leaks:
+            bad.append(f"{name}: identifiers used as words rather than lookup chips: "
+                       f"{', '.join(leaks[:6])}")
+        if b.get("maxIdentifierLeaks") is not None and \
+                len(s["identifierLeaks"]) > b["maxIdentifierLeaks"]:
+            bad.append(f"{name}: {len(s['identifierLeaks'])} identifiers in prose, "
+                       f"above the {b['maxIdentifierLeaks']} this surface has reached "
+                       f"({', '.join(leaks[:4])})")
         if b.get("noEnumTokens") and s["enumTokensInProse"]:
-            bad.append(f"{name}: catalog enum values in prose: "
+            bad.append(f"{name}: stored values in prose instead of English: "
                        f"{', '.join(s['enumTokensInProse'][:6])}")
+        if b.get("maxEnumTokensInProse") is not None and \
+                len(s["enumTokensInProse"]) > b["maxEnumTokensInProse"]:
+            bad.append(f"{name}: {len(s['enumTokensInProse'])} stored values in prose, "
+                       f"above the {b['maxEnumTokensInProse']} this surface has reached")
         if b.get("noProjectVocabulary") and s["vocabulary"]["projectManagement"]:
-            bad.append(f"{name}: project-management wording in reader prose: "
-                       f"{', '.join(s['vocabulary']['projectManagement'])}")
+            bad.append(f"{name}: scheduling vocabulary has no place in prose about "
+                       f"mathematics: {', '.join(s['vocabulary']['projectManagement'])}")
         if b.get("noImplementationVocabulary") and s["vocabulary"]["implementation"]:
-            bad.append(f"{name}: implementation wording belongs on methods or "
-                       f"reference: {', '.join(s['vocabulary']['implementation'])}")
-        if b.get("noDuplicateSentences") and s["duplicateSentences"]:
-            d = s["duplicateSentences"][0]
-            bad.append(f"{name}: a disclaimer is repeated {d['count']}× instead of "
-                       f"being stated once: {d['sentence'][:80]}…")
+            bad.append(f"{name}: implementation vocabulary belongs on the methods or "
+                       f"reference surface: "
+                       f"{', '.join(s['vocabulary']['implementation'][:6])}")
+        dupes = s["duplicateSentences"]
+        if b.get("noDuplicateSentences") and dupes and \
+                b.get("maxDuplicateSentences") is None:
+            d = dupes[0]
+            bad.append(f"{name}: a sentence is repeated {d['count']} times instead of "
+                       f"being stated once: {d['sentence'][:70]}…")
+        if b.get("maxDuplicateSentences") is not None and \
+                len(dupes) > b["maxDuplicateSentences"]:
+            bad.append(f"{name}: {len(dupes)} repeated sentences, above the "
+                       f"{b['maxDuplicateSentences']} this surface has reached")
         if b.get("maxDefaultOpenWords") and \
                 s["words"]["defaultOpen"] > b["maxDefaultOpenWords"]:
-            bad.append(f"{name}: {s['words']['defaultOpen']} words visible before "
-                       f"expanding anything, budget {b['maxDefaultOpenWords']}")
+            bad.append(f"{name}: {s['words']['defaultOpen']} words to read before "
+                       f"expanding anything, above the budget of "
+                       f"{b['maxDefaultOpenWords']}")
         if b.get("maxSections") and s["sections"] > b["maxSections"]:
-            bad.append(f"{name}: {s['sections']} major sections, budget "
+            bad.append(f"{name}: {s['sections']} major sections, above the budget of "
                        f"{b['maxSections']}")
         if b.get("requireAltText") and s["images"]["missingAlt"]:
-            bad.append(f"{name}: image without alternative text: "
+            bad.append(f"{name}: a graph image has no alternative text: "
                        f"{s['images']['missingAlt'][0]}")
+        hrefs = {l for l in s["links"]["all"]}
         for href in b.get("requireLinks", []):
-            if href not in {l for l in s["links"]["internal"]} and \
-                    not any(href in x for x in s["links"]["internal"]):
-                bad.append(f"{name}: expected navigation link {href} is missing")
+            if not any(h == href or h.startswith(href + "#") for h in hrefs):
+                bad.append(f"{name}: no link to {href}; the surfaces must reach "
+                           f"one another")
+        for anchor in b.get("requireAnchors", []):
+            if anchor not in s["anchors"]:
+                bad.append(f"{name}: expected anchor #{anchor} is missing")
+    # every internal link must land on an anchor that exists, on whichever
+    # surface it points at
+    anchors = {n: set(s["anchors"]) for n, s in surfaces.items()}
+    for name, s in sorted(surfaces.items()):
+        for href in s["links"]["all"]:
+            if "#" not in href or href.startswith("http"):
+                continue
+            page, _, frag = href.partition("#")
+            target = page or name
+            if target in anchors and frag and frag not in anchors[target]:
+                bad.append(f"{name}: link to {href} lands on no anchor in {target}")
     return bad
 
 
@@ -510,6 +550,78 @@ plain words continue afterwards in prose.</p>
         keys[k] = keys.get(k, 0) + 1
     if max(keys.values()) != 2:
         bad.append("a disclaimer repeated in two separate blocks was not detected")
+    return bad
+
+
+def selftest_budgets() -> list[str]:
+    """Every hard rule must fire on the fault it exists for, and stay silent on
+    text that is merely long or technical. A gate that cannot fail protects
+    nothing. Returns the scenarios that wrongly passed."""
+    bad: list[str] = []
+
+    def surface(role: str, **over) -> dict:
+        base = {"role": role, "words": {"defaultOpen": 100, "total": 100},
+                "sections": 2, "identifierLeaks": [], "enumTokensInProse": [],
+                "vocabulary": {"projectManagement": [], "implementation": []},
+                "duplicateSentences": [], "images": {"missingAlt": []},
+                "links": {"all": ["reference.html", "methods.html"], "internal": []},
+                "anchors": []}
+        base.update(over)
+        return base
+
+    strict = {"all": {"noProjectVocabulary": True, "noDuplicateSentences": True,
+                      "requireAltText": True},
+              "public": {"noIdentifierLeaks": True, "noEnumTokens": True,
+                         "noImplementationVocabulary": True,
+                         "maxDefaultOpenWords": 150, "maxSections": 3,
+                         "requireLinks": ["reference.html", "methods.html"]},
+              "reference": {"maxIdentifierLeaks": 5, "maxDuplicateSentences": 1}}
+
+    cases = [
+        ("an identifier used as a word",
+         {"index.html": surface("public",
+                                identifierLeaks=[{"token": "turingIdealOmega"}])}),
+        ("a stored value printed as prose",
+         {"index.html": surface("public", enumTokensInProse=["kernelChecked"])}),
+        ("scheduling vocabulary",
+         {"index.html": surface("public", vocabulary={
+             "projectManagement": ["tranche"], "implementation": []})}),
+        ("implementation vocabulary on the reader surface",
+         {"index.html": surface("public", vocabulary={
+             "projectManagement": [], "implementation": ["backend"]})}),
+        ("a disclaimer repeated across cards",
+         {"index.html": surface("public", duplicateSentences=[
+             {"count": 4, "sentence": "no fact is recorded"}])}),
+        ("a reading path over budget",
+         {"index.html": surface("public", words={"defaultOpen": 900, "total": 900})}),
+        ("too many major sections",
+         {"index.html": surface("public", sections=9)}),
+        ("a graph image with no alternative text",
+         {"index.html": surface("public", images={"missingAlt": ["g.svg"]})}),
+        ("a surface that cannot reach the others",
+         {"index.html": surface("public", links={"all": [], "internal": []})}),
+        ("a link to an anchor that does not exist",
+         {"index.html": surface("public",
+                                links={"all": ["reference.html#gone"], "internal": []}),
+          "reference.html": surface("reference", anchors=["present"])}),
+        ("a ratcheted count drifting upward",
+         {"reference.html": surface("reference",
+                                    identifierLeaks=[{"token": f"x{i}"}
+                                                     for i in range(6)])}),
+    ]
+    for name, surfaces in cases:
+        if not check_budgets(surfaces, strict):
+            bad.append(f"no failure reported for {name}")
+
+    clean = {"index.html": surface("public"),
+             "reference.html": surface("reference",
+                                       identifierLeaks=[{"token": "a"}],
+                                       duplicateSentences=[{"count": 2,
+                                                            "sentence": "x"}])}
+    if check_budgets(clean, strict):
+        bad.append("a clean site was reported as failing")
+    if check_budgets(clean, None) or check_budgets(clean, {}):
+        bad.append("baseline mode without budgets reported a failure")
     return bad
 
 

@@ -45,13 +45,46 @@ SCHEMA_ID = "reverse-mathlib.catalog/v7"
 AMBIENT_EDGE_LABEL = "ambient, kernel checked"
 
 
-# Prose budgets per surface, enforced at build time. Empty while the baseline is
-# being captured: the first commit measures the site as it stands, so the
-# before/after reduction is a recorded number rather than an assertion. Hard
-# rules only ever cover what is objectively wrong — an identifier in a sentence,
-# a scheduling word in reader prose, one disclaimer copied six times. Em dash
-# density, sentence length and compound density stay advisory in the report.
-READABILITY_BUDGETS: dict = {}
+# Prose budgets per surface, enforced at build time and set at the baseline the
+# rewrite reached, so the work cannot silently unwind. Hard rules cover only what
+# is objectively wrong: an identifier used as a fragment of a sentence, a stored
+# enum value in prose, scheduling vocabulary on a reader surface, one disclaimer
+# copied across cards, and a reading path that outgrows its budget.
+#
+# Em dash density, sentence length, shouted words and compound density stay
+# advisory in the report. Hard limits on them would fight good prose rather than
+# bad, and a sentence is sometimes long because the mathematics is.
+#
+# The reference surface still carries identifiers inside registered prose that no
+# renderer can mark without reading the sentence. Its allowance is a ratchet at
+# the level reached, not an endorsement: it may fall, never rise.
+READABILITY_BUDGETS: dict = {
+    "all": {
+        "noProjectVocabulary": True,
+        "noDuplicateSentences": True,
+        "requireAltText": True,
+    },
+    "public": {
+        "noIdentifierLeaks": True,
+        "noEnumTokens": True,
+        "noImplementationVocabulary": True,
+        "maxDefaultOpenWords": 1500,
+        "maxSections": 6,
+        "requireLinks": ["reference.html", "methods.html"],
+    },
+    "methods": {
+        "noIdentifierLeaks": True,
+        "noEnumTokens": True,
+        "maxDefaultOpenWords": 1500,
+        "maxSections": 8,
+    },
+    "reference": {
+        "maxIdentifierLeaks": 96,
+        "maxEnumTokensInProse": 11,
+        "maxDuplicateSentences": 2,
+        "maxDefaultOpenWords": 2200,
+    },
+}
 
 
 def repo_root() -> Path:
@@ -456,6 +489,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"flat-label recenter selftest failed: {name}")
     for name in readability.selftest_extraction():
         problems.append(f"readability extraction selftest failed: {name}")
+    for name in readability.selftest_budgets():
+        problems.append(f"readability budget selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -1291,7 +1326,7 @@ strong, the open end ordinary</span>
                     for ev in f_["evidence"]))
             note_block = f"<p>{prose(f_['note'])}</p>" if f_.get("note") else ""
             study_link = case_study_link(f_["id"])
-            cards.append(f"""<div class="card" data-family="certified">
+            cards.append(f"""<div class="card" data-family="certified" id="fact-{e(f_['id'])}">
 <h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
 <span class="tag">{e(KIND_PROSE.get(f_['kind'], f_['kind']))}</span>
 <span class="tag">{e(prose_verification('kernelChecked'))}</span>
@@ -1319,8 +1354,8 @@ strong, the open end ordinary</span>
                 f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
             refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
             study_link = case_study_link(c["id"])
-            cards.append(f"""<details class="card">
-<summary><strong>{e(gloss(c['statement']))}</strong> — <code>{e(c['id'])}</code></summary>
+            cards.append(f"""<details class="card" id="concept-{e(short_id(c['id']))}">
+<summary><strong>{e(gloss(c['statement']))}</strong> <code>{e(short_id(c['id']))}</code></summary>
 <p>{e(c['statement'])}</p>
 <p class="meta">{prose(c['description'])}</p>
 {refs_block}{study_link}</details>""")
@@ -1487,7 +1522,7 @@ strong, the open end ordinary</span>
             if r.get("downgraded"):
                 differs.append(("downgraded", e(r["downgraded"])))
             body = "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in rows + differs)
-            cards.append(f"""<details class="card" data-family="backend">
+            cards.append(f"""<details class="card" data-family="backend" id="backend-{e(r['id'])}">
 <summary><code>{e(r['id'])}</code>
 <span class="tag">{e(prose_verification(r['status']))}</span></summary>
 <dl>{body}</dl></details>""")
@@ -1686,10 +1721,11 @@ is labelled as such.</p>"""
 <h1>{e(title)}</h1>
 {surfaces_nav(page)}
 {body}
-<footer>Canonical data: <a href="catalog.direct.json"><code>catalog.direct.json</code></a>
-(schema <code>{e(catalog["schema"])}</code>) —
+<footer>{"The data behind these pages: " if page == "index.html" else "Canonical data: "}
+<a href="catalog.direct.json"><code>catalog.direct.json</code></a>
+{"" if page == "index.html" else f'(schema <code>{e(catalog["schema"])}</code>) '}—
 Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
-No timestamp by design: the catalog depends only on the environment and the pin.</footer>
+{"" if page == "index.html" else "There is no timestamp by design: the data depends only on the environment and the revisions above."}</footer>
 </main>{script}</body></html>
 """
 

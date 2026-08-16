@@ -25,7 +25,7 @@ family (WKLω ⇔ EFILCω already links the `wkl` and `efilc` concepts).
 
 Routes, each its own frozen artifact:
 
-* **forward** (`WKLω → matchingω`): through the frozen EFILC bridge
+* **forward** (`WKLω → matchingω`): through the EFILC equivalence
   (`efilcAt_of_weakKonigAt`) and the paired mate-table compiler
   (`twoRegularPerfectMatchingAt_of_efilcAt`, Shafer §6.1 Lemma 6.1.7 at
   `m = 1`);
@@ -69,7 +69,7 @@ rm_statement_variant
 named route theorems — the reversal `matching_separates` ∘
 `weakKonigAt_of_disjointRangeSeparationAt` through the bridge-local separation
 interface, and the forward `efilcAt_of_weakKonigAt` ∘
-`twoRegularPerfectMatchingAt_of_efilcAt` through the frozen EFILC bridge — and
+`twoRegularPerfectMatchingAt_of_efilcAt` through the EFILC equivalence — and
 nothing else; the dependency gates in `scripts/MetaSmoke.lean` require this
 proof to reach all four, so registration preserves those artifacts rather than
 silently replacing them with an inline proof. -/
@@ -86,7 +86,7 @@ rm_fact wklTwoRegularMatchingOmega equivalence where
   scope := omegaModels
   lhs := [countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega]
   rhs := [wkl.binaryTree.turingIdealOmega]
-  note := "The fifth production ω fact and the first certified equivalence \
+  note := "The first proved equivalence \
     involving the countableHall family: the enumerated-neighborhood 2-regular \
     perfect-matching variant and the binary-tree WKL variant are equivalent at the \
     Turing-ideal ω layer. Provenance: Shafer thesis §6.1 Thm 6.1.2, citing Hirst \
@@ -102,7 +102,7 @@ revmath_certify_fact wklTwoRegularMatchingOmega where
     weakKonigAt_of_disjointRangeSeparationAt (the reversal, through the \
     bridge-local unregistered disjoint-range separation interface), and \
     efilcAt_of_weakKonigAt then twoRegularPerfectMatchingAt_of_efilcAt (the \
-    forward, through the frozen EFILC bridge); all route architectures and this \
+    forward, through the EFILC equivalence); all route architectures and this \
     composition are pinned by dependency gates in scripts/MetaSmoke.lean"
 
 end ReverseMathlib.Ports
