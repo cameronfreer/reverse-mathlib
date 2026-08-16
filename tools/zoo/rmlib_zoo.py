@@ -440,6 +440,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"base-context classifier selftest failed: {name}")
     for name in selftest_projection_layout():
         problems.append(f"projection-layout selftest failed: {name}")
+    for name in selftest_flat_label_recenter():
+        problems.append(f"flat-label recenter selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -553,7 +555,11 @@ def cmd_check(args: argparse.Namespace) -> None:
                                 for vn in cl["variants"]})
         drawn_nodes = (len(view["nodes"]) - len(view.get("clusters", {}))
                        + cl_variant_count)
-        if dot.count(" -> ") != len(view["edges"]) + cl_edge_count:
+        # literature bands add invisible placement constraints to the DOT —
+        # never drawn edges, so they count in the DOT and never in the SVG
+        band_count = sum(len(b["concepts"])
+                         for b in view.get("literatureBands", []))
+        if dot.count(" -> ") != len(view["edges"]) + cl_edge_count + band_count:
             problems.append(f"view {vname} DOT/JSON edge counts disagree")
         # every DOT edge endpoint must be a declared node — otherwise Graphviz would
         # invent nodes and the rendered SVG would disagree with the canonical JSON
@@ -682,6 +688,57 @@ def to_dot(catalog: dict) -> str:
     return "\n".join(lines) + "\n"
 
 
+def recenter_flat_edge_labels(svg: str) -> str:
+    """Graphviz pins a flat edge's label to the midpoint of the *unclipped*
+    node gap, so when the edge is clipped at an enclosure boundary the label
+    can stray off the visible arrow (no dot-language attribute moves it —
+    label, xlabel, head/tail labels, and ports all land on the same spot).
+    Deterministic post-pass on the exact failure signature, general across
+    views: inside each edge group whose path is horizontal (flat), a label
+    sitting outside the path's x-extent is recentered onto it. Well-placed
+    labels and non-flat edges are untouched."""
+
+    def fix_group(m: "re.Match[str]") -> str:
+        g = m.group(0)
+        path = re.search(r'<path[^>]*\bd="([^"]+)"', g)
+        text = re.search(r'(<text[^>]*\bx=")([\d.eE+-]+)(")', g)
+        if not path or not text:
+            return g
+        pts = re.findall(r'([\d.eE+-]+),([\d.eE+-]+)', path.group(1))
+        xs = [float(x) for x, _ in pts]
+        ys = [float(y) for _, y in pts]
+        if not xs or max(ys) - min(ys) > 1.0:
+            return g
+        if min(xs) <= float(text.group(2)) <= max(xs):
+            return g
+        mid = (min(xs) + max(xs)) / 2
+        return g.replace(text.group(0), f'{text.group(1)}{mid:.2f}{text.group(3)}', 1)
+
+    return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
+
+
+def selftest_flat_label_recenter() -> list[str]:
+    """The flat-clipped-label post-pass is frozen on its exact firing
+    condition: a stray label on a flat edge is recentered onto the visible
+    span; in-span labels and non-flat edges stay untouched. Returns the
+    scenarios that wrongly passed."""
+    def group(path: str, x: str) -> str:
+        return ('<g id="edge1" class="edge">\n<title>a&#45;&gt;b</title>\n'
+                f'<path fill="none" d="{path}"/>\n'
+                f'<text text-anchor="middle" x="{x}" y="-275.8">L</text>\n</g>')
+    bad = []
+    flat = "M626,-291.4C632,-291.4 638,-291.4 644,-291.4"
+    out = recenter_flat_edge_labels(group(flat, "614.5"))
+    if 'x="635.00"' not in out:
+        bad.append("stray flat label not recentered onto the visible span")
+    if recenter_flat_edge_labels(group(flat, "630")) != group(flat, "630"):
+        bad.append("in-span flat label wrongly moved")
+    steep = "M626,-291.4C632,-260.1 638,-240.2 644,-215.9"
+    if recenter_flat_edge_labels(group(steep, "614.5")) != group(steep, "614.5"):
+        bad.append("non-flat edge label wrongly moved")
+    return bad
+
+
 def render_svg(dot_path: Path, svg_path: Path) -> bool:
     dot = shutil.which("dot")
     if dot is None:
@@ -691,6 +748,8 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     if res.returncode != 0:
         # Graphviz being absent and Graphviz erroring are different outcomes: the latter fails.
         sys.exit("rmlib-zoo: graphviz `dot` failed")
+    svg_path.write_text(recenter_flat_edge_labels(svg_path.read_text(encoding="utf-8")),
+                        encoding="utf-8")
     return True
 
 
@@ -877,9 +936,17 @@ reduction: open head (pinned, external)</span>
             "concept-projection.svg" if "concept-projection" in view_svgs else None,
             "views/concept-projection/graph.dot", "views/concept-projection/graph.json",
             open_=True)
+        # vertical placement is geometry, so it must never be the only provenance:
+        # every literature band states what positions it, and that nothing is certified
+        bands = "".join(
+            f'<p><strong>{e(", ".join(b["concepts"]))}</strong> drawn above '
+            f'<strong>{e(b["above"])}</strong> — literature placement only, no '
+            f'certified comparison edge. Corpus claim '
+            f'<code>{e(b["order"]["claim"])}</code>: {e(b["order"]["reading"])}.</p>'
+            for b in v.get("literatureBands", []))
         fine_print = (f'<details class="fineprint"><summary>Projection fine print '
                       f'(exact merge and enclosure rules)</summary>'
-                      f'<p>{e(v["comment"])}</p></details>')
+                      f'<p>{e(v["comment"])}</p>{bands}</details>')
         return (f'<h2 id="overview">Concept overview — a noncanonical, lossy, '
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
@@ -2267,12 +2334,15 @@ def build_family_views(catalog: dict) -> dict:
                        "missing bridges and unary form claims never render as edges. "
                        "An intra-concept calibration never renders as a concept "
                        "self-loop: its concept renders as an enclosure containing the "
-                       "exact variant nodes, with the fact drawn between them",
+                       "exact variant nodes, with the fact drawn between them. "
+                       "Literature bands are corpus-backed vertical placement only — "
+                       "no certified comparison edge exists where none is drawn",
             "nodes": sorted({c["id"].split(":", 1)[-1]
                              for c in catalog.get("concepts", [])}),
             "clusters": {c: {"variants": sorted(cl["variants"]),
                              "edges": cl["edges"]}
                          for c, cl in sorted(proj_clusters.items())},
+            "literatureBands": literature_bands(catalog, set(proj_clusters)),
             "edges": proj_edges},
         "computed-closure": build_computed_closure(catalog),
     }
@@ -2344,31 +2414,321 @@ def selftest_projection_layout() -> list[str]:
     projection view (no production names), a separation out of a typed
     base-context concept must receive the extra rank span (minlen) and the
     bottom-rank pin, while an ordinary separation between principles must
-    not. Returns the scenarios that wrongly passed."""
+    not; and a base separation into an enclosure must anchor at the
+    enclosure's rank-minimal member with the internal height taken off the
+    span (dot cannot place virtual nodes inside a cluster, so any other
+    anchor routes the edge around the side). Returns the scenarios that
+    wrongly passed."""
     view = {
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
-        "nodes": ["baseNode", "p", "q", "r"],
+        "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
+                  "bandC"],
+        "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
+        "clusters": {
+            "blob": {"variants": ["blob.top", "blob.bottom"],
+                     "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
+                                "bidirectional": True, "exactLhs": "blob.bottom",
+                                "exactRhs": "blob.top"}]}},
         "edges": [
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
              "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "q"},
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
-             "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"}],
+             "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "blob"},
+            {"family": "certifiedOmegaFact", "kind": "nonImplication",
+             "label": "⊭ω", "lhsConcept": "p", "rhsConcept": "r"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "flatP", "rhsConcept": "blob"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "mutM", "rhsConcept": "blob"},
+            {"family": "ambientFactorization", "label": "ambient",
+             "lhsConcept": "blob", "rhsConcept": "mutM"},
+            {"family": "computedClosureUnused", "label": "third",
+             "lhsConcept": "mutM", "rhsConcept": "blob"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "ordE", "rhsConcept": "blob"},
+            {"family": "ambientFactorization", "label": "ambient",
+             "lhsConcept": "p", "rhsConcept": "ordE"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
     bad = []
-    if not any(ln.startswith('"baseNode" ->') and "minlen=3" in ln for ln in lines):
-        bad.append("base-context separation lacks the extra rank span")
-    if not any(ln.startswith('"baseNode" ->') and "weight=10" in ln for ln in lines):
-        bad.append("base-context separation lacks the straight-up weight")
+    if not any(ln.startswith('"baseNode" -> "q"') and "minlen=3" in ln
+               and "weight=10" in ln for ln in lines):
+        bad.append("non-enclosure base separation lacks the rank span with the "
+                   "straight-up weight on the same edge")
+    if not any(ln.startswith('"baseNode" -> "q"') and f'label="{TURNSTILE_PAD}⊭ω"' in ln
+               for ln in lines):
+        bad.append("separation label lacks the turnstile offset pad")
+    if not any(ln.startswith('"blob.bottom" -> "blob.top"')
+               and f'label="{TURNSTILE_PAD}⊨ω"' in ln for ln in lines):
+        bad.append("equivalence label lacks the turnstile offset pad")
     if any(ln.startswith('"p" ->') and "weight" in ln for ln in lines):
         bad.append("ordinary separation wrongly received the straight-up weight")
     if any(ln.startswith('"p" ->') and "minlen" in ln for ln in lines):
         bad.append("ordinary separation wrongly received the extra rank span")
     if '{rank=min; "baseNode";}' not in dot:
         bad.append("base rank pin missing")
+    enclosure = [ln for ln in lines
+                 if ln.startswith('"baseNode" -> "blob.bottom"')]
+    if not any('lhead="cluster_0"' in ln and "minlen=2" in ln and "weight=10" in ln
+               for ln in enclosure):
+        bad.append("base separation into an enclosure misses the rank-minimal "
+                   "anchor with height-adjusted span")
+    if any(ln.startswith('"baseNode" -> "blob.top"') for ln in lines):
+        bad.append("base separation wrongly anchored at a higher enclosure member")
+    if not any(ln.startswith('"flatP" -> "blob.bottom"') and "minlen=0" in ln
+               and 'lhead="cluster_0"' in ln and "port" not in ln for ln in lines):
+        bad.append("pendant equivalence misses the flat rank-minimal anchor")
+    if dot.index('"flatP";') > dot.index("subgraph"):
+        bad.append("pendant lateral node not declared before the enclosure "
+                   "(left-side seating)")
+    mut = [ln for ln in lines if ln.startswith(('"mutM" -> "blob.bottom"',
+                                                '"blob.bottom" -> "mutM"'))]
+    if not (len(mut) == 3 and all("minlen=0" in ln and "tailport=" in ln
+                                  and "headport=" in ln for ln in mut)):
+        bad.append("mutual lateral pair misses flat anchoring with fanned lanes")
+    lanes = {(re.search(r"tailport=(\w+)", ln).group(1),
+              re.search(r"headport=(\w+)", ln).group(1)) for ln in mut
+             if "tailport=" in ln and "headport=" in ln}
+    if len(lanes) != 3:
+        bad.append("three parallel lateral edges did not get three distinct lanes")
+    over = dict(view)
+    over["edges"] = view["edges"] + [
+        {"family": "importedReduction", "label": "≤W",
+         "lhsConcept": "mutM", "rhsConcept": "blob"}]
+    try:
+        view_dot("concept-projection", over)
+        bad.append("a fourth parallel lateral edge was routed instead of rejected")
+    except ValueError:
+        pass
+    if any(ln.startswith(('"mutM" -> "blob.top"', '"blob.top" -> "mutM"',
+                          '"flatP" -> "blob.top"')) for ln in lines):
+        bad.append("lateral pair wrongly anchored at a higher enclosure member")
+    if not any(ln.startswith('"ordE" -> "blob.top"') and "weight=0" in ln
+               for ln in lines):
+        bad.append("ordinary enclosure attachment misses the alignment-yield "
+                   "weight")
+    if any(ln.startswith('"baseNode" ->') and "weight=0" in ln for ln in lines):
+        bad.append("base separation wrongly received the alignment-yield weight")
+    if '"blob.top" -> "bandC" [style=invis, minlen=1];' not in dot:
+        bad.append("literature band misses the invisible lift above the "
+                   "enclosure's top member")
+    fake_catalog = {"corpus": {"claims": [
+        {"id": "goodClaim", "concepts": ["ns:injectionRangeExistence",
+                                         "ns:jumpClosure"]},
+        {"id": "orderClaim", "concepts": ["ns:wkl", "ns:jumpClosure"]},
+        {"id": "targetOnlyClaim", "concepts": ["ns:wkl"]}]}}
+    ok_order = {"claim": "orderClaim", "reading": "r"}
+    saved = list(LITERATURE_BANDS)
+    try:
+        for scenario, band in [
+                ("unregistered claim", {"concepts": ["jumpClosure"], "above": "wkl",
+                                        "claims": ["missingClaim"],
+                                        "order": ok_order}),
+                ("untagged concept", {"concepts": ["untaggedConcept"],
+                                      "above": "wkl", "claims": ["goodClaim"],
+                                      "order": ok_order}),
+                ("non-enclosure target", {"concepts": ["jumpClosure"],
+                                          "above": "notACluster",
+                                          "claims": ["goodClaim"],
+                                          "order": ok_order}),
+                ("missing order record", {"concepts": ["jumpClosure"],
+                                          "above": "wkl",
+                                          "claims": ["goodClaim"]}),
+                ("empty order reading", {"concepts": ["jumpClosure"], "above": "wkl",
+                                         "claims": ["goodClaim"],
+                                         "order": {"claim": "orderClaim",
+                                                   "reading": "  "}}),
+                ("unregistered order claim", {"concepts": ["jumpClosure"],
+                                              "above": "wkl",
+                                              "claims": ["goodClaim"],
+                                              "order": {"claim": "nope",
+                                                        "reading": "r"}}),
+                # the finding this gate exists for: a claim that identifies the
+                # band's own concepts but says nothing about the target
+                ("order claim unrelated to the target",
+                 {"concepts": ["jumpClosure"], "above": "wkl",
+                  "claims": ["goodClaim"],
+                  "order": {"claim": "goodClaim", "reading": "r"}}),
+                ("order claim unrelated to the band",
+                 {"concepts": ["jumpClosure"], "above": "wkl",
+                  "claims": ["goodClaim"],
+                  "order": {"claim": "targetOnlyClaim", "reading": "r"}})]:
+            LITERATURE_BANDS[:] = [band]
+            try:
+                literature_bands(fake_catalog, {"wkl"})
+                bad.append(f"literature-band validation passed a {scenario}")
+            except ValueError:
+                pass
+        LITERATURE_BANDS[:] = [{"concepts": ["jumpClosure"], "above": "wkl",
+                                "claims": ["goodClaim"], "order": ok_order}]
+        if literature_bands(fake_catalog, {"wkl"}) != [
+                {"concepts": ["jumpClosure"], "above": "wkl",
+                 "order": {"claim": "orderClaim", "reading": "r"}}]:
+            bad.append("literature-band validation mangled a valid band")
+    finally:
+        LITERATURE_BANDS[:] = saved
     return bad
+
+
+# A leading en-space (U+2002) pushes a turnstile label's glyphs right of the
+# edge line so the turnstile's left vertical stroke never blends with the
+# arrow — ⊨ and ⊭ alike, in every view: general rule, no per-edge tweaking. An
+# en-space, not an ASCII space: graphviz emits SVG text without
+# xml:space="preserve", so ASCII leading spaces collapse at render time.
+TURNSTILE_PAD = " "
+
+
+def _edge_label(label: str) -> str:
+    return TURNSTILE_PAD + label if label.startswith(("⊨", "⊭")) else label
+
+
+# Literature positioning: strength reads upward even where no certified
+# comparison edge exists. Each band places concepts strictly above a named
+# enclosure — placement only, never an edge. Identifying the band's concepts
+# is not enough to justify the *ordering*, so every band carries an `order`
+# record naming the registered corpus claim that relates the band to the
+# target, plus the reading it licenses. Validated fail-closed by
+# literature_bands().
+LITERATURE_BANDS = [
+    {"concepts": ["injectionRangeExistence", "jumpClosure"], "above": "wkl",
+     "claims": ["hirstInjectionRangeAca", "hirstJumpIdealOmegaModels"],
+     "order": {
+         "claim": "hirstLowWklOmegaModel",
+         "reading": "The cited claim exhibits an ω-model of WKL₀ all of whose "
+                    "sets are low; no jump ideal is low (a jump ideal contains "
+                    "0', which is not low), so a WKL₀ ω-model need not be jump "
+                    "closed. That is the literature basis for placing the "
+                    "jump-closure band above the WKL circle. The converse "
+                    "direction (jump closure gives WKL) is textbook ACA₀ ⇒ "
+                    "WKL₀, literature-backed and NOT certified here; no "
+                    "comparison edge is drawn, and this record licenses "
+                    "placement only"}},
+]
+
+
+def literature_bands(catalog: dict, cluster_names: set) -> list:
+    """Validate LITERATURE_BANDS against the pinned corpus, fail-closed. Every
+    cited claim must be registered; every band concept must be tagged by a
+    cited claim; the target must render as an enclosure; and — the part that
+    justifies the *above* relation rather than mere identification — the band's
+    `order` record must name a registered claim that itself tags the target and
+    at least one band concept, with a nonempty reading. Returns the validated
+    bands with placement plus the order record (the view never carries a drawn
+    edge for a band)."""
+    claims = {c["id"]: c for c in catalog.get("corpus", {}).get("claims", [])}
+
+    def tags(cid: str, why: str) -> set:
+        if cid not in claims:
+            raise ValueError(
+                f"literature band cites unregistered corpus claim {cid} ({why})")
+        return {x.split(":", 1)[-1] for x in claims[cid].get("concepts", [])}
+
+    out = []
+    for band in LITERATURE_BANDS:
+        tagged: set = set()
+        for cid in band["claims"]:
+            tagged |= tags(cid, "concept identification")
+        for c in band["concepts"]:
+            if c not in tagged:
+                raise ValueError(
+                    f"literature band concept {c} is not tagged by its cited claims")
+        if band["above"] not in cluster_names:
+            raise ValueError(
+                f"literature band target {band['above']} does not render as an enclosure")
+        order = band.get("order") or {}
+        if not order.get("claim") or not (order.get("reading") or "").strip():
+            raise ValueError(
+                f"literature band above {band['above']} carries no order record: "
+                "a band must name the claim relating it to the target, and the "
+                "reading that claim licenses")
+        otags = tags(order["claim"], "order justification")
+        if band["above"] not in otags:
+            raise ValueError(
+                f"literature band order claim {order['claim']} does not relate to "
+                f"the target concept {band['above']} — identification of the band's "
+                "own concepts never justifies an ordering")
+        if not otags & set(band["concepts"]):
+            raise ValueError(
+                f"literature band order claim {order['claim']} does not relate to "
+                "any band concept")
+        out.append({"concepts": sorted(band["concepts"]), "above": band["above"],
+                    "order": {"claim": order["claim"],
+                              "reading": order["reading"]}})
+    return out
+
+
+def _cluster_top_anchor(cl: dict) -> str:
+    """The enclosure member a literature band lifts from: the rank-top member
+    (tails no intra-cluster edge in the rendered direction; ties sorted)."""
+    tails = {e["exactLhs"] for e in cl["edges"]}
+    tops = sorted(v for v in cl["variants"] if v not in tails)
+    return tops[0] if tops else cl["variants"][0]
+
+
+def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
+    """The enclosure member a rising base-context edge anchors at, with the
+    enclosure's internal rank height above it: the rank-minimal member is one
+    that heads no intra-cluster edge (in the rendered direction; ties resolved
+    by sorted order), and the height is the longest intra-cluster chain rising
+    from it. Purely geometric: `lhead` clips the arrow at the enclosure
+    boundary either way, so the anchor never changes what the arrow points at."""
+    heads = {e["exactRhs"] for e in cl["edges"]}
+    bottoms = sorted(v for v in cl["variants"] if v not in heads)
+    bottom = bottoms[0] if bottoms else cl["variants"][0]
+    adj: dict[str, list[str]] = {}
+    for e in cl["edges"]:
+        adj.setdefault(e["exactLhs"], []).append(e["exactRhs"])
+
+    def height(v: str, seen: tuple = ()) -> int:
+        if v in seen:
+            return 0
+        return max((1 + height(w, seen + (v,)) for w in adj.get(v, [])), default=0)
+
+    return bottom, height(bottom)
+
+
+def _edge_concept(e: dict, end: str) -> str:
+    if end == "t":
+        return e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
+    return e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+
+
+# Facing-side compass lanes for fanning a lateral pair's parallel flat edges
+# (external-node port, member port), top lane first.
+_FLAT_LANES = [("nw", "ne"), ("w", "e"), ("sw", "se")]
+
+
+def _lateral_pairs(view: dict, clusters: dict) -> dict[tuple[str, str], str]:
+    """The lateral-pair rule, general and typed on view structure: an external
+    concept X and an enclosure C sit side by side — every {X, C} edge anchors at
+    C's rank-minimal member with minlen=0, keeping lhead/ltail clipping — when
+    the pair has no consistent vertical order. That is exactly when (a) X's only
+    view edge is a single bidirectional equivalence with C (a pendant
+    equivalence: symmetric, and nothing else places X), or (b) the pair carries
+    edges in both emitted directions (a drawn 2-cycle). Pendants are declared
+    before the cluster so dot's initial ordering seats them on the enclosure's
+    left; mutual pairs stay on the right. Separation edges never participate —
+    they keep the rising-lane rule."""
+    deg: dict[str, int] = {}
+    pair: dict[tuple[str, str], list[dict]] = {}
+    for e in view["edges"]:
+        s, t = _edge_concept(e, "t"), _edge_concept(e, "h")
+        deg[s] = deg.get(s, 0) + 1
+        deg[t] = deg.get(t, 0) + 1
+        if (s in clusters) != (t in clusters):
+            x, c = (t, s) if s in clusters else (s, t)
+            pair.setdefault((x, c), []).append(e)
+    lateral: dict[tuple[str, str], str] = {}
+    for (x, c), es in pair.items():
+        if any(e.get("kind") == "nonImplication" for e in es):
+            continue
+        if len(es) == 1 and deg[x] == 1 and es[0].get("bidirectional"):
+            lateral[(x, c)] = "left"
+        elif len({_edge_concept(e, "t") == x for e in es}) == 2:
+            lateral[(x, c)] = "right"
+    return lateral
 
 
 def view_dot(name: str, view: dict) -> str:
@@ -2380,6 +2740,35 @@ def view_dot(name: str, view: dict) -> str:
              f'  rankdir={"BT" if bottom_up else "LR"};', '  node [shape=box];']
     clusters = view.get("clusters", {})
     anchors = {}
+    base_anchors = {}
+    lateral = _lateral_pairs(view, clusters) if clusters else {}
+    lat_edge: dict[int, str] = {}
+    for (x, c), side in lateral.items():
+        es = sorted((i for i, e in enumerate(view["edges"])
+                     if frozenset((_edge_concept(e, "t"), _edge_concept(e, "h")))
+                     == frozenset((x, c))),
+                    key=lambda i: (view["edges"][i].get("family", ""),
+                                   view["edges"][i].get("label", "")))
+        if len(es) > len(_FLAT_LANES):
+            # fail closed rather than wrap: a fourth parallel edge would reuse the
+            # first lane's ports and silently draw two edges on top of each other
+            raise ValueError(
+                f"lateral pair {x} <-> {c} has {len(es)} parallel edges but only "
+                f"{len(_FLAT_LANES)} distinct routing lanes exist")
+        for k, i in enumerate(es):
+            attr = ", minlen=0"
+            if len(es) > 1:
+                xp, mp = _FLAT_LANES[k]
+                if side == "left":
+                    xp, mp = mp, xp
+                if _edge_concept(view["edges"][i], "t") == x:
+                    attr += f", tailport={xp}, headport={mp}"
+                else:
+                    attr += f", tailport={mp}, headport={xp}"
+            lat_edge[i] = attr
+    left_nodes = {x for (x, c), side in lateral.items() if side == "left"}
+    for n in sorted(left_nodes):
+        lines.append(f'  "{n}";')
     if clusters:
         # compound lets an external concept-level arrow clip at the enclosure
         # boundary instead of pointing at any particular internal variant
@@ -2387,6 +2776,7 @@ def view_dot(name: str, view: dict) -> str:
         for ci, (cname, cl) in enumerate(sorted(clusters.items())):
             tag = f"cluster_{ci}"
             anchors[cname] = (cl["variants"][0], tag)
+            base_anchors[cname] = _cluster_base_anchor(cl) + (tag,)
             lines.append(f'  subgraph "{tag}" {{')
             lines.append(f'    label="{cname} (concept)"; style=rounded;')
             for vn in cl["variants"]:
@@ -2397,10 +2787,10 @@ def view_dot(name: str, view: dict) -> str:
                 if e.get("kind") == "nonImplication":
                     ex += ", arrowhead=tee"
                 lines.append(f'    "{e["exactLhs"]}" -> "{e["exactRhs"]}" '
-                             f'[label="{e.get("label", "")}", {st}{ex}];')
+                             f'[label="{_edge_label(e.get("label", ""))}", {st}{ex}];')
             lines.append('  }')
     for n in view["nodes"]:
-        if n in clusters:
+        if n in clusters or n in left_nodes:
             continue
         lines.append(f'  "{n}";')
     base_nodes: set[str] = set()
@@ -2410,28 +2800,51 @@ def view_dot(name: str, view: dict) -> str:
         if base_nodes:
             lines.append('  {rank=min; '
                          + '; '.join(f'"{n}"' for n in sorted(base_nodes)) + ';}')
-    for e in view["edges"]:
+    for ei, e in enumerate(view["edges"]):
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
-        src = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
-        tgt = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+        src = _edge_concept(e, "t")
+        tgt = _edge_concept(e, "h")
         extra = ", dir=both" if e.get("bidirectional") else ""
-        if src in anchors:
-            node, tag = anchors[src]
-            extra += f', ltail="{tag}"'
-            src = node
-        if tgt in anchors:
-            node, tag = anchors[tgt]
-            extra += f', lhead="{tag}"'
-            tgt = node
+        if ei in lat_edge:
+            # lateral pair: flat edge into the rank-minimal member, clipped at
+            # the enclosure boundary; fanned across compass lanes when parallel
+            if src in anchors:
+                node, _h, tag = base_anchors[src]
+                extra += f', ltail="{tag}"'
+                src = node
+            if tgt in anchors:
+                node, _h, tag = base_anchors[tgt]
+                extra += f', lhead="{tag}"'
+                tgt = node
+            extra += lat_edge[ei]
+        else:
+            enclosure_touch = False
+            if src in anchors:
+                node, tag = anchors[src]
+                extra += f', ltail="{tag}"'
+                src = node
+                enclosure_touch = True
+            if tgt in anchors:
+                node, tag = anchors[tgt]
+                extra += f', lhead="{tag}"'
+                tgt = node
+                enclosure_touch = True
+            if enclosure_touch and e.get("kind") != "nonImplication":
+                # ordinary enclosure attachments yield x-alignment priority
+                # (weight=0): they never fight the straightness of plain-node
+                # chains, so a node stays vertically over its feeders instead
+                # of being dragged toward the enclosure
+                extra += ", weight=0"
         if e.get("family") == "computedClosure":
             # derived, never certified: dotted, and the rule name travels with the
             # edge so the geometry is never the only provenance. Open head for
             # derived implications/reductions; the tee marks a derived separation's
             # blocked direction, exactly as on direct separation edges.
             hd = "tee" if e.get("relation") == "nonImplication" else "onormal"
-            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")} '
-                         f'[{e["derivationText"]}]", {style}, arrowhead={hd}];')
+            lbl = _edge_label(f'{e.get("label", "")} [{e["derivationText"]}]')
+            lines.append(f'  "{src}" -> "{tgt}" [label="{lbl}", '
+                         f'{style}, arrowhead={hd}];')
             continue
         if e.get("strongEnd") == "head":
             extra += ", arrowhead=normal, arrowtail=onormal"
@@ -2451,15 +2864,36 @@ def view_dot(name: str, view: dict) -> str:
             # A separation out of a base-context node spans extra ranks so the base
             # sits substantially below the blob it fails to reach, and carries a
             # high weight so dot aligns the base directly beneath its target and
-            # routes the edge straight up instead of around the blob.
+            # routes the edge straight up instead of around the blob. When the target
+            # is an enclosure, the rising edge anchors at the enclosure's
+            # rank-minimal member: dot cannot place an edge's virtual nodes inside a
+            # cluster, so an edge into a higher internal rank is forced around the
+            # side regardless of weight. lhead still clips the arrow at the
+            # enclosure boundary — the anchor is pure geometry — and the enclosure's
+            # internal height comes off minlen so the base stays the same total
+            # span below the enclosure's top member.
             src_concept = e.get("lhsConcept") or e.get("lhs") or e.get("exactLhs")
             if src_concept in base_nodes:
-                extra += ", minlen=3, weight=10"
-            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
+                tgt_concept = e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
+                span = 3
+                if tgt_concept in base_anchors:
+                    tgt, height, _tag = base_anchors[tgt_concept]
+                    span = max(1, 3 - height)
+                extra += f", minlen={span}, weight=10"
+            lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
-        lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
+        lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                      f'{style}{extra}];')
+    for band in view.get("literatureBands", []):
+        cl = clusters.get(band["above"])
+        if not cl:
+            continue
+        top = _cluster_top_anchor(cl)
+        for c in band["concepts"]:
+            # placement only, never an edge: the invisible constraint lifts the
+            # literature-positioned band strictly above the enclosure's top rank
+            lines.append(f'  "{top}" -> "{c}" [style=invis, minlen=1];')
     lines.append('}')
     return "\n".join(lines) + "\n"
 
