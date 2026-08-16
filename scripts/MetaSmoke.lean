@@ -2395,4 +2395,53 @@ info: concepts: 6; variants: 15; ports: 8; evidence: 10 (8 kernel checked, 2 cla
 #guard_msgs in
 #revmath_stats
 
+/-! ### Issue #49 feasibility slice: independent route gates
+
+The four deliverables of the relativized-evaluator slice, each with its pinned
+positive route and negative exclusion (`#rm_assert_not_proof_depends` establishes
+the proof term stays clear; it never claims no alternate route exists):
+
+* the range-to-jump reduction goes through `exists_code`, the primitive-recursive
+  curry map, and the one-query membership characterization — never through the
+  jump-enumeration construction;
+* bounded acceptance goes through the table evaluator and the `evaln_congr`
+  agreement — never through `jumpSet`;
+* the enumeration-graph reduction goes through the executable first-acceptance
+  enumeration and bounded acceptance — never through the range-to-jump theorem;
+* the range characterization goes through the padding/infinitude and the
+  least-stage specification. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.range_le_jump
+  ReverseMathlib.Omega.OracleCode.exists_code
+#rm_assert_proof_depends ReverseMathlib.Omega.range_le_jump
+  ReverseMathlib.Omega.OracleCode.primrec₂_curry
+#rm_assert_proof_depends ReverseMathlib.Omega.range_le_jump
+  ReverseMathlib.Omega.mem_jumpSet_iff
+#rm_assert_proof_depends ReverseMathlib.Omega.range_le_jump
+  ReverseMathlib.Omega.OracleCode.eval_curry
+#rm_assert_not_proof_depends ReverseMathlib.Omega.range_le_jump
+  [ReverseMathlib.Omega.jumpEnum, ReverseMathlib.Omega.nthNewAccept_recursiveIn,
+   ReverseMathlib.Omega.jumpEnum_recursiveIn]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpAccept_recursiveIn
+  ReverseMathlib.Omega.OracleCode.primrec_evaln_getD
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpAccept_recursiveIn
+  ReverseMathlib.Omega.OracleCode.evaln_table
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpAccept_recursiveIn
+  ReverseMathlib.Omega.table_recursiveIn
+#rm_assert_not_proof_depends ReverseMathlib.Omega.jumpAccept_recursiveIn
+  [ReverseMathlib.Omega.jumpSet]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpEnumGraph_le
+  ReverseMathlib.Omega.nthNewAccept_recursiveIn
+#rm_assert_proof_depends ReverseMathlib.Omega.jumpEnumGraph_le
+  ReverseMathlib.Omega.jumpAccept_recursiveIn
+#rm_assert_not_proof_depends ReverseMathlib.Omega.jumpEnumGraph_le
+  [ReverseMathlib.Omega.range_le_jump]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.range_jumpEnum
+  ReverseMathlib.Omega.jumpSet_infinite
+#rm_assert_proof_depends ReverseMathlib.Omega.range_jumpEnum
+  ReverseMathlib.Omega.exists_newAccept
+
 end RMSmoke

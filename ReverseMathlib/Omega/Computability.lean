@@ -20,8 +20,8 @@ and the first certified ω-scope fact only after the fact-evidence linkage (#24)
 
 Design notes: a set is presented to the oracle machinery through its characteristic
 function `charFn`, so `A ≤ᵀ B` is `Nat.RecursiveIn {charFn B} (charFn A)`. The join uses the
-standard even/odd coding. The Turing jump is deliberately absent — off the critical path for
-the WKLω milestone.
+standard even/odd coding. The Turing jump lives in `ReverseMathlib.Omega.Jump`, built on
+the oracle codes of `ReverseMathlib.Omega.OracleCode`.
 -/
 
 namespace ReverseMathlib.Omega
