@@ -35,11 +35,23 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import readability  # noqa: E402  (sibling module, loaded from this file's directory)
+
 SCHEMA_ID = "reverse-mathlib.catalog/v7"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
 AMBIENT_EDGE_LABEL = "ambient, kernel checked"
+
+
+# Prose budgets per surface, enforced at build time. Empty while the baseline is
+# being captured: the first commit measures the site as it stands, so the
+# before/after reduction is a recorded number rather than an assertion. Hard
+# rules only ever cover what is objectively wrong — an identifier in a sentence,
+# a scheduling word in reader prose, one disclaimer copied six times. Em dash
+# density, sentence length and compound density stay advisory in the report.
+READABILITY_BUDGETS: dict = {}
 
 
 def repo_root() -> Path:
@@ -442,6 +454,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"projection-layout selftest failed: {name}")
     for name in selftest_flat_label_recenter():
         problems.append(f"flat-label recenter selftest failed: {name}")
+    for name in readability.selftest_extraction():
+        problems.append(f"readability extraction selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -3007,9 +3021,19 @@ def cmd_build(args: argparse.Namespace) -> None:
             if marker not in page:
                 sys.exit(f"rmlib-zoo build: corpus section marker missing: {marker!r}")
     (site / "index.html").write_text(page)
+    # Prose measurement runs on the BUILT pages, so what a reader meets is what
+    # gets measured. Baseline mode: reported and tracked, never enforced — the
+    # budgets arrive once the surfaces are split and the prose is rewritten.
+    report = readability.write_report(site, budgets=READABILITY_BUDGETS)
     print(f"rmlib-zoo build: wrote {dot_path.name}"
           f"{', ' + svg_path.name if have_svg else ''}, views/ambient-standard/graph.json, "
           f"site/index.html under {out}")
+    print("rmlib-zoo readability (advisory metrics are reported, never enforced):")
+    print(readability.summarize(report))
+    if report["violations"]:
+        for v in report["violations"]:
+            print(f"rmlib-zoo readability: {v}")
+        sys.exit("rmlib-zoo build: readability budgets exceeded")
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
