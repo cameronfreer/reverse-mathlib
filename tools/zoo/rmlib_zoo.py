@@ -2370,10 +2370,12 @@ def selftest_projection_layout() -> list[str]:
     lines = [ln.strip() for ln in dot.splitlines()]
     bad = []
     if not any(ln.startswith('"baseNode" -> "q"') and "minlen=3" in ln
+               and "weight=10" in ln for ln in lines):
+        bad.append("non-enclosure base separation lacks the rank span with the "
+                   "straight-up weight on the same edge")
+    if not any(ln.startswith('"baseNode" -> "q"') and f'label="{SEP_LABEL_PAD}⊭ω"' in ln
                for ln in lines):
-        bad.append("base-context separation lacks the extra rank span")
-    if not any(ln.startswith('"baseNode" ->') and "weight=10" in ln for ln in lines):
-        bad.append("base-context separation lacks the straight-up weight")
+        bad.append("separation label lacks the turnstile offset pad")
     if any(ln.startswith('"p" ->') and "weight" in ln for ln in lines):
         bad.append("ordinary separation wrongly received the straight-up weight")
     if any(ln.startswith('"p" ->') and "minlen" in ln for ln in lines):
@@ -2389,6 +2391,17 @@ def selftest_projection_layout() -> list[str]:
     if any(ln.startswith('"baseNode" -> "blob.top"') for ln in lines):
         bad.append("base separation wrongly anchored at a higher enclosure member")
     return bad
+
+
+# Leading en-spaces (U+2002) push a separation label's glyphs right of the edge
+# line so the turnstile's vertical stroke never blends with the arrow. En-spaces,
+# not ASCII spaces: graphviz emits SVG text without xml:space="preserve", so
+# ASCII leading spaces collapse at render time.
+SEP_LABEL_PAD = "   "
+
+
+def _sep_label(label: str) -> str:
+    return SEP_LABEL_PAD + label if label else label
 
 
 def _cluster_base_anchor(cl: dict) -> tuple[str, int]:
@@ -2438,10 +2451,12 @@ def view_dot(name: str, view: dict) -> str:
             for e in cl["edges"]:
                 st = STYLE.get(e.get("family", ""), "style=solid")
                 ex = ", dir=both" if e.get("bidirectional") else ""
+                lbl = e.get("label", "")
                 if e.get("kind") == "nonImplication":
                     ex += ", arrowhead=tee"
+                    lbl = _sep_label(lbl)
                 lines.append(f'    "{e["exactLhs"]}" -> "{e["exactRhs"]}" '
-                             f'[label="{e.get("label", "")}", {st}{ex}];')
+                             f'[label="{lbl}", {st}{ex}];')
             lines.append('  }')
     for n in view["nodes"]:
         if n in clusters:
@@ -2474,8 +2489,11 @@ def view_dot(name: str, view: dict) -> str:
             # derived implications/reductions; the tee marks a derived separation's
             # blocked direction, exactly as on direct separation edges.
             hd = "tee" if e.get("relation") == "nonImplication" else "onormal"
-            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")} '
-                         f'[{e["derivationText"]}]", {style}, arrowhead={hd}];')
+            lbl = f'{e.get("label", "")} [{e["derivationText"]}]'
+            if hd == "tee":
+                lbl = _sep_label(lbl)
+            lines.append(f'  "{src}" -> "{tgt}" [label="{lbl}", '
+                         f'{style}, arrowhead={hd}];')
             continue
         if e.get("strongEnd") == "head":
             extra += ", arrowhead=normal, arrowtail=onormal"
@@ -2511,7 +2529,7 @@ def view_dot(name: str, view: dict) -> str:
                     tgt, height, _tag = base_anchors[tgt_concept]
                     span = max(1, 3 - height)
                 extra += f", minlen={span}, weight=10"
-            lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
+            lines.append(f'  "{src}" -> "{tgt}" [label="{_sep_label(e.get("label", ""))}", '
                          f'{style}{extra}, arrowhead=tee];')
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{e.get("label", "")}", '
