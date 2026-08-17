@@ -1,20 +1,50 @@
+/-
+Copyright (c) 2026 Cameron Freer. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Cameron Freer
+-/
 import ReverseMathlib.Omega.BoundedTree
 import ReverseMathlib.Omega.Jump
 import ReverseMathlib.Omega.JumpClosure
 
 /-!
-Slice A scratch: the leftmost path of an explicitly bounded tree is computable from
-the jump of the tree joined with its bound, so a jump-closed Turing ideal satisfies
-explicitly bounded Kőnig.
+# The leftmost path from the jump: jump closure gives explicitly bounded Kőnig
+(issue #50, slice A)
 
-This file develops the combinatorics first (extendibility, the finite-branching
-step), then the computability layer. Nothing here enters the spine until the whole
-slice is green.
+The leftmost path of an internally presented explicitly bounded tree is computable from
+the jump of the tree joined with its bound graph, so over the Turing-ideal closure
+conditions a jump-closed second-order part satisfies explicitly bounded Kőnig
+(`boundedKonigAt_of_jumpClosedAt`) — the first certified comparison between the jump
+family and the WKL circle.
 
-A plain `lake build` does not compile this file: the experimental root does not
-import it, and CI will not catch a break here. Build it by name:
+The construction is layered so that each oracle access is visible and gated:
 
-  lake build ReverseMathlibExperimental.KonigLeftmostPath
+* **Combinatorics** (`ExtendsAt`, `ExtendibleAt`, `exists_extendible_child`): the
+  finite-branching step — an extendible node of a bounded tree has an extendible child
+  below the supplied bound — proved by induction on the bound, with no witness function
+  over a finite range. The specification path `leftmostNode` walks least extendible
+  children; `Nat.sInf` is total, so every lemma carries the nonemptiness hypothesis
+  explicitly and the empty-set fallback value never acquires semantic meaning.
+* **The base oracle through its own jump** (`le_jump`): every set is computable from its
+  own jump. The construction names `jumpSet (joinSet tree boundGraph)` as its **only**
+  oracle; recovering the base from its jump is what makes that honest rather than a
+  silent second query.
+* **The finite extension test and the frontier** (`extendsTest_iff`,
+  `frontier_ne_nil_iff`): the supplied bound turns extension search at each length into
+  a finite enumeration, and the depth recursion carrying the surviving nodes as state is
+  the program shape — computable from the join, in transcript-then-verify normal form
+  (`frontier_recursiveIn_join`).
+* **One-query extendibility** (`extendibleSet_le_jump`): dead ends are semidecidable in
+  the join, so the jump decides extendibility with a single curry-coded query.
+* **The executable recursion** (`leftmostExec`, `leftmostExec_eq`,
+  `leftmostGraph_le_jump`): each step takes one finite transcript of extendibility bits
+  over the enumerated children and appends the first `1`; the equality with the
+  `leastChild` specification holds exactly under the extendibility invariant. The
+  delivered reduction is graph-level; internal packaging by ideal closure is separate.
+
+Route gates in `scripts/MetaSmoke.lean` pin `le_jump`, the frontier computation, the
+one-query extendibility reduction, and the executable-spec equality into the proof of
+the packaged implication, and keep `le_jump` independent of `range_le_jump`.
 -/
 
 namespace ReverseMathlib.Omega
@@ -709,7 +739,7 @@ fallback value never acquires semantic meaning. -/
 open Classical in
 /-- The executable step: append the first child value whose extendibility bit is `1` in
 the finite transcript below the recovered bound. -/
-private noncomputable def leftmostStep (T : InternalBoundedTree Ω) (c : ℕ) : ℕ :=
+noncomputable def leftmostStep (T : InternalBoundedTree Ω) (c : ℕ) : ℕ :=
   seqCode (decodeSeq c ++
     [((List.range (T.bound.eval (decodeSeq c).length)).map fun v =>
         charFnTot {x | ExtendibleAt T.tree.1 x} (seqCode (decodeSeq c ++ [v]))).findIdx
@@ -719,7 +749,7 @@ open Classical in
 /-- On an extendible node the transcript's first `1` is the least extendible child, so
 the executable step meets the `leastChild` specification exactly where the invariant
 holds. -/
-private theorem leftmostStep_eq (T : InternalBoundedTree Ω) {c : ℕ}
+theorem leftmostStep_eq (T : InternalBoundedTree Ω) {c : ℕ}
     (hc : ExtendibleAt T.tree.1 c) :
     leftmostStep T c = seqCode (decodeSeq c ++ [leastChild T c]) := by
   have hbnd : T.bound.MapsTo (decodeSeq c).length (T.bound.eval (decodeSeq c).length) :=
@@ -747,7 +777,7 @@ private theorem leftmostStep_eq (T : InternalBoundedTree Ω) {c : ℕ}
   rw [leftmostStep, hfind]
 
 /-- The executable leftmost recursion: iterate the step from the empty node. -/
-private noncomputable def leftmostExec (T : InternalBoundedTree Ω) : ℕ → ℕ
+noncomputable def leftmostExec (T : InternalBoundedTree Ω) : ℕ → ℕ
   | 0 => seqCode []
   | n + 1 => leftmostStep T (leftmostExec T n)
 
