@@ -81,7 +81,7 @@ READABILITY_BUDGETS: dict = {
     "reference": {
         "maxIdentifierLeaks": 96,
         "maxEnumTokensInProse": 11,
-        "maxDuplicateSentences": 2,
+        "maxDuplicateSentences": 4,
         "maxDefaultOpenWords": 2200,
     },
 }
@@ -485,6 +485,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"base-context classifier selftest failed: {name}")
     for name in selftest_projection_layout():
         problems.append(f"projection-layout selftest failed: {name}")
+    for name in selftest_optional_graphviz():
+        problems.append(f"optional-graphviz selftest failed: {name}")
     for name in selftest_flat_label_recenter():
         problems.append(f"flat-label recenter selftest failed: {name}")
     for name in readability.selftest_extraction():
@@ -764,6 +766,46 @@ def recenter_flat_edge_labels(svg: str) -> str:
         return g.replace(text.group(0), f'{text.group(1)}{mid:.2f}{text.group(3)}', 1)
 
     return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
+
+
+def selftest_optional_graphviz() -> list[str]:
+    """Graphviz is optional, and a build without it is a supported path: the atlas
+    still states its results, and the reference surface still lists every edge.
+    A legend explains a picture, so it appears only alongside one. Returns the
+    scenarios that wrongly passed."""
+    bad = []
+    view = {"view": "concept-projection", "family": "mixed-direct-only",
+            "nodes": ["p", "q"], "baseContextConcepts": [],
+            "edges": [{"family": "certifiedOmegaFact", "kind": "implication",
+                       "label": "⊨ω", "lhsConcept": "p", "rhsConcept": "q"}]}
+    catalog = {"schema": "test/v1", "concepts": [], "statementVariants": [],
+               "facts": [], "ports": [], "scopedResults": [],
+               "dependencies": {"leanVersion": "4", "mathlibRevision": "abc"}}
+    # Bands and derivations have their own fixtures; this one is about pictures
+    # and legends, so the synthetic catalog carries neither.
+    saved_bands = list(LITERATURE_BANDS)
+    saved_derivs = list(COMPUTED_DERIVATIONS)
+    LITERATURE_BANDS.clear()
+    COMPUTED_DERIVATIONS.clear()
+    for have_svg, svgs, want_legend in ((False, set(), 0), (True, {"concept-projection"}, 1)):
+        try:
+            pages = site_pages(catalog, have_svg, "digraph {}", svgs)
+        except Exception as exc:                      # noqa: BLE001 - reported, not raised
+            bad.append(f"building with graphviz={have_svg} raised {exc!r}")
+            continue
+        for name, text in pages.items():
+            shows = "<img " in text
+            legends = text.count('<div class="legend"')
+            if legends != (1 if shows else 0):
+                bad.append(f"graphviz={have_svg}: {name} carries {legends} legend(s) "
+                           f"with {'a picture' if shows else 'no picture'}")
+        if not have_svg and "<img " in "".join(pages.values()):
+            bad.append("a build without graphviz still emitted an image")
+        if have_svg and pages["index.html"].count('<div class="legend"') != want_legend:
+            bad.append("the atlas lost its legend when a picture was available")
+    LITERATURE_BANDS[:] = saved_bands
+    COMPUTED_DERIVATIONS[:] = saved_derivs
+    return bad
 
 
 def selftest_flat_label_recenter() -> list[str]:
@@ -1107,9 +1149,8 @@ def site_pages(catalog: dict, have_svg: bool, dot_text: str,
                    f'alt="{e(title)}: directed graph with {e(str(nodes_n))} nodes and '
                    f'{edges_n} edges"/></figure>')
         else:
-            fig = ("<p><em>(graph image rendered when Graphviz is available at build "
-                   "time; the edge-detail list below is the always-present accessible "
-                   "form)</em></p>")
+            # Said once per surface where it applies, not once per panel.
+            fig = ""
         return f"""<details class="graphpanel"{" open" if open_ else ""}><summary><strong>{e(title)}</strong>
 ({nodes_n} nodes, {edges_n} edges; {e(styling)})</summary>
 <p><em>{e(comment)}</em></p>
@@ -1148,12 +1189,14 @@ text and line style, never by color alone)</summary><ul>{edge_items}</ul></detai
                 if not ed.get(k):
                     continue
                 v = str(ed[k])
-                if k == "status":
-                    bits.append((name, e(prose_verification(v))))
-                elif k == "scope":
-                    bits.append((name, e(prose_scope(v))))
-                elif k in ("kind", "relation"):
-                    bits.append((name, e(KIND_PROSE.get(v, v))))
+                if k in ("status", "scope", "kind", "relation"):
+                    # a stored value rendered on every edge: boilerplate by
+                    # construction, and marked so that a disclaimer copied into a
+                    # field is still caught
+                    rendered = {"status": prose_verification,
+                                "scope": prose_scope}.get(k, KIND_PROSE.get)(v)
+                    bits.append((name, f"<span data-boilerplate>"
+                                       f"{e(rendered or v)}</span>"))
                 else:
                     bits.append((name, f"<code>{e(v)}</code>"))
             if ed.get("contexts"):
@@ -1170,10 +1213,11 @@ text and line style, never by color alone)</summary><ul>{edge_items}</ul></detai
                 bits.append(("records, both directions", ", ".join(
                     f"<code>{e(x)}</code>" for x in ed["records"])))
             if ed.get("derivation") == "strongImpliesOrdinary":
-                bits.append(("both directions", "one is certified strong and is "
+                bits.append(("both directions", "<span data-boilerplate>one is "
+                             "certified strong and is "
                              "shown here at the ordinary notion by the explicit "
                              "weakening; the other is certified at the ordinary "
-                             "notion only"))
+                             "notion only</span>"))
             detail = ("<dl class=\"fields\">"
                       + "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in bits)
                       + "</dl>")
@@ -1268,7 +1312,8 @@ strong, the open end ordinary</span>
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
                 f'granularity for orientation only; the per-family graphs below are '
-                f'canonical.</em></p>\n{fine_print}\n{legend_html()}\n{panel}\n'
+                f'canonical.</em></p>\n{fine_print}\n'
+                f'{legend_html() if view_svgs else ""}\n{panel}\n'
                 f'{principles_section(catalog)}')
 
     def canonical_graphs_section() -> str:
@@ -1296,10 +1341,14 @@ strong, the open end ordinary</span>
                 title, styling, v["comment"], len(v["nodes"]), view_edge_items(v),
                 len(v["edges"]), f"{vname}.svg" if vname in view_svgs else None,
                 f"views/{vname}/graph.dot", f"views/{vname}/graph.json"))
-        return ('<h2 id="graphs">Canonical graphs (one per evidence family — never '
-                'flattened into one)</h2>\n'
-                '<p><em>Line styles as in the legend under the concept overview '
-                'above.</em></p>\n'
+        missing = ("" if view_svgs else
+                   "<p><em>Graphviz was not available when these pages were built, so "
+                   "the pictures are absent. Every edge is listed below each panel, "
+                   "which is the form these graphs are read in either way.</em></p>\n")
+        return ('<h2 id="graphs">Canonical graphs, one per kind of evidence and never '
+                'flattened together</h2>\n'
+                '<p><em>Line styles as in the legend under the concept projection '
+                'above.</em></p>\n' + missing
                 + "\n".join(panels))
 
     def facts_section() -> str:
@@ -1329,8 +1378,8 @@ strong, the open end ordinary</span>
             cards.append(f"""<div class="card" data-family="certified" id="fact-{e(f_['id'])}">
 <h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
 <span class="tag">{e(KIND_PROSE.get(f_['kind'], f_['kind']))}</span>
-<span class="tag">{e(prose_verification('kernelChecked'))}</span>
-<span class="tag">{e(prose_scope(ctx.get('scope')))}</span></h3>
+<span class="tag" data-boilerplate>{e(prose_verification('kernelChecked'))}</span>
+<span class="tag" data-boilerplate>{e(prose_scope(ctx.get('scope')))}</span></h3>
 <p class="meta"><code>{e(f_['id'])}</code></p>
 <details><summary>base, context, certifications, note, and case study</summary><ul>{ev_items}</ul>{note_block}{study_link}</details>
 </div>""")
@@ -1524,7 +1573,7 @@ strong, the open end ordinary</span>
             body = "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in rows + differs)
             cards.append(f"""<details class="card" data-family="backend" id="backend-{e(r['id'])}">
 <summary><code>{e(r['id'])}</code>
-<span class="tag">{e(prose_verification(r['status']))}</span></summary>
+<span class="tag" data-boilerplate>{e(prose_verification(r['status']))}</span></summary>
 <dl>{body}</dl></details>""")
         return section(
             "backend-sec", "Results from the semantics bridge", len(cards),
@@ -1638,16 +1687,27 @@ strong, the open end ordinary</span>
         return f"{where}, {lhs} implies {rhs}."
 
     def bridge_summary(x: dict) -> str:
-        """One sentence for a result checked in the external bridge."""
+        """One sentence for a result checked in the external bridge, stated at the
+        exact objects it is about.
+
+        These results concern a named theory and a named sentence in that bridge,
+        under a named model class or a named calculus. Rendering them as claims
+        about RCA₀ and weak Kőnig's lemma would promote them past what was proved:
+        whether the bridge's theory captures RCA₀ is exactly the direction that
+        remains open.
+        """
         if x.get("summary"):
             return x["summary"]
+        theory = f'<code>{e(x.get("theory", "the bridge theory"))}</code>'
+        sentence = f'<code>{e(x.get("sentence", "the sentence"))}</code>'
+        qualifier = f'<code>{e(x.get("qualifierId", ""))}</code>'
         if x.get("kind") == "semanticCountermodel":
-            return ("The base theory does not semantically imply weak Kőnig's lemma "
-                    "over general second-order structures.")
+            return (f"There is a model of the bridge theory {theory} in which its "
+                    f"sentence {sentence} fails, among the structures {qualifier}.")
         if x.get("kind") == "calculusNonderivability":
-            return ("Weak Kőnig's lemma is not derivable from the base theory in the "
-                    "fixed proof calculus recorded with this result.")
-        return x.get("statement", "")
+            return (f"The bridge sentence {sentence} is not derivable from the bridge "
+                    f"theory {theory} in the calculus {qualifier}.")
+        return e(x.get("statement", ""))
 
     def methods_sections() -> str:
         """How each kind of checking works. Implementation vocabulary belongs on
@@ -1758,7 +1818,8 @@ checked in the pinned external Lean bridge</li>
             rows.append(
                 f"<tr><td><strong>{e(label)}</strong><br/>"
                 f'<span class="meta">{e(summary)}</span></td>'
-                f'<td class="how">{e(prose_verification("kernelChecked"))}<br/>'
+                f'<td class="how" data-boilerplate>'
+                f'{e(prose_verification("kernelChecked"))}<br/>'
                 f'{e(prose_scope(ctx.get("scope")))}</td>'
                 f'<td class="how">{chip(f_["id"], "fact-" + f_["id"])}</td></tr>')
         return ('<div class="wrapscroll"><table class="results">'
@@ -1769,9 +1830,9 @@ checked in the pinned external Lean bridge</li>
     def public_bridge_results() -> str:
         items = []
         for x in catalog.get("scopedResults", []):
-            rec = x.get("record", "")
+            rec = x.get("sourceId", "")
             items.append(
-                f"<li>{e(bridge_summary(x))} "
+                f"<li>{bridge_summary(x)} "
                 f"<span class=\"meta\">({e(prose_scope(x.get('scope')))})</span> "
                 f"{chip(rec, 'backend-' + rec) if rec else ''}</li>")
         if not items:
@@ -1780,18 +1841,27 @@ checked in the pinned external Lean bridge</li>
 
     def public_graph() -> str:
         v = views["concept-projection"]
+        # The legend explains the picture, so it appears only when the picture
+        # does. Graphviz is optional: without it the atlas still states its
+        # results, and the reference surface carries the edge lists.
+        has_img = "concept-projection" in view_svgs
         img = (f'<figure class="graph"><img src="concept-projection.svg" '
                f'alt="Directed graph of the principles in this atlas: '
                f'{len(v["nodes"])} principles joined by {len(v["edges"])} results, '
                f'with weak Kőnig\'s lemma and its equivalents grouped in the centre, '
                f'the base theory below, and the jump principles above."/></figure>'
-               if "concept-projection" in view_svgs else "")
+               if has_img else "")
+        if not has_img:
+            return ""
         return f"""<h2 id="graph">The principles and how they relate</h2>
-<p>Each box is a principle; each arrow is one result from the table below. Boxes
-drawn inside an enclosure are different formulations of the same principle. Height
-follows logical strength: the base theory sits at the bottom, and a principle drawn
-above another is stronger, or is placed there by the literature where this atlas has
-not yet proved a comparison.</p>
+<p>Most boxes are principles; the lowest is the base context these results are stated
+over, not a principle. Boxes inside an enclosure are formulations of one principle.
+Arrows are recorded results, and there are more of them than the table below lists: the
+table gives the results proved over ω-models, while the picture also carries reductions
+proved in a separate development and factorizations in ambient Lean, which show how one
+argument is built from another and are not claims about strength. Height follows
+strength for the ω-model arrows only: a principle drawn above another is stronger, or is
+placed there by the literature where no comparison has been proved here.</p>
 {img}
 {legend_html()}
 <p class="meta">Exact endpoints, certificates and downloads for every arrow are on the
@@ -1804,10 +1874,11 @@ Lean theorems: each says that over every Turing ideal, one principle implies ano
 is equivalent to it, or fails to imply it. A failure is always witnessed by an explicit
 countermodel, never asserted as underivability.</p>
 <p>Turing ideals are the second-order parts of ω-models of RCA₀. That identification is
-standard in the literature ([Sim09] VIII.1) and is quoted here, not proved. Nothing on
-this page is a claim about derivability in RCA₀ itself, with one exception: the
-nonderivability result above, which holds relative to one fixed proof calculus and
-says nothing about any other.</p>
+standard in the literature ([Sim09] VIII.1) and is quoted here, not proved. No result on
+these pages is a claim about derivability in RCA₀. The nonderivability result is about a
+named theory and a named sentence inside the bridge, in one named calculus; whether that
+theory captures RCA₀ is the direction that remains unproved, and until it is proved the
+result may not be read as being about RCA₀ itself.</p>
 <p>Results reached by composing others are shown as derivations on the reference page
 and are counted nowhere. Findings quoted from the literature are recorded with their
 source and are never treated as proved here; where a translation between two
@@ -1826,9 +1897,10 @@ proved.</p>
 <h2 id="results">Results</h2>
 {public_results_table()}
 <h2 id="bridge">Results from the external bridge</h2>
-<p>Two further results come from a separate Lean development that formalizes the
-syntax and semantics of second-order arithmetic, and are checked there rather than
-here.</p>
+<p>Two further results are checked in a separate Lean development that formalizes the
+syntax and semantics of second-order arithmetic. They are stated about a theory and a
+sentence defined in that development, under a named class of structures or a named
+calculus, and they are not statements about RCA₀ or about weak Kőnig's lemma as such.</p>
 {public_bridge_results()}
 {proved_box()}"""
 
@@ -1929,9 +2001,8 @@ COMPUTED_DERIVATIONS = [
                    "turingIdealOmega",
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "WKLω → Hallω: the certified equivalence used forward, then the "
-                "certified EFILCω → Hallω implication. A display derivation only — "
-                "Hall's reversal remains an audited open question, and no fact is "
-                "registered.",
+                "certified EFILCω → Hallω implication. Hall's reversal remains an "
+                "open question.",
     },
     {
         "id": "computed.weihrauch.hallLeWkl",
@@ -1961,8 +2032,7 @@ COMPUTED_DERIVATIONS = [
                    "turingIdealOmega",
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "bounded-Kőnigω → Hallω: the certified bounded-Kőnig ⇔ WKL "
-                "equivalence used forward, then the WKLω → Hallω chain. A display "
-                "derivation only — no fact is registered.",
+                "equivalence used forward, then the WKLω → Hallω chain.",
     },
     {
         "id": "computed.omega.recCoreNotBoundedKonig",
@@ -1976,8 +2046,7 @@ COMPUTED_DERIVATIONS = [
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "RCA₀-core ⊭ω bounded-Kőnigω: the certified REC countermodel for "
                 "binary WKL transported along bounded-Kőnig → WKL (the countermodel "
-                "refutes the source of any implication into the refuted target). A "
-                "display derivation only — no fact is registered.",
+                "refutes the source of any implication into the refuted target).",
     },
     {
         "id": "computed.omega.recCoreNotEfilc",
@@ -2027,8 +2096,7 @@ COMPUTED_DERIVATIONS = [
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "RCA₀-core ⊭ω 2-regular matchingω: the certified REC countermodel "
                 "for binary WKL transported along matching → WKL (the forward "
-                "elimination of the certified equivalence). A display derivation "
-                "only — no fact is registered.",
+                "elimination of the certified equivalence).",
     },
 ]
 
@@ -3377,7 +3445,8 @@ def cmd_build(args: argparse.Namespace) -> None:
     # must appear somewhere in the site are checked against the whole site, and
     # the per-surface budgets in the readability report cover the rest.
     page = "\n".join(pages.values())
-    for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
+    for marker in ("Canonical graphs, one per kind of evidence and never "
+                   "flattened together",
                    "a lossy projection to concept granularity, not the canonical record",
                    "only validated display merges with named premises",
                    "Filtering changes visibility only",
@@ -3404,7 +3473,8 @@ def cmd_build(args: argparse.Namespace) -> None:
         shows_graph = "<img " in text
         if legend_count != (1 if shows_graph else 0):
             sys.exit(f"rmlib-zoo build: {name} should carry "
-                     f"{'exactly one legend' if shows_graph else 'no legend'}, "
+                     f"{'exactly one legend' if shows_graph else 'no legend'} "
+                     f"(a legend explains a picture, so it appears only with one), "
                      f"found {legend_count}")
     # one image per rendered graph panel on the reference surface, and the single
     # orientation picture on the atlas

@@ -50,6 +50,7 @@ IMPLEMENTATION_VOCABULARY = [
     "backend", "crosswalk", "schema", "fingerprint", "ingest", "ingestion",
     "artifact", "catalog", "enum", "gate", "route", "spine", "downgrade",
     "capability", "interface", "port", "registry", "payload", "pipeline",
+    "registered", "registration", "ingested", "view-only",
 ]
 
 # Enum values the catalog uses as data. Correct in a chip or a download; wrong
@@ -112,6 +113,7 @@ class _Extract(HTMLParser):
         self._closed_depth = 0          # enclosing <details> that are collapsed
         self._details_stack: list[bool] = []
         self._chip_stack: list[str] = []
+        self._boiler_stack: list[str] = []
         self._code_depth = 0
         self._skip_depth = 0
         self._in_summary = False
@@ -149,8 +151,8 @@ class _Extract(HTMLParser):
                 self._closed_depth += 1
         elif tag == "summary":
             self._in_summary = True
-        elif tag in ("dt", "th", "dd", "td"):
-            self._label_depth += 1   # field name or field value: data, not narrative
+        elif tag in ("dt", "th"):
+            self._label_depth += 1
         elif tag in ("code", "kbd", "samp"):
             self._code_depth += 1
         elif tag == "img":
@@ -161,6 +163,13 @@ class _Extract(HTMLParser):
             self._heading = tag
         if a.get("id"):
             self.anchors.add(a["id"])
+        if "data-boilerplate" in a:   # valueless attribute parses as None
+            # explicit marker for text repeated by construction, such as a stored
+            # value rendered on every card. Marking it is a deliberate act by the
+            # generator, never an inference from the element type: exempting every
+            # field value would hide a disclaimer copied into a card field.
+            self._label_depth += 1
+            self._boiler_stack.append(tag)
         if a.get("class") and "chip" in a["class"].split():
             # a lookup chip is an identifier presented as data, like <code>;
             # remember the tag that opened it so the matching end tag closes it
@@ -173,6 +182,9 @@ class _Extract(HTMLParser):
             return
         if tag not in self.INLINE:
             self._flush()
+        if self._boiler_stack and self._boiler_stack[-1] == tag:
+            self._boiler_stack.pop()
+            self._label_depth = max(0, self._label_depth - 1)
         if self._chip_stack and self._chip_stack[-1] == tag:
             self._chip_stack.pop()
             self._code_depth = max(0, self._code_depth - 1)
@@ -183,7 +195,7 @@ class _Extract(HTMLParser):
                     self._closed_depth = max(0, self._closed_depth - 1)
         elif tag == "summary":
             self._in_summary = False
-        elif tag in ("dt", "th", "dd", "td"):
+        elif tag in ("dt", "th"):
             self._label_depth = max(0, self._label_depth - 1)
         elif tag in ("code", "kbd", "samp"):
             self._code_depth = max(0, self._code_depth - 1)
@@ -435,7 +447,10 @@ def check_budgets(surfaces: dict, budgets: dict | None) -> list[str]:
                 continue
             page, _, frag = href.partition("#")
             target = page or name
-            if target in anchors and frag and frag not in anchors[target]:
+            if target not in anchors:
+                bad.append(f"{name}: link to {href} points at {target}, which this "
+                           f"site does not build")
+            elif frag and frag not in anchors[target]:
                 bad.append(f"{name}: link to {href} lands on no anchor in {target}")
     return bad
 
@@ -529,10 +544,34 @@ plain words continue afterwards in prose.</p>
                    "<p>two</p></details>")
     if not all(b.get("label") for b in labels.blocks if "base, context" in b["text"]):
         bad.append("a summary control was not marked as a label")
-    fields = parse("<dl><dt>revision</dt><dd>checked in a pinned development</dd></dl>"
-                   "<dl><dt>revision</dt><dd>checked in a pinned development</dd></dl>")
-    if not all(b.get("label") for b in fields.blocks):
-        bad.append("a repeated field name or value was counted as narrative prose")
+    # A field NAME repeated per card is a label. A field VALUE is prose: a
+    # disclaimer copied into every card's field is exactly the fault this rule
+    # exists for, so only an explicit boilerplate marker exempts it.
+    cards = ('<div class="card"><dl><dt>note</dt>'
+             "<dd>This result is shown for display and is counted nowhere.</dd></dl>"
+             "</div>"
+             '<div class="card"><dl><dt>note</dt>'
+             "<dd>This result is shown for display and is counted nowhere.</dd></dl>"
+             "</div>")
+    c = parse(cards)
+    if not all(b.get("label") for b in c.blocks if b["text"] == "note"):
+        bad.append("a repeated field name was counted as narrative prose")
+    if any(b.get("label") for b in c.blocks if b["text"].startswith("This result")):
+        bad.append("a field value was exempted, hiding a disclaimer copied per card")
+    body = [x for b in c.blocks if not b.get("label")
+            for x in SENTENCE_SPLIT.split(b["text"]) if _words(x) >= 6]
+    if len({_normalize_sentence(x) for x in body}) != 1 or len(body) != 2:
+        bad.append("a disclaimer repeated in a card field was not detected")
+    rows = parse("<table><tr><th>result</th></tr>"
+                 "<tr><td>Counted nowhere, shown only for display here.</td></tr>"
+                 "<tr><td>Counted nowhere, shown only for display here.</td></tr></table>")
+    cells = [b for b in rows.blocks if b["text"].startswith("Counted")]
+    if any(b.get("label") for b in cells) or len(cells) != 2:
+        bad.append("repeated prose in table cells was exempted from detection")
+    marked = parse('<p data-boilerplate>Stored value rendered on every card here.</p>'
+                   '<p data-boilerplate>Stored value rendered on every card here.</p>')
+    if not all(b.get("label") for b in marked.blocks):
+        bad.append("an explicit boilerplate marker was ignored")
 
     # Two block-level copies of one sentence are two sentences, however the
     # next block begins.
@@ -604,6 +643,12 @@ def selftest_budgets() -> list[str]:
          {"index.html": surface("public",
                                 links={"all": ["reference.html#gone"], "internal": []}),
           "reference.html": surface("reference", anchors=["present"])}),
+        ("a link into a surface that is not built",
+         {"index.html": surface("public",
+                                links={"all": ["missing.html#x"], "internal": []})}),
+        ("internal vocabulary that reads as ordinary English",
+         {"index.html": surface("public", vocabulary={
+             "projectManagement": [], "implementation": ["registered"]})}),
         ("a ratcheted count drifting upward",
          {"reference.html": surface("reference",
                                     identifierLeaks=[{"token": f"x{i}"}

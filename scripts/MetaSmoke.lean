@@ -972,7 +972,7 @@ that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
 info: concepts (7):
-  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; the family's registered perfect-matching form asserts that every countable bipartite graph that is 2-regular on both sides has a perfect matching
+  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; its perfect-matching form asserts that every countable bipartite graph that is 2-regular on both sides has a perfect matching
     scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
