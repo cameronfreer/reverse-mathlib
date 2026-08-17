@@ -752,16 +752,20 @@ def recenter_flat_edge_labels(svg: str) -> str:
 
     Placement is collision-aware. Several flat edges between the same pair share
     almost the same visible span, so recentering each to its midpoint would stack
-    their labels on one point. Candidates along the span are tried in order and
-    the first clear of every other label wins, which keeps the label on its own
-    edge without landing it on a neighbour's.
+    their labels on one point. Every label is tracked by its occurrence in the
+    document — not by coordinate value, so two labels rendered on the same point
+    still see each other as collisions. Candidates along the span are tried in
+    order and the first clear of every other label wins; when no candidate is
+    clear the label keeps its original placement, because this pass exists to
+    remove collisions and must never manufacture one.
     """
-    placed = [(float(x), float(y)) for x, y in
+    placed = [[float(x), float(y)] for x, y in
               re.findall(r'<text[^>]*\bx="([\d.eE+-]+)"[^>]*\by="([\d.eE+-]+)"', svg)]
+    claimed: set[int] = set()
 
-    def clear(x: float, y: float, own: tuple) -> bool:
+    def clear(x: float, y: float, own: int) -> bool:
         return all(abs(x - px) >= 34 or abs(y - py) >= 11
-                   for px, py in placed if (px, py) != own)
+                   for i, (px, py) in enumerate(placed) if i != own)
 
     def fix_group(m: "re.Match[str]") -> str:
         g = m.group(0)
@@ -775,26 +779,26 @@ def recenter_flat_edge_labels(svg: str) -> str:
         if not xs or max(ys) - min(ys) > 1.0:
             return g
         x0, y0 = float(text.group(2)), float(text.group(4))
+        own = next((i for i, p in enumerate(placed)
+                    if p == [x0, y0] and i not in claimed), None)
+        if own is None:
+            # a label the global extraction did not see: leave it exactly as
+            # rendered rather than reason about collisions it is not part of
+            return g
+        claimed.add(own)
         lo, hi = min(xs), max(xs)
         # already on its own edge and clear of every other label: leave it alone
-        if lo <= x0 <= hi and clear(x0, y0, (x0, y0)):
+        if lo <= x0 <= hi and clear(x0, y0, own):
             return g
         mid, quarter = (lo + hi) / 2, (hi - lo) / 4
-        for cand in (x0 if lo <= x0 <= hi else mid, mid, mid + quarter,
-                     mid - quarter, hi, lo):
-            if lo <= cand <= hi and clear(cand, y0, (x0, y0)):
-                if (x0, y0) in placed:
-                    placed.remove((x0, y0))
-                placed.append((cand, y0))
+        for cand in (mid, mid + quarter, mid - quarter, hi, lo):
+            if lo <= cand <= hi and clear(cand, y0, own):
+                placed[own] = [cand, y0]
                 return g.replace(text.group(0),
                                  f"{text.group(1)}{cand:.2f}{text.group(3)}"
                                  f"{text.group(4)}{text.group(5)}", 1)
-        if (x0, y0) in placed:
-            placed.remove((x0, y0))
-        placed.append((mid, y0))
-        return g.replace(text.group(0),
-                         f"{text.group(1)}{mid:.2f}{text.group(3)}"
-                         f"{text.group(4)}{text.group(5)}", 1)
+        # no clear candidate anywhere on the span: retain the original placement
+        return g
 
     return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
 
@@ -858,6 +862,31 @@ def selftest_flat_label_recenter() -> list[str]:
     steep = "M626,-291.4C632,-260.1 638,-240.2 644,-215.9"
     if recenter_flat_edge_labels(group(steep, "614.5")) != group(steep, "614.5"):
         bad.append("non-flat edge label wrongly moved")
+
+    def pair(path: str, xa: str, xb: str) -> str:
+        return ('<g id="edge1" class="edge">\n<title>a&#45;&gt;b</title>\n'
+                f'<path fill="none" d="{path}"/>\n'
+                f'<text text-anchor="middle" x="{xa}" y="-275.8">L</text>\n</g>\n'
+                '<g id="edge2" class="edge">\n<title>a&#45;&gt;c</title>\n'
+                f'<path fill="none" d="{path}"/>\n'
+                f'<text text-anchor="middle" x="{xb}" y="-275.8">M</text>\n</g>')
+
+    def label_xs(svg: str) -> list[float]:
+        return [float(x) for x in re.findall(r'<text[^>]*\bx="([\d.eE+-]+)"', svg)]
+    wide = "M500,-291.4C560,-291.4 640,-291.4 700,-291.4"
+    for scenario, xa, xb in (("exact", "600", "600"), ("near", "600", "610")):
+        out_xs = label_xs(recenter_flat_edge_labels(pair(wide, xa, xb)))
+        if len(out_xs) != 2 or abs(out_xs[0] - out_xs[1]) < 34:
+            bad.append(f"{scenario}-overlap labels on a wide span were both "
+                       "judged clear instead of being separated")
+    # a stray label whose whole span is blocked by another label: the old
+    # fallback forced it to the midpoint, manufacturing the very collision the
+    # pass exists to remove — it must retain its original placement instead
+    blocked = ('<text text-anchor="middle" x="635" y="-275.8">N</text>\n'
+               + group(flat, "614.5"))
+    if 'x="614.5"' not in recenter_flat_edge_labels(blocked):
+        bad.append("stray label on a fully blocked span was moved into a "
+                   "collision instead of retained")
     return bad
 
 
@@ -2987,6 +3016,16 @@ def selftest_projection_layout() -> list[str]:
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
     bad = []
+    if "nodesep=0.9;" not in lines:
+        bad.append("concept projection lacks the lateral-gap node separation")
+    ordinary = view_dot("family-view", {
+        "view": "family-view", "family": "certifiedOmegaFact",
+        "nodes": ["p", "q"],
+        "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
+                   "lhsConcept": "p", "rhsConcept": "q"}]})
+    if "nodesep" in ordinary:
+        bad.append("ordinary view wrongly received the lateral-gap node "
+                   "separation")
     if not any(ln.startswith('"baseNode" -> "q"') and "minlen=3" in ln
                and "weight=10" in ln for ln in lines):
         bad.append("non-enclosure base separation lacks the rank span with the "
