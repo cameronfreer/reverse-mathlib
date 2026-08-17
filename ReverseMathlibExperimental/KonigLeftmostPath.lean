@@ -411,4 +411,199 @@ theorem frontier_ne_nil_iff (T : InternalBoundedTree Ω) {bnd : ℕ → ℕ}
   · rintro ⟨d, hdT, hlen, hpre⟩
     exact List.ne_nil_of_mem (mem_frontier_of_extends T hbnd k d hdT hlen hpre)
 
+/-! ### Link 4: the frontier is computable from the tree joined with the bound graph
+
+The recursion is in the *transcript-then-verify* normal form throughout: at each node one
+bound lookup and one finite `valueTable` of tree-membership bits over the enumerated
+candidates, then pure primitive-recursive post-processing (`filterMap`, `flatten`). Stated
+generically in the oracle set, then instantiated at `joinSet T.tree.1 T.bound.graph.1` with
+the bound recovered from its graph — the only two channels the construction is entitled
+to. -/
+
+/-- Filtering the image is one `filterMap` over the source. -/
+private theorem filter_map_eq_filterMap {α β : Type*} (l : List α) (f : α → β)
+    (p : β → Bool) :
+    (l.map f).filter p = l.filterMap fun a => if p (f a) then some (f a) else none := by
+  induction l with
+  | nil => rfl
+  | cons a l ih =>
+    by_cases h : p (f a) <;> simp [h, ih]
+
+open Classical in
+/-- The children list, restated on the membership *bits* — the shape a program computes:
+enumerate the candidates below the bound and keep those whose tree bit is `1`. -/
+private theorem childrenIn_eq_filterMap (S : Set ℕ) (bnd : ℕ → ℕ) (d : ℕ) :
+    childrenIn S bnd d = (List.range (bnd (decodeSeq d).length)).filterMap fun v =>
+      if charFnTot S (seqCode (decodeSeq d ++ [v])) = 1
+      then some (seqCode (decodeSeq d ++ [v])) else none := by
+  rw [childrenIn, filter_map_eq_filterMap]
+  refine List.filterMap_congr fun v _ => ?_
+  by_cases h : seqCode (decodeSeq d ++ [v]) ∈ S <;> simp [charFnTot, h]
+
+/-- Reading a function's values off positions of its own range-indexed table. -/
+private theorem map_range_getD {α : Type*} (f : ℕ → α) {w v : ℕ} (hv : v < w)
+    (d : α) : ((List.range w).map f).getD v d = f v := by
+  rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hv]
+  rfl
+
+/-- Iterating a function of the previous value over the whole list, through the coding. -/
+private theorem map_getD_range {α : Type*} (l : List ℕ) (g : ℕ → α) :
+    (List.range l.length).map (fun j => g (l.getD j 0)) = l.map g := by
+  refine List.ext_getElem (by simp) fun i h1 h2 => ?_
+  simp only [List.getElem_map, List.getElem_range]
+  rw [List.getD_eq_getElem _ _ (by simpa using h2)]
+
+/-- **One level of children is a finite oracle computation**: a single bound lookup, a
+`valueTable` of tree bits over the candidates, and a pure `filterMap`. -/
+theorem childrenIn_code_recursiveIn {O : Set (ℕ →. ℕ)} {S : Set ℕ} {bnd : ℕ → ℕ}
+    (hS : Nat.RecursiveIn O fun e => Part.some (charFnTot S e))
+    (hbnd : Nat.RecursiveIn O fun i => Part.some (bnd i)) :
+    Nat.RecursiveIn O fun d => Part.some (seqCode (childrenIn S bnd d)) := by
+  classical
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  -- the candidate at (node, value), as one primitive-recursive map
+  have hcand : Primrec fun m : ℕ => seqCode (decodeSeq m.unpair.1 ++ [m.unpair.2]) :=
+    primrec_seqCode.comp
+      (Primrec₂.comp (f := fun (l : List ℕ) (a : ℕ) => l ++ [a]) Primrec.list_concat
+        (primrec_decodeSeq.comp hfst) hsnd)
+  -- the tree-membership bit of the candidate at (node, value)
+  have hbit : Nat.RecursiveIn O fun m => Part.some
+      (charFnTot S (seqCode (decodeSeq m.unpair.1 ++ [m.unpair.2]))) :=
+    recursiveIn_comp_primrec hS hcand
+  -- the transcript: all candidate bits below the bound at the node's length
+  have htab := valueTable_recursiveIn_param
+    (f := fun d v => charFnTot S (seqCode (decodeSeq d ++ [v]))) hbit
+  have hw : Nat.RecursiveIn O fun d => Part.some (bnd (decodeSeq d).length) :=
+    recursiveIn_comp_total hbnd (recursiveIn_of_primrec primrec_seqLength)
+  have hdw := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id) hw
+  have htabd : Nat.RecursiveIn O fun d => Part.some
+      (valueTable (fun v => charFnTot S (seqCode (decodeSeq d ++ [v])))
+        (bnd (decodeSeq d).length)) :=
+    (recursiveIn_comp_total htab hdw).of_eq fun d => by simp only [Nat.unpair_pair, id_eq]
+  -- pure post-processing: keep the candidates whose recorded bit is 1
+  have hpost : Primrec fun z : ℕ => seqCode
+      ((List.range (decodeSeq z.unpair.2).length).filterMap fun v =>
+        if (decodeSeq z.unpair.2).getD v 0 = 1
+        then some (seqCode (decodeSeq z.unpair.1 ++ [v])) else none) := by
+    refine primrec_seqCode.comp (Primrec.listFilterMap
+      (Primrec.list_range.comp (Primrec.list_length.comp
+        (primrec_decodeSeq.comp hsnd))) ?_)
+    have hgetD : Primrec fun p : ℕ × ℕ => (decodeSeq p.1.unpair.2).getD p.2 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet
+        (hsnd.comp Primrec.fst) Primrec.snd
+    have hval : Primrec fun p : ℕ × ℕ => seqCode (decodeSeq p.1.unpair.1 ++ [p.2]) :=
+      primrec_seqCode.comp
+        (Primrec₂.comp (f := fun (l : List ℕ) (a : ℕ) => l ++ [a]) Primrec.list_concat
+          (primrec_decodeSeq.comp (hfst.comp Primrec.fst)) Primrec.snd)
+    exact Primrec.ite (Primrec.eq.comp hgetD (Primrec.const 1))
+      (Primrec.option_some.comp hval) (Primrec.const none)
+  have hpair := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id) htabd
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun d => ?_
+  simp only [Nat.unpair_pair, id_eq, decodeSeq_valueTable, List.length_map,
+    List.length_range]
+  rw [childrenIn_eq_filterMap]
+  refine congrArg Part.some (congrArg seqCode (List.filterMap_congr fun v hv => ?_))
+  rw [map_range_getD _ (List.mem_range.mp hv)]
+
+open Classical in
+/-- One step of the frontier recursion, on frontier *codes*: decode the surviving nodes,
+take all their children, re-encode. -/
+private noncomputable def frontierStep (S : Set ℕ) (bnd : ℕ → ℕ) (l : ℕ) : ℕ :=
+  seqCode ((decodeSeq l).flatMap (childrenIn S bnd))
+
+private theorem frontierCode_eq_nat_rec (S : Set ℕ) (bnd : ℕ → ℕ) (c k : ℕ) :
+    seqCode (frontier S bnd c k) = Nat.rec (motive := fun _ => ℕ)
+      (seqCode (frontier S bnd c 0)) (fun _ ih => frontierStep S bnd ih) k := by
+  induction k with
+  | zero => rfl
+  | succ k ih =>
+    have hstep : seqCode (frontier S bnd c (k + 1))
+        = frontierStep S bnd (seqCode (frontier S bnd c k)) := by
+      rw [frontierStep, decodeSeq_seqCode]
+      conv_lhs => rw [frontier]
+    rw [hstep, ih]
+
+/-- The frontier step is a finite oracle computation: a `valueTable` of children codes
+over the surviving nodes, then a pure decode-and-flatten. -/
+private theorem frontierStep_recursiveIn {O : Set (ℕ →. ℕ)} {S : Set ℕ} {bnd : ℕ → ℕ}
+    (hS : Nat.RecursiveIn O fun e => Part.some (charFnTot S e))
+    (hbnd : Nat.RecursiveIn O fun i => Part.some (bnd i)) :
+    Nat.RecursiveIn O fun l => Part.some (frontierStep S bnd l) := by
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hchild := childrenIn_code_recursiveIn hS hbnd
+  -- the transcript: children codes of each surviving node in order
+  have helem : Primrec fun m : ℕ => (decodeSeq m.unpair.1).getD m.unpair.2 0 :=
+    Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet hfst hsnd
+  have htab := valueTable_recursiveIn_param
+    (f := fun l j => seqCode (childrenIn S bnd ((decodeSeq l).getD j 0)))
+    (recursiveIn_comp_primrec hchild helem)
+  have hlen : Nat.RecursiveIn O fun l => Part.some (Nat.pair l (decodeSeq l).length) :=
+    recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id)
+      (recursiveIn_of_primrec primrec_seqLength)
+  have htabl : Nat.RecursiveIn O fun l => Part.some
+      (valueTable (fun j => seqCode (childrenIn S bnd ((decodeSeq l).getD j 0)))
+        (decodeSeq l).length) :=
+    (recursiveIn_comp_total htab hlen).of_eq fun l => by simp only [Nat.unpair_pair]
+  -- pure post-processing: decode each recorded children list and flatten
+  have hpost : Primrec fun t : ℕ => seqCode ((decodeSeq t).flatMap decodeSeq) :=
+    primrec_seqCode.comp
+      (Primrec.list_flatMap primrec_decodeSeq (primrec_decodeSeq.comp Primrec.snd))
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) htabl).of_eq fun l => ?_
+  simp only [frontierStep, decodeSeq_valueTable]
+  congr 1
+  rw [List.flatMap_map]
+  simp only [decodeSeq_seqCode]
+  rw [List.flatMap_def, List.flatMap_def, map_getD_range]
+
+/-- **Link 4, generic form**: the frontier recursion is a relative computation from any
+oracle answering tree-membership bits and bound values — primitive recursion on the depth
+with the start node as parameter, one `frontierStep` transcript per level. -/
+theorem frontier_code_recursiveIn {O : Set (ℕ →. ℕ)} {S : Set ℕ} {bnd : ℕ → ℕ}
+    (hS : Nat.RecursiveIn O fun e => Part.some (charFnTot S e))
+    (hbnd : Nat.RecursiveIn O fun i => Part.some (bnd i)) :
+    Nat.RecursiveIn O fun q =>
+      Part.some (seqCode (frontier S bnd q.unpair.1 q.unpair.2)) := by
+  classical
+  -- the base: one tree bit at the start node
+  have hbase : Nat.RecursiveIn O fun c => Part.some (seqCode (frontier S bnd c 0)) := by
+    have hpair := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id) hS
+    have hpost : Primrec fun z : ℕ =>
+        if z.unpair.2 = 1 then seqCode [z.unpair.1] else seqCode [] := by
+      have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+      have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+      exact Primrec.ite (Primrec.eq.comp hsnd (Primrec.const 1))
+        (primrec_seqCode.comp (Primrec.list_cons.comp hfst (Primrec.const [])))
+        (Primrec.const (seqCode []))
+    refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun c => ?_
+    simp only [Nat.unpair_pair, id_eq, frontier]
+    by_cases h : c ∈ S <;> simp [charFnTot, h]
+  have hstep' : Nat.RecursiveIn O fun m => Part.some
+      (frontierStep S bnd m.unpair.2.unpair.2) :=
+    recursiveIn_comp_primrec (frontierStep_recursiveIn hS hbnd)
+      ((Primrec.snd.comp Primrec.unpair).comp (Primrec.snd.comp Primrec.unpair))
+  have h := recursiveIn_nat_rec_param (base := fun c => seqCode (frontier S bnd c 0))
+    (step := fun _ _ ih => frontierStep S bnd ih) hbase hstep'
+  exact h.of_eq fun q => congrArg Part.some
+    (frontierCode_eq_nat_rec S bnd q.unpair.1 q.unpair.2).symm
+
+/-- **Link 4**: the frontier of an internally presented explicitly bounded tree is
+computable from the tree joined with its bound graph — the tree bits from the even side,
+the bound values by unique-graph lookup on the odd side. This is the entire base-oracle
+budget of the leftmost-path construction. -/
+theorem frontier_recursiveIn_join (T : InternalBoundedTree Ω) :
+    Nat.RecursiveIn {charFn (joinSet T.tree.1 T.bound.graph.1)} fun q =>
+      Part.some (seqCode (frontier T.tree.1 T.bound.eval q.unpair.1 q.unpair.2)) := by
+  have hS : Nat.RecursiveIn {charFn (joinSet T.tree.1 T.bound.graph.1)}
+      fun e => Part.some (charFnTot T.tree.1 e) := by
+    refine (left_le_joinSet T.tree.1 T.bound.graph.1).of_eq fun e => ?_
+    rw [charFn_eq_coe]
+    rfl
+  have hbnd : Nat.RecursiveIn {charFn (joinSet T.tree.1 T.bound.graph.1)}
+      fun i => Part.some (T.bound.eval i) :=
+    recursiveIn_of_turingReducible T.bound.eval_recursiveIn_graph
+      (right_le_joinSet T.tree.1 T.bound.graph.1)
+  exact frontier_code_recursiveIn hS hbnd
+
 end ReverseMathlib.Omega
