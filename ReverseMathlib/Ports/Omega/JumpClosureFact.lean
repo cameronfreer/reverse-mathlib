@@ -11,10 +11,12 @@ import ReverseMathlib.Ports.Omega.Catalog
 # The seventh production ω fact: injection-range existenceω ⇔ jump closureω
 (issue #49)
 
-The **atomic registration** of the first fact literature-positioned above the WKL
-circle (no certified comparison edge to WKL exists): over every
-Turing ideal, every internal graph-coded injection has an internal range iff the
-part is closed under the Turing jump.
+The **atomic registration**: over every Turing ideal, every internal graph-coded
+injection has an internal range iff the part is closed under the Turing jump. At
+registration this pair was literature-positioned above the WKL circle with no
+certified comparison edge; the comparison edge arrived with the eighth fact
+(`jumpClosureBoundedKonigOmega`), which certifies jump closure → bounded Kőnig and
+retired the literature band.
 
 **Presentation discipline** (pinned in review): the range side is the **exact
 injection-graph presentation** of `InternalFunction` — the presentation the sixth

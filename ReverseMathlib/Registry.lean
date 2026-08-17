@@ -24,6 +24,7 @@ import ReverseMathlib.Ports.Omega.BoundedKonig
 import ReverseMathlib.Ports.Omega.TwoRegularMatching
 import ReverseMathlib.Ports.Omega.RangeSeparationFact
 import ReverseMathlib.Ports.Omega.JumpClosureFact
+import ReverseMathlib.Ports.Omega.KonigJumpFact
 import ReverseMathlib.Ports.Mathlib.Hall
 import ReverseMathlib.Ports.Mathlib.Konig
 
