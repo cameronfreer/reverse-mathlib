@@ -1673,8 +1673,14 @@ strong, the open end ordinary</span>
         a newly registered result is never silently unlabelled."""
         if f_.get("summary"):
             return f_["summary"]
-        lhs = variant_display(f_.get("lhs", [""])[0])
-        rhs = variant_display(f_.get("rhs", [""])[0])
+        def mid_sentence(name: str) -> str:
+            """A formulation name opening with an article is capitalised as a
+            heading; inside a sentence the article is not."""
+            first, _, rest = name.partition(" ")
+            return f"{first.lower()} {rest}" if first in ("The", "A", "An") else name
+
+        lhs = mid_sentence(variant_display(f_.get("lhs", [""])[0]))
+        rhs = mid_sentence(variant_display(f_.get("rhs", [""])[0]))
         where = ("over every Turing ideal"
                  if f_.get("context", {}).get("scope") == "omegaModels"
                  else prose_scope(f_.get("context", {}).get("scope")))
@@ -3521,9 +3527,11 @@ def cmd_build(args: argparse.Namespace) -> None:
                 sys.exit(f"rmlib-zoo build: corpus section marker missing: {marker!r}")
     for name, text in pages.items():
         (site / name).write_text(text)
-    # Prose measurement runs on the BUILT pages, so what a reader meets is what
-    # gets measured. Baseline mode: reported and tracked, never enforced — the
-    # budgets arrive once the surfaces are split and the prose is rewritten.
+    # Prose measurement runs on the built pages, so what a reader meets is what
+    # gets measured. The hard budgets in READABILITY_BUDGETS are enforced here and
+    # fail the build; the advisory metrics beside them are reported every build and
+    # enforced nowhere, since a limit on sentence length or em dash density would
+    # fight good prose as readily as bad.
     report = readability.write_report(site, budgets=READABILITY_BUDGETS)
     print(f"rmlib-zoo build: wrote {dot_path.name}"
           f"{', ' + svg_path.name if have_svg else ''}, views/ambient-standard/graph.json, "
