@@ -740,19 +740,33 @@ def to_dot(catalog: dict) -> str:
 
 
 def recenter_flat_edge_labels(svg: str) -> str:
-    """Graphviz pins a flat edge's label to the midpoint of the *unclipped*
-    node gap, so when the edge is clipped at an enclosure boundary the label
-    can stray off the visible arrow (no dot-language attribute moves it —
-    label, xlabel, head/tail labels, and ports all land on the same spot).
-    Deterministic post-pass on the exact failure signature, general across
-    views: inside each edge group whose path is horizontal (flat), a label
-    sitting outside the path's x-extent is recentered onto it. Well-placed
-    labels and non-flat edges are untouched."""
+    """Graphviz pins a flat edge's label to the midpoint of the *unclipped* node
+    gap, so when the edge is clipped at an enclosure boundary the label can stray
+    off the visible arrow (no dot-language attribute moves it — label, xlabel,
+    head/tail labels, and ports all land on the same spot).
+
+    Deterministic post-pass on the exact failure signature, general across views:
+    inside each edge group whose path is horizontal (flat), a label sitting
+    outside the path's x-extent is recentered onto it. Well-placed labels and
+    non-flat edges are untouched.
+
+    Placement is collision-aware. Several flat edges between the same pair share
+    almost the same visible span, so recentering each to its midpoint would stack
+    their labels on one point. Candidates along the span are tried in order and
+    the first clear of every other label wins, which keeps the label on its own
+    edge without landing it on a neighbour's.
+    """
+    placed = [(float(x), float(y)) for x, y in
+              re.findall(r'<text[^>]*\bx="([\d.eE+-]+)"[^>]*\by="([\d.eE+-]+)"', svg)]
+
+    def clear(x: float, y: float, own: tuple) -> bool:
+        return all(abs(x - px) >= 34 or abs(y - py) >= 11
+                   for px, py in placed if (px, py) != own)
 
     def fix_group(m: "re.Match[str]") -> str:
         g = m.group(0)
         path = re.search(r'<path[^>]*\bd="([^"]+)"', g)
-        text = re.search(r'(<text[^>]*\bx=")([\d.eE+-]+)(")', g)
+        text = re.search(r'(<text[^>]*\bx=")([\d.eE+-]+)("[^>]*\by=")([\d.eE+-]+)(")', g)
         if not path or not text:
             return g
         pts = re.findall(r'([\d.eE+-]+),([\d.eE+-]+)', path.group(1))
@@ -760,10 +774,27 @@ def recenter_flat_edge_labels(svg: str) -> str:
         ys = [float(y) for _, y in pts]
         if not xs or max(ys) - min(ys) > 1.0:
             return g
-        if min(xs) <= float(text.group(2)) <= max(xs):
+        x0, y0 = float(text.group(2)), float(text.group(4))
+        lo, hi = min(xs), max(xs)
+        # already on its own edge and clear of every other label: leave it alone
+        if lo <= x0 <= hi and clear(x0, y0, (x0, y0)):
             return g
-        mid = (min(xs) + max(xs)) / 2
-        return g.replace(text.group(0), f'{text.group(1)}{mid:.2f}{text.group(3)}', 1)
+        mid, quarter = (lo + hi) / 2, (hi - lo) / 4
+        for cand in (x0 if lo <= x0 <= hi else mid, mid, mid + quarter,
+                     mid - quarter, hi, lo):
+            if lo <= cand <= hi and clear(cand, y0, (x0, y0)):
+                if (x0, y0) in placed:
+                    placed.remove((x0, y0))
+                placed.append((cand, y0))
+                return g.replace(text.group(0),
+                                 f"{text.group(1)}{cand:.2f}{text.group(3)}"
+                                 f"{text.group(4)}{text.group(5)}", 1)
+        if (x0, y0) in placed:
+            placed.remove((x0, y0))
+        placed.append((mid, y0))
+        return g.replace(text.group(0),
+                         f"{text.group(1)}{mid:.2f}{text.group(3)}"
+                         f"{text.group(4)}{text.group(5)}", 1)
 
     return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
 
@@ -1269,8 +1300,8 @@ countermodel</span>
 separate development</span>
 <span class="lg">{arrow("#444", "1.6", dash="5 3", open_head=True)} a Weihrauch reduction, proved in a
 separate development</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} reductions both ways: the filled end is
-strong, the open end ordinary</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} Weihrauch reductions both ways: the
+filled end is strong, the open end ordinary</span>
 </div>"""
 
     def projection_section() -> str:
@@ -3241,6 +3272,11 @@ def view_dot(name: str, view: dict) -> str:
     bottom_up = name == "concept-projection"
     lines = [f'digraph "{name}" {{',
              f'  rankdir={"BT" if bottom_up else "LR"};', '  node [shape=box];']
+    if bottom_up:
+        # Lateral pairs put several flat edges in the gap between a concept and an
+        # enclosure. Without room there, the arrowheads are clipped at the enclosure
+        # boundary and a two-way reduction stops reading as one.
+        lines.append('  nodesep=0.9;')
     clusters = view.get("clusters", {})
     anchors = {}
     base_anchors = {}
