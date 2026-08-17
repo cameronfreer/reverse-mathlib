@@ -606,4 +606,93 @@ theorem frontier_recursiveIn_join (T : InternalBoundedTree Ω) :
       (right_le_joinSet T.tree.1 T.bound.graph.1)
   exact frontier_code_recursiveIn hS hbnd
 
+/-! ### Link 5: extendibility is one jump query
+
+Dead ends are semidecidable in the joined base oracle: search the depths for an empty
+frontier level. The jump of that oracle therefore decides extendibility with a single
+query, through the standard curry-and-self-halt coding — the same route `le_jump` takes.
+The semantic content is exactly `frontier_ne_nil_iff`, quantified over depths. -/
+
+private theorem decodeSeq_zero : decodeSeq 0 = [] := by
+  simp [decodeSeq, Denumerable.decode_eq_ofNat, Denumerable.list_ofNat_zero]
+
+private theorem seqCode_eq_zero_iff {l : List ℕ} : seqCode l = 0 ↔ l = [] := by
+  constructor
+  · intro h
+    have h2 := congrArg decodeSeq h
+    rwa [decodeSeq_seqCode, decodeSeq_zero] at h2
+  · rintro rfl
+    rw [← decodeSeq_zero, seqCode_decodeSeq]
+
+/-- A node fails extendibility exactly when some frontier level dies out — the negative
+side of `frontier_ne_nil_iff`, quantified over depths. -/
+theorem not_extendibleAt_iff (T : InternalBoundedTree Ω) {bnd : ℕ → ℕ}
+    (hbnd : ∀ i, T.bound.MapsTo i (bnd i)) (c : ℕ) :
+    ¬ ExtendibleAt T.tree.1 c ↔ ∃ k, frontier T.tree.1 bnd c k = [] := by
+  rw [ExtendibleAt]
+  push Not
+  constructor
+  · rintro ⟨n, hn⟩
+    refine ⟨n, ?_⟩
+    by_contra hne
+    exact hn ((frontier_ne_nil_iff T hbnd c n).mp hne)
+  · rintro ⟨k, hk⟩
+    exact ⟨k, fun hext => (frontier_ne_nil_iff T hbnd c k).mpr hext hk⟩
+
+/-- **Link 5**: the extendible nodes are decidable from one query to the jump of the
+joined base oracle. The searched program hunts depth-by-depth for an empty frontier
+level; currying pins the node into the code, and the jump answers the halting
+question. -/
+theorem extendibleSet_le_jump (T : InternalBoundedTree Ω) :
+    {c | ExtendibleAt T.tree.1 c} ≤ᵀ jumpSet (joinSet T.tree.1 T.bound.graph.1) := by
+  classical
+  set A := joinSet T.tree.1 T.bound.graph.1 with hA
+  -- the dead-end search: the frontier code at (node, depth), tested against zero by rfind
+  have hprep : Primrec fun q : ℕ => Nat.pair q.unpair.1.unpair.1 q.unpair.2 := by
+    have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+    have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+    exact Primrec₂.comp (f := Nat.pair) Primrec₂.natPair (hfst.comp hfst) hsnd
+  have hfr' : Nat.RecursiveIn {charFn A} fun q => Part.some
+      (seqCode (frontier T.tree.1 T.bound.eval q.unpair.1.unpair.1 q.unpair.2)) :=
+    (recursiveIn_comp_primrec (frontier_recursiveIn_join T) hprep).of_eq fun q => by
+      simp only [Nat.unpair_pair]
+  have hsearch := Nat.RecursiveIn.rfind hfr'
+  obtain ⟨e, he⟩ := exists_code.mp hsearch
+  have hbnd : ∀ i, T.bound.MapsTo i (T.bound.eval i) := fun i => T.bound.pair_eval_mem i
+  -- the one-query key: failing extendibility is exactly self-halting of the curried code
+  have key : ∀ c : ℕ, (¬ ExtendibleAt T.tree.1 c ↔
+      Encodable.encode (OracleCode.curry e c) ∈ jumpSet A) := by
+    intro c
+    rw [mem_jumpSet_iff, Denumerable.ofNat_encode, ← charFn_eq_coe, eval_curry, he,
+      not_extendibleAt_iff T hbnd, Nat.rfind_dom]
+    simp only [Nat.unpair_pair, Part.map_eq_map, Part.map_some]
+    constructor
+    · rintro ⟨k, hk⟩
+      refine ⟨k, ?_, fun {m} _ => trivial⟩
+      rw [Part.mem_some_iff]
+      simp [seqCode_eq_zero_iff, hk]
+    · rintro ⟨n, hn, -⟩
+      rw [Part.mem_some_iff] at hn
+      exact ⟨n, seqCode_eq_zero_iff.mp (by simpa using hn.symm)⟩
+  -- one query: ask the jump about the curried code, flip the answer
+  have hmap : Nat.Partrec fun c : ℕ =>
+      Part.some (Encodable.encode (OracleCode.curry e c)) := by
+    apply Nat.Partrec.of_primrec
+    exact Primrec.nat_iff.mp (Primrec.encode.comp
+      (primrec₂_curry.comp (_root_.Primrec.const e) _root_.Primrec.id))
+  have h1 := Nat.RecursiveIn.comp
+    (Nat.RecursiveIn.oracle (O := {charFn (jumpSet A)}) (charFn (jumpSet A)) rfl)
+    hmap.recursiveIn
+  have hflip : Nat.RecursiveIn {charFn (jumpSet A)} fun w : ℕ =>
+      (Part.some (1 - w) : Part ℕ) :=
+    (Nat.Partrec.recursiveIn (Nat.Partrec.of_primrec
+      (Nat.Primrec.sub.comp (Nat.Primrec.pair (Nat.Primrec.const 1)
+        Nat.Primrec.id)))).of_eq fun w => by simp [Nat.unpaired]
+  have h2 := Nat.RecursiveIn.comp hflip h1
+  refine h2.of_eq fun c => ?_
+  simp only [Part.bind_eq_bind, Part.bind_some, charFn, Set.mem_setOf_eq]
+  by_cases hc : ExtendibleAt T.tree.1 c
+  · rw [if_neg (fun hmem => ((key c).mpr hmem) hc), if_pos hc]
+  · rw [if_pos ((key c).mp hc), if_neg hc]
+
 end ReverseMathlib.Omega
