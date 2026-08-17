@@ -1,5 +1,6 @@
 import ReverseMathlib.Omega.BoundedTree
 import ReverseMathlib.Omega.Jump
+import ReverseMathlib.Omega.JumpClosure
 
 /-!
 Slice A scratch: the leftmost path of an explicitly bounded tree is computable from
@@ -928,5 +929,28 @@ theorem leftmostValue_eq_getD (T : InternalBoundedTree Ω)
     exact hin
   rw [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hin']
   exact hpre.getElem hi
+
+/-! ### The packaging: jump closure gives explicitly bounded Kőnig -/
+
+/-- **Jump closure gives explicitly bounded Kőnig** over the Turing-ideal closure
+conditions: the leftmost path of an internally presented explicitly bounded tree is one
+`leftmostGraph_le_jump` reduction below the jump of the tree joined with its bound graph,
+and both the join and its jump are internal. -/
+theorem boundedKonigAt_of_jumpClosedAt {Ω : OmegaPart}
+    (hΩ : IsTuringIdeal Ω) (hJ : JumpClosedAt Ω) : BoundedKonigAt Ω := by
+  intro T hlev
+  have hjoin : joinSet T.tree.1 T.bound.graph.1 ∈ Ω := hΩ.join T.tree.2 T.bound.graph.2
+  have hjump : jumpSet (joinSet T.tree.1 T.bound.graph.1) ∈ Ω := hJ ⟨_, hjoin⟩
+  have hgraph : leftmostGraph T ∈ Ω :=
+    hΩ.mem_of_reducible hjump (leftmostGraph_le_jump T)
+  refine ⟨⟨⟨leftmostGraph T, hgraph⟩,
+    fun x => ⟨leftmostValue T x, (isGraphOf_leftmostGraph T x _).mpr rfl⟩,
+    fun x y y' hy hy' => ((isGraphOf_leftmostGraph T x y).mp hy).symm.trans
+      ((isGraphOf_leftmostGraph T x y').mp hy')⟩, ?_⟩
+  intro n
+  refine ⟨leftmostNode T n, leftmostNode_mem T hlev n, leftmostNode_length T n, ?_⟩
+  intro i hi v hv
+  have hval : leftmostValue T i = v := (isGraphOf_leftmostGraph T i v).mp hv
+  rw [← hval, leftmostValue_eq_getD T hlev hi]
 
 end ReverseMathlib.Omega
