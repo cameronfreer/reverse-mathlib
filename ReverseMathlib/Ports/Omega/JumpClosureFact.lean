@@ -99,10 +99,10 @@ rm_fact injectionRangeExistenceJumpOmega equivalence where
   scope := omegaModels
   lhs := [injectionRangeExistence.injectionGraphs.turingIdealOmega]
   rhs := [jumpClosure.turingIdealClosure.turingIdealOmega]
-  note := "The seventh production ω fact, and the first whose endpoints are \
-    literature-positioned above the WKL circle (no certified comparison edge to \
-    WKL exists): injection-range existence at the exact injection-graph \
-    presentation and jump closure are equivalent at the Turing-ideal ω layer. \
+  note := "Over every Turing ideal, injection-range existence in its exact \
+    injection-graph formulation is equivalent to closure under the Turing jump. \
+    The literature places this pair above weak Kőnig's lemma; no comparison with \
+    WKL is proved here. \
     Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the \
     pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, \
     literature-backed). No ACA-labeled endpoint or fact: no \

@@ -34,7 +34,7 @@ Routes, each already frozen:
   independent tree-to-injections calibration (matching slice 5);
 * **WKL → separation**: `matching_separates ∘
   twoRegularPerfectMatchingAt_of_efilcAt ∘ efilcAt_of_weakKonigAt` — through
-  the frozen EFILC bridge, the mate-table compiler, and the Shafer gadget.
+  the EFILC equivalence, the mate-table compiler, and the Shafer gadget.
 -/
 
 namespace ReverseMathlib.Ports
@@ -79,18 +79,17 @@ rm_fact disjointRangeSeparationWklOmega equivalence where
   scope := omegaModels
   lhs := [disjointRangeSeparation.injectionGraphs.turingIdealOmega]
   rhs := [wkl.binaryTree.turingIdealOmega]
-  note := "The sixth production ω fact: the injection-graph disjoint-range \
+  note := "Over every Turing ideal, the injection-graph disjoint-range \
     separation and binary-tree WKL variants are equivalent at the Turing-ideal \
-    ω layer. Both directions were frozen before registration — the interface \
-    was deliberately built bridge-local during the matching tranche so this \
-    fact would arrive with worked artifacts on both sides. The presentation is \
+    ω layer. Both directions were proved before this statement was recorded, \
+    each through its own route. The presentation is \
     exactly injection graphs: no formula-coded Σ⁰₁ adapter is proved, and no \
     generic Σ⁰₁-separation claim is made"
 
 revmath_certify_fact disjointRangeSeparationWklOmega where
   context := rca0.turingIdealOmega
   via := ReverseMathlib.Ports.disjointRangeSeparation_wkl_omega_equivalence
-  note := "Composed from the four named frozen theorems: \
+  note := "Composed from four named theorems: \
     weakKonigAt_of_disjointRangeSeparationAt (separation → WKL, the independent \
     tree-to-injections calibration) and matching_separates ∘ \
     twoRegularPerfectMatchingAt_of_efilcAt ∘ efilcAt_of_weakKonigAt (WKL → \

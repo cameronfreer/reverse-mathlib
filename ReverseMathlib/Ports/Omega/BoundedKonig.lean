@@ -53,7 +53,7 @@ rm_statement_variant wkl.explicitlyBoundedTree.internalBoundFunction.turingIdeal
 /-- **The exact ω-model equivalence certificate**: over every Turing ideal, explicitly
 bounded Kőnig holds iff WKLω does. Visibly composed from the two named direction routes —
 `weakKonigAt_of_boundedKonigAt` (the constant-bound specialization) and
-`boundedKonigAt_of_weakKonigAt` (through the frozen EFILC bridge) — and nothing else; the
+`boundedKonigAt_of_weakKonigAt` (through the EFILC equivalence) — and nothing else; the
 dependency gates in `scripts/MetaSmoke.lean` require this proof to reach both named
 theorems, so registration preserves those artifacts rather than silently replacing them
 with an inline proof. -/
@@ -66,7 +66,7 @@ rm_fact boundedKonigWklOmega equivalence where
   scope := omegaModels
   lhs := [wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega]
   rhs := [wkl.binaryTree.turingIdealOmega]
-  note := "The fourth production ω fact: the explicitly bounded (supplied internal bound \
+  note := "Over every Turing ideal, the explicitly bounded (supplied internal bound \
     function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω \
     layer — the presentation-relating fact that lets the bounded variant join the wkl \
     conceptual family"
@@ -75,7 +75,7 @@ revmath_certify_fact boundedKonigWklOmega where
   context := rca0.turingIdealOmega
   via := ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence
   note := "Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and \
-    boundedKonigAt_of_weakKonigAt (the latter through the frozen efilcAt_of_weakKonigAt); \
+    boundedKonigAt_of_weakKonigAt (the latter through efilcAt_of_weakKonigAt); \
     all three routes and this composition are pinned by dependency gates in \
     scripts/MetaSmoke.lean"
 

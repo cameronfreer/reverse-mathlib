@@ -53,7 +53,7 @@ rm_concept explicitFiniteInverseLimitCompactness where
 rm_concept countableHall where
   statement := "Countable Hall / marriage: a countable family of finite sets satisfying \
     the marriage condition (every finite subfamily has at least as many candidates as \
-    members) admits an injective transversal; the family's registered perfect-matching \
+    members) admits an injective transversal; its perfect-matching \
     form asserts that every countable bipartite graph that is 2-regular on both sides \
     has a perfect matching"
   description := "Countable Hall / marriage as a conceptual family: the one-sided \

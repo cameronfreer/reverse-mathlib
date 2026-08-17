@@ -35,11 +35,56 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import readability  # noqa: E402  (sibling module, loaded from this file's directory)
+
 SCHEMA_ID = "reverse-mathlib.catalog/v7"
 # The one label the canonical ambient graph carries; shared so the label gate covers
 # to_dot as well as the family views. Directional glyphs are forbidden in ALL graph
 # labels — direction belongs to drawn arrowheads only.
 AMBIENT_EDGE_LABEL = "ambient, kernel checked"
+
+
+# Prose budgets per surface, enforced at build time and set at the baseline the
+# rewrite reached, so the work cannot silently unwind. Hard rules cover only what
+# is objectively wrong: an identifier used as a fragment of a sentence, a stored
+# enum value in prose, scheduling vocabulary on a reader surface, one disclaimer
+# copied across cards, and a reading path that outgrows its budget.
+#
+# Em dash density, sentence length, shouted words and compound density stay
+# advisory in the report. Hard limits on them would fight good prose rather than
+# bad, and a sentence is sometimes long because the mathematics is.
+#
+# The reference surface still carries identifiers inside registered prose that no
+# renderer can mark without reading the sentence. Its allowance is a ratchet at
+# the level reached, not an endorsement: it may fall, never rise.
+READABILITY_BUDGETS: dict = {
+    "all": {
+        "noProjectVocabulary": True,
+        "noDuplicateSentences": True,
+        "requireAltText": True,
+    },
+    "public": {
+        "noIdentifierLeaks": True,
+        "noEnumTokens": True,
+        "noImplementationVocabulary": True,
+        "maxDefaultOpenWords": 1500,
+        "maxSections": 6,
+        "requireLinks": ["reference.html", "methods.html"],
+    },
+    "methods": {
+        "noIdentifierLeaks": True,
+        "noEnumTokens": True,
+        "maxDefaultOpenWords": 1500,
+        "maxSections": 8,
+    },
+    "reference": {
+        "maxIdentifierLeaks": 96,
+        "maxEnumTokensInProse": 11,
+        "maxDuplicateSentences": 4,
+        "maxDefaultOpenWords": 2200,
+    },
+}
 
 
 def repo_root() -> Path:
@@ -440,8 +485,14 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"base-context classifier selftest failed: {name}")
     for name in selftest_projection_layout():
         problems.append(f"projection-layout selftest failed: {name}")
+    for name in selftest_optional_graphviz():
+        problems.append(f"optional-graphviz selftest failed: {name}")
     for name in selftest_flat_label_recenter():
         problems.append(f"flat-label recenter selftest failed: {name}")
+    for name in readability.selftest_extraction():
+        problems.append(f"readability extraction selftest failed: {name}")
+    for name in readability.selftest_budgets():
+        problems.append(f"readability budget selftest failed: {name}")
     for name in selftest_scoped_results():
         problems.append(f"scoped-results checker selftest did not fail closed: {name}")
     # typed computed closure: view-only derived edges, each the conclusion of a proof
@@ -717,6 +768,46 @@ def recenter_flat_edge_labels(svg: str) -> str:
     return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
 
 
+def selftest_optional_graphviz() -> list[str]:
+    """Graphviz is optional, and a build without it is a supported path: the atlas
+    still states its results, and the reference surface still lists every edge.
+    A legend explains a picture, so it appears only alongside one. Returns the
+    scenarios that wrongly passed."""
+    bad = []
+    view = {"view": "concept-projection", "family": "mixed-direct-only",
+            "nodes": ["p", "q"], "baseContextConcepts": [],
+            "edges": [{"family": "certifiedOmegaFact", "kind": "implication",
+                       "label": "⊨ω", "lhsConcept": "p", "rhsConcept": "q"}]}
+    catalog = {"schema": "test/v1", "concepts": [], "statementVariants": [],
+               "facts": [], "ports": [], "scopedResults": [],
+               "dependencies": {"leanVersion": "4", "mathlibRevision": "abc"}}
+    # Bands and derivations have their own fixtures; this one is about pictures
+    # and legends, so the synthetic catalog carries neither.
+    saved_bands = list(LITERATURE_BANDS)
+    saved_derivs = list(COMPUTED_DERIVATIONS)
+    LITERATURE_BANDS.clear()
+    COMPUTED_DERIVATIONS.clear()
+    for have_svg, svgs, want_legend in ((False, set(), 0), (True, {"concept-projection"}, 1)):
+        try:
+            pages = site_pages(catalog, have_svg, "digraph {}", svgs)
+        except Exception as exc:                      # noqa: BLE001 - reported, not raised
+            bad.append(f"building with graphviz={have_svg} raised {exc!r}")
+            continue
+        for name, text in pages.items():
+            shows = "<img " in text
+            legends = text.count('<div class="legend"')
+            if legends != (1 if shows else 0):
+                bad.append(f"graphviz={have_svg}: {name} carries {legends} legend(s) "
+                           f"with {'a picture' if shows else 'no picture'}")
+        if not have_svg and "<img " in "".join(pages.values()):
+            bad.append("a build without graphviz still emitted an image")
+        if have_svg and pages["index.html"].count('<div class="legend"') != want_legend:
+            bad.append("the atlas lost its legend when a picture was available")
+    LITERATURE_BANDS[:] = saved_bands
+    COMPUTED_DERIVATIONS[:] = saved_derivs
+    return bad
+
+
 def selftest_flat_label_recenter() -> list[str]:
     """The flat-clipped-label post-pass is frozen on its exact firing
     condition: a stray label on a flat edge is recentered onto the visible
@@ -753,29 +844,271 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     return True
 
 
+SITE_CSS = """* { box-sizing: border-box; }
+body { font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+       margin: 0; padding: 1.25rem 1rem 3rem; color: #1a1a1a; background: #fafafa;
+       line-height: 1.5; }
+main { max-width: 56rem; margin: 0 auto; }
+h1 { font-size: 1.5rem; }
+h2 { font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #ddd;
+      padding-bottom: 0.3rem; }
+h3 { font-size: 1rem; margin: 0 0 0.5rem; overflow-wrap: anywhere; }
+h4 { font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }
+code { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+        font-size: 0.85em; background: #f0f0f0; padding: 0.1em 0.3em;
+        border-radius: 3px; overflow-wrap: anywhere; }
+.card { background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+         padding: 0.9rem 1.1rem; margin: 0.75rem 0; }
+.card p { margin: 0.4rem 0; }
+.tag { font-size: 0.72rem; font-weight: normal; color: #555; background: #eee;
+        border-radius: 10px; padding: 0.1rem 0.55rem; vertical-align: middle;
+        white-space: nowrap; }
+dl { display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.9rem;
+      margin: 0.5rem 0; }
+dt { color: #666; font-size: 0.85rem; }
+dd { margin: 0; overflow-wrap: anywhere; }
+ul { margin: 0.3rem 0; padding-left: 1.2rem; }
+li { margin: 0.25rem 0; overflow-wrap: anywhere; }
+#principles { background: #f4f8fc; border: 1px solid #cfe0ef; border-radius: 6px;
+  padding: 0.4rem 1.1rem 0.9rem; margin: 1rem 0 1.5rem; }
+#principles h2 { margin-top: 0.5rem; }
+.principles { font-size: 1.02rem; }
+.principles dt { margin-top: 0.6rem; }
+.principles dd { margin: 0.2rem 0 0 1.2rem; max-width: 62rem; }
+.banner { background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
+           border-radius: 6px; overflow-wrap: anywhere; }
+.banner p { margin: 0.3rem 0; }
+figure.graph { margin: 0.75rem 0; text-align: center; }
+figure.graph img { max-width: 100%; height: auto; }
+figcaption { color: #666; font-size: 0.8rem; }
+.scroll { overflow-x: auto; }
+details summary { cursor: pointer; color: #666; font-size: 0.85rem; }
+details p { font-size: 0.85rem; color: #444; }
+details.card > summary, details.graphpanel > summary { color: #1a1a1a;
+    font-size: 0.95rem; overflow-wrap: anywhere; }
+details.graphpanel { background: #fff; border: 1px solid #e2e2e2;
+    border-radius: 6px; padding: 0.6rem 0.9rem; margin: 0.75rem 0; }
+.meta { color: #555; font-size: 0.85rem; overflow-wrap: anywhere; }
+.refitem { background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+    padding: 0.6rem 0.9rem; margin: 0.5rem 0; font-size: 0.9rem;
+    overflow-wrap: anywhere; }
+.scount { font-size: 0.8rem; color: #666; font-weight: normal; }
+.legend { display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem;
+    color: #555; background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
+    padding: 0.5rem 0.9rem; margin: 0.5rem 0; }
+.legend .lg { display: flex; align-items: center; gap: 0.45rem; }
+.legend svg { flex: none; }
+footer { color: #666; font-size: 0.8rem; margin-top: 2.5rem;
+          border-top: 1px solid #ddd; padding-top: 0.75rem;
+          overflow-wrap: anywhere; }
+a { color: #205ea6; }
+.chip { text-decoration: none; }
+.chip code { background: #eef2f7; border: 1px solid #d7e2ee; color: #24486d; }
+nav.surfaces { margin: 0.4rem 0 1.2rem; font-size: 0.9rem; }
+nav.surfaces a { margin-right: 0.9rem; }
+table.results { border-collapse: collapse; width: 100%; margin: 0.6rem 0 1rem; }
+table.results th, table.results td { border-bottom: 1px solid #e2e2e2;
+      padding: 0.45rem 0.6rem; text-align: left; vertical-align: top;
+      font-size: 0.93rem; }
+table.results th { font-size: 0.78rem; text-transform: uppercase;
+      letter-spacing: 0.04em; color: #555; }
+table.results td.how { white-space: nowrap; color: #444; font-size: 0.86rem; }
+.wrapscroll { overflow-x: auto; }
+#proved { background: #f7f5ef; border: 1px solid #e0d9c8; border-radius: 6px;
+      padding: 0.9rem 1.1rem; margin: 1.2rem 0; }
+#proved h2 { margin-top: 0; border: 0; }
+"""
+
+
+FILTER_SCRIPT = """
+/* Filtering changes visibility only; the canonical data is catalog.direct.json. */
+function applyFilter() {
+  var t = document.getElementById('ftext').value.toLowerCase();
+  var f = document.getElementById('ffam').value;
+  document.querySelectorAll('.card').forEach(function (c) {
+    var okT = !t || c.textContent.toLowerCase().indexOf(t) >= 0;
+    var okF = !f || c.getAttribute('data-family') === f;
+    c.style.display = (okT && okF) ? '' : 'none';
+  });
+  document.querySelectorAll('section[data-sec]').forEach(function (s) {
+    var cards = s.querySelectorAll('.card'), shown = 0;
+    cards.forEach(function (c) { if (c.style.display !== 'none') shown += 1; });
+    var badge = s.querySelector('.scount');
+    if (badge) {
+      badge.textContent = (shown === cards.length)
+        ? '(' + cards.length + ')'
+        : '(' + shown + ' of ' + cards.length + ' shown)';
+    }
+    s.style.display = (cards.length > 0 && shown === 0) ? 'none' : '';
+  });
+}"""
+
+
+# One place where catalog enum values become English. Every reader-facing
+# rendering goes through these maps, so a value can never reach a sentence in its
+# stored form: the identifier stays in the data and in the lookup chips, and the
+# page says what it means.
+VERIFICATION_PROSE = {
+    "kernelChecked": "checked by the Lean kernel",
+    "backendChecked": "checked in the pinned external Lean bridge",
+    "importedChecked": "checked in a pinned external Lean development",
+    "computedView": "derived for display; not counted",
+    "claimed": "claimed, not checked",
+    "reported": "reported from the literature",
+}
+
+SCOPE_PROSE = {
+    "omegaModels": "over ω-models",
+    "allModels": "over all second-order structures",
+    "provability": "in the pinned proof calculus",
+    "ambientFactorization": "in ambient Lean over standard ℕ",
+    "weihrauch": "as a Weihrauch reduction",
+    "strongWeihrauch": "as a strong Weihrauch reduction",
+    "none": "with no model-theoretic scope",
+}
+
+KIND_PROSE = {
+    "equivalence": "equivalence",
+    "implication": "implication",
+    "nonImplication": "separation, witnessed by a countermodel",
+}
+
+RELATION_SYMBOL = {"equivalence": "⇔", "implication": "⇒", "nonImplication": "⊭"}
+
+
+def prose_verification(value: str | None) -> str:
+    return VERIFICATION_PROSE.get(value or "", value or "unrecorded")
+
+
+def prose_scope(value: str | None) -> str:
+    return SCOPE_PROSE.get(value or "", value or "unrecorded")
+
+
+def short_id(identifier: str) -> str:
+    """Identifiers carry a namespace for the data; a chip shows the local part."""
+    return (identifier or "").split(":", 1)[-1]
+
+
+def identifier_pattern(catalog: dict) -> "re.Pattern":
+    """Every identifier the catalog knows, plus the shapes Lean names take.
+
+    Registration fields are plain strings, so an identifier written inside a note
+    arrives as ordinary text. Marking those occurrences as data at render time is
+    what keeps the rule uniform: an identifier is data wherever it appears, and a
+    sentence never has one as a fragment.
+    """
+    known = set()
+    for key in ("concepts", "statementVariants", "facts", "ports",
+                "importedReductions", "backendEvidence", "semanticContexts",
+                "reducibilityNotions"):
+        for item in catalog.get(key, []) or []:
+            if isinstance(item, dict) and item.get("id"):
+                known.add(short_id(item["id"]))
+    for f_ in catalog.get("facts", []) or []:
+        for ev in f_.get("evidence", []) or []:
+            if ev.get("certificate"):
+                known.add(ev["certificate"])
+    for c in catalog.get("corpus", {}).get("claims", []) or []:
+        if c.get("id"):
+            known.add(c["id"])
+    literal = "|".join(re.escape(k) for k in sorted(known, key=len, reverse=True))
+    # dotted Lean names, file paths, and the catalog's own camelCase values
+    shapes = (r"[A-Za-z_][\w']*(?:\.[A-Za-z_][\w']*)+"      # Module.Name.thing
+              r"|[A-Za-z_][\w']*\.lean"                        # a source file
+              r"|\b[a-z][a-z0-9]*(?:[A-Z][A-Za-z0-9]*)+\b")    # storedCamelCase
+    return re.compile(f"({literal}|{shapes})" if literal else f"({shapes})")
+
+
+def mark_identifiers(text: str, pattern: "re.Pattern") -> str:
+    """Escape prose, then wrap identifier occurrences in a code element."""
+    out, last = [], 0
+    for m in pattern.finditer(text or ""):
+        if m.group(0) in readability.NOTATION_ALLOWED:
+            continue
+        out.append(html.escape(text[last:m.start()]))
+        out.append(f"<code>{html.escape(m.group(0))}</code>")
+        last = m.end()
+    out.append(html.escape(text[last:]))
+    return "".join(out)
+
+
 def principles_section(catalog: dict) -> str:
-    """The definitions block: what each concept-level item asserts, right at the top.
-    Statements are typed registry data (the required rm_concept `statement` field),
-    never prose invented at render time."""
-    items = "\n".join(
-        f'<dt><strong>{html.escape(c["display"]["label"])}</strong> — '
-        f'<code>{html.escape(c["id"])}</code></dt>'
-        f'<dd>{html.escape(c["statement"])}</dd>'
-        for c in catalog.get("concepts", []))
+    """What each principle asserts, in the words registered with it. Statements are
+    typed registry data (the required `statement` field of a principle), never prose
+    invented at render time. The mathematical name is the clause the statement opens
+    with; the identifier travels beside it as a lookup chip."""
+    rows = []
+    for c in catalog.get("concepts", []):
+        st = c.get("statement") or ""
+        name = st.split(":", 1)[0].strip() or short_id(c["id"])
+        body = st.split(":", 1)[1].strip() if ":" in st else st
+        ref = html.escape(short_id(c["id"]))
+        rows.append(
+            f'<dt><strong>{html.escape(name)}</strong> '
+            f'<a class="chip" href="reference.html#concept-{ref}"><code>{ref}</code></a>'
+            f"</dt><dd>{html.escape(body)}</dd>")
+    items = "\n".join(rows)
     return f"""<section id="principles"><h2>The principles</h2>
-<p><em>What each concept-level item asserts. Exact Lean interfaces, presentation
-caveats, and per-variant forms are in the <a href="#concepts-sec">concepts</a> and
-<a href="#variants-sec">variants</a> sections.</em></p>
+<p>What each principle asserts. Their exact formulations, Lean statements and
+presentation caveats are on the <a href="reference.html#concepts-sec">reference
+page</a>.</p>
 <dl class="principles">
 {items}
 </dl></section>"""
 
 
-def site_html(catalog: dict, have_svg: bool, dot_text: str,
-              view_svgs: set[str] | None = None) -> str:
+def site_pages(catalog: dict, have_svg: bool, dot_text: str,
+               view_svgs: set[str] | None = None) -> dict[str, str]:
+    """Three surfaces, three audiences.
+
+    ``index.html`` is the atlas a mathematician reads: what is proved, over what,
+    and how it was checked, in ordinary mathematical English. ``reference.html``
+    carries the exact identifiers, formulations, certificates, revisions and
+    corpus records, where the project's internal taxonomy is the subject matter.
+    ``methods.html`` explains how each kind of checking works.
+
+    Nothing is deleted in the move: every provenance detail the single page
+    carried is still present, on the surface where a reader looking for it would
+    go.
+    """
     deps = catalog["dependencies"]
     e = html.escape
     view_svgs = view_svgs or set()
+
+    ident_re = identifier_pattern(catalog)
+
+    def prose(text: str | None) -> str:
+        """Reader text with identifiers marked as data."""
+        return mark_identifiers(text or "", ident_re)
+
+    concept_by_id = {c["id"]: c for c in catalog.get("concepts", [])}
+    variant_by_id = {v["id"]: v for v in catalog.get("statementVariants", [])}
+
+    def concept_display(cid: str) -> str:
+        """The principle's mathematical name: the clause its statement opens with,
+        which is written for a reader, rather than the registration identifier."""
+        st = (concept_by_id.get(cid, {}) or {}).get("statement") or ""
+        name = st.split(":", 1)[0].strip()
+        return name or short_id(cid)
+
+    def variant_display(vid: str) -> str:
+        """The formulation's mathematical name. Results are about formulations, not
+        principles: two formulations of one principle can be inequivalent until a
+        theorem says otherwise, and naming both by their shared principle would
+        render such a result as a tautology. The phrase every formulation shares,
+        that it is stated at a second-order part, is dropped as noise."""
+        v = variant_by_id.get(vid, {})
+        name = ((v.get("description") or "").split(":", 1)[0].strip()
+                or concept_display(v.get("concept", "")) or short_id(vid))
+        name = re.sub(r"\s+at a second-order part", "", name)
+        return re.sub(r"^,\s*|\s*,$", "", name).strip()
+
+    def chip(identifier: str, anchor: str | None = None, page: str = "reference.html") -> str:
+        """An identifier as a lookup chip: data the reader can search for, never a
+        fragment of a sentence. Every chip links to its reference entry."""
+        target = f"{page}#{anchor}" if anchor else page
+        return (f'<a class="chip" href="{e(target)}"><code>{e(short_id(identifier))}'
+                f"</code></a>")
     case_study_href = ("https://github.com/cameronfreer/reverse-mathlib/blob/main/"
                        "docs/hall-efilc-case-study.md")
     case_study_concepts = {
@@ -802,7 +1135,7 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
     def note_html(text: str | None) -> str:
         if not text:
             return "<em>unknown</em>"
-        return f"{e(text)} <em>[claimed, UNVERIFIED]</em>"
+        return f"{e(text)} <em>[claimed in the literature, not checked here]</em>"
 
     def section(sec_id: str, title: str, total: int, inner: str, note: str = "") -> str:
         return (f'<section data-sec id="{sec_id}"><h2>{title} '
@@ -816,9 +1149,8 @@ def site_html(catalog: dict, have_svg: bool, dot_text: str,
                    f'alt="{e(title)}: directed graph with {e(str(nodes_n))} nodes and '
                    f'{edges_n} edges"/></figure>')
         else:
-            fig = ("<p><em>(graph image rendered when Graphviz is available at build "
-                   "time; the edge-detail list below is the always-present accessible "
-                   "form)</em></p>")
+            # Said once per surface where it applies, not once per panel.
+            fig = ""
         return f"""<details class="graphpanel"{" open" if open_ else ""}><summary><strong>{e(title)}</strong>
 ({nodes_n} nodes, {edges_n} edges; {e(styling)})</summary>
 <p><em>{e(comment)}</em></p>
@@ -840,33 +1172,61 @@ text and line style, never by color alone)</summary><ul>{edge_items}</ul></detai
             else:
                 src = ed.get("lhsConcept") or ed.get("lhs") or ed.get("exactLhs")
                 tgt = ed.get("rhsConcept") or ed.get("rhs") or ed.get("exactRhs")
-            detail = "; ".join(
-                f"{k}: {ed[k]}" for k in ("family", "kind", "fact", "record", "source",
-                                          "id", "relation", "premiseFamily", "degree",
-                                          "scope", "notion", "status", "revision",
-                                          "theorem", "exactLhs", "exactRhs")
-                if ed.get(k))
+            # Metadata reads as data, not as a sentence: each field keeps its
+            # English key and its value stays in a code element, so an identifier
+            # is never a fragment of prose. Values are strings from the catalog;
+            # the keys name what they are.
+            FIELD_NAMES = {"family": "evidence family", "kind": "relation",
+                           "fact": "fact", "record": "record", "source": "source",
+                           "id": "identifier", "relation": "relation",
+                           "premiseFamily": "premise family", "degree": "degree",
+                           "scope": "scope", "notion": "reducibility notion",
+                           "status": "verification", "revision": "revision",
+                           "theorem": "checking theorem",
+                           "exactLhs": "left endpoint", "exactRhs": "right endpoint"}
+            bits: list[tuple[str, str]] = []
+            for k, name in FIELD_NAMES.items():
+                if not ed.get(k):
+                    continue
+                v = str(ed[k])
+                if k in ("status", "scope", "kind", "relation"):
+                    # a stored value rendered on every edge: boilerplate by
+                    # construction, and marked so that a disclaimer copied into a
+                    # field is still caught
+                    rendered = {"status": prose_verification,
+                                "scope": prose_scope}.get(k, KIND_PROSE.get)(v)
+                    bits.append((name, f"<span data-boilerplate>"
+                                       f"{e(rendered or v)}</span>"))
+                else:
+                    bits.append((name, f"<code>{e(v)}</code>"))
             if ed.get("contexts"):
-                detail += "; contexts: " + ", ".join(ed["contexts"])
+                bits.append(("contexts", ", ".join(
+                    f"<code>{e(c)}</code>" for c in ed["contexts"])))
             if ed.get("certificates"):
-                detail += "; certificates: " + ", ".join(
-                    str(c) for c in ed["certificates"] if c)
+                bits.append(("certificates", ", ".join(
+                    f"<code>{e(str(c))}</code>" for c in ed["certificates"] if c)))
             if ed.get("derivationText"):
-                detail += (f"; derivation: {ed['derivationText']}"
-                           f"; premises cited: {', '.join(ed.get('leaves', []))}")
+                bits.append(("derivation", f"<code>{e(ed['derivationText'])}</code>"))
+                bits.append(("premises", ", ".join(
+                    f"<code>{e(x)}</code>" for x in ed.get("leaves", []))))
             if ed.get("records"):
-                detail += "; records (both directions): " + ", ".join(ed["records"])
+                bits.append(("records, both directions", ", ".join(
+                    f"<code>{e(x)}</code>" for x in ed["records"])))
             if ed.get("derivation") == "strongImpliesOrdinary":
-                detail += ("; one direction certified strong (≤sW) — the filled "
-                           "arrowhead — and shown here at the ordinary notion by the "
-                           "explicit weakening ≤sW ⇒ ≤W; the open arrowhead direction "
-                           "is certified ordinary only")
+                bits.append(("both directions", "<span data-boilerplate>one is "
+                             "certified strong and is "
+                             "shown here at the ordinary notion by the explicit "
+                             "weakening; the other is certified at the ordinary "
+                             "notion only</span>"))
+            detail = ("<dl class=\"fields\">"
+                      + "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in bits)
+                      + "</dl>")
             # the label already encodes the connector (⊨ω →, ≤sW, ⇔, …); fall back to a
             # bare arrow only when a view supplies none
             conn = ed.get("label") or ("⇔" if ed.get("bidirectional") else "→")
             items.append(f"<li><code>{e(str(src))}</code> {e(conn)} "
                          f"<code>{e(str(tgt))}</code>"
-                         f"<br/><small>{e(detail)}</small></li>")
+                         f"<br/><small>{detail}</small></li>")
         return "".join(items)
 
     views = build_family_views(catalog)
@@ -899,18 +1259,18 @@ separation; dashed arrows = imported reductions at pinned revisions, filled head
 certified strong, open head certified ordinary only; dashed double-headed arrow with one
 filled and one open head = mutual ordinary reduction where the filled head marks the
 direction also certified strong">
-<span class="lg">{arrow("#444", "1.3")} ambient: kernel-checked proof route (not
-strength)</span>
-<span class="lg">{arrow("#444", "2.8")} ⊨ω: certified ω-model fact</span>
-<span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω: certified equivalence</span>
-<span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω: certified separation
-(countermodel)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3")} imported ≤sW reduction: filled
-head (pinned, external)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3", open_head=True)} imported ≤W
-reduction: open head (pinned, external)</span>
-<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} mutual
-≤W: the filled end is additionally certified ≤sW; the open end is ordinary-only</span>
+<span class="lg">{arrow("#444", "1.3")} a proof in ambient Lean showing how one argument
+factors through another; it carries no claim about strength</span>
+<span class="lg">{arrow("#444", "2.8")} ⊨ω: an implication proved over every Turing ideal</span>
+<span class="lg">{arrow("#444", "2.8", both=True)} ⊨ω: an equivalence proved over every Turing ideal</span>
+<span class="lg">{arrow("#444", "2.8", head="tee")} ⊭ω: a failure, witnessed by an explicit
+countermodel</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3")} a strong Weihrauch reduction, proved in a
+separate development</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", open_head=True)} a Weihrauch reduction, proved in a
+separate development</span>
+<span class="lg">{arrow("#444", "1.6", dash="5 3", both=True, open_head=True)} reductions both ways: the filled end is
+strong, the open end ordinary</span>
 </div>"""
 
     def projection_section() -> str:
@@ -939,10 +1299,11 @@ reduction: open head (pinned, external)</span>
         # vertical placement is geometry, so it must never be the only provenance:
         # every literature band states what positions it, and that nothing is certified
         bands = "".join(
-            f'<p><strong>{e(", ".join(b["concepts"]))}</strong> drawn above '
-            f'<strong>{e(b["above"])}</strong> — literature placement only, no '
-            f'certified comparison edge. Corpus claim '
-            f'<code>{e(b["order"]["claim"])}</code>: {e(b["order"]["reading"])}.</p>'
+            f'<p>{e(" and ".join(concept_display("reverse-mathlib:" + c) for c in b["concepts"]))}'
+            f' are drawn above {e(concept_display("reverse-mathlib:" + b["above"]))}. '
+            f'This is placement from the literature; no comparison between them is '
+            f'proved here. It rests on the recorded finding '
+            f'<code>{e(b["order"]["claim"])}</code>: {prose(b["order"]["reading"])}.</p>'
             for b in v.get("literatureBands", []))
         fine_print = (f'<details class="fineprint"><summary>Projection fine print '
                       f'(exact merge and enclosure rules)</summary>'
@@ -951,7 +1312,8 @@ reduction: open head (pinned, external)</span>
                 f'direct-only projection</h2>\n'
                 f'<p><em>One edge per direct evidence record, projected to concept '
                 f'granularity for orientation only; the per-family graphs below are '
-                f'canonical.</em></p>\n{fine_print}\n{legend_html()}\n{panel}\n'
+                f'canonical.</em></p>\n{fine_print}\n'
+                f'{legend_html() if view_svgs else ""}\n{panel}\n'
                 f'{principles_section(catalog)}')
 
     def canonical_graphs_section() -> str:
@@ -979,10 +1341,14 @@ reduction: open head (pinned, external)</span>
                 title, styling, v["comment"], len(v["nodes"]), view_edge_items(v),
                 len(v["edges"]), f"{vname}.svg" if vname in view_svgs else None,
                 f"views/{vname}/graph.dot", f"views/{vname}/graph.json"))
-        return ('<h2 id="graphs">Canonical graphs (one per evidence family — never '
-                'flattened into one)</h2>\n'
-                '<p><em>Line styles as in the legend under the concept overview '
-                'above.</em></p>\n'
+        missing = ("" if view_svgs else
+                   "<p><em>Graphviz was not available when these pages were built, so "
+                   "the pictures are absent. Every edge is listed below each panel, "
+                   "which is the form these graphs are read in either way.</em></p>\n")
+        return ('<h2 id="graphs">Canonical graphs, one per kind of evidence and never '
+                'flattened together</h2>\n'
+                '<p><em>Line styles as in the legend under the concept projection '
+                'above.</em></p>\n' + missing
                 + "\n".join(panels))
 
     def facts_section() -> str:
@@ -1005,14 +1371,15 @@ reduction: open head (pinned, external)</span>
                 f"context {ctx_links}</li>" + "".join(
                     f"<li>certificate <code>{e(ev['certificate'])}</code> "
                     f"[context <code>{e(ev['context'])}</code>]"
-                    + (f" — {e(ev['note'])}" if ev.get("note") else "") + "</li>"
+                    + (f" — {prose(ev['note'])}" if ev.get("note") else "") + "</li>"
                     for ev in f_["evidence"]))
-            note_block = f"<p>{e(f_['note'])}</p>" if f_.get("note") else ""
+            note_block = f"<p>{prose(f_['note'])}</p>" if f_.get("note") else ""
             study_link = case_study_link(f_["id"])
-            cards.append(f"""<div class="card" data-family="certified">
+            cards.append(f"""<div class="card" data-family="certified" id="fact-{e(f_['id'])}">
 <h3><code>{e(lhs)}</code> {arrow} <code>{e(rhs)}</code>
-<span class="tag">{e(f_['kind'])}</span> <span class="tag">kernelChecked</span>
-<span class="tag">scope {e(str(ctx.get('scope', '')))}</span></h3>
+<span class="tag">{e(KIND_PROSE.get(f_['kind'], f_['kind']))}</span>
+<span class="tag" data-boilerplate>{e(prose_verification('kernelChecked'))}</span>
+<span class="tag" data-boilerplate>{e(prose_scope(ctx.get('scope')))}</span></h3>
 <p class="meta"><code>{e(f_['id'])}</code></p>
 <details><summary>base, context, certifications, note, and case study</summary><ul>{ev_items}</ul>{note_block}{study_link}</details>
 </div>""")
@@ -1036,10 +1403,10 @@ reduction: open head (pinned, external)</span>
                 f'<span class="tag">{e(r["relation"])}</span></li>' for r in refs)
             refs_block = f"<ul class='refs'>{ref_html}</ul>" if ref_html else ""
             study_link = case_study_link(c["id"])
-            cards.append(f"""<details class="card">
-<summary><strong>{e(gloss(c['statement']))}</strong> — <code>{e(c['id'])}</code></summary>
+            cards.append(f"""<details class="card" id="concept-{e(short_id(c['id']))}">
+<summary><strong>{e(gloss(c['statement']))}</strong> <code>{e(short_id(c['id']))}</code></summary>
 <p>{e(c['statement'])}</p>
-<p class="meta">{e(c['description'])}</p>
+<p class="meta">{prose(c['description'])}</p>
 {refs_block}{study_link}</details>""")
         return section("concepts-sec", "Concepts", len(cards), "\n".join(cards))
 
@@ -1049,7 +1416,7 @@ reduction: open head (pinned, external)</span>
             cards.append(f"""<details class="card">
 <summary><strong>{e(gloss(v['description']))}</strong> — <code>{e(v['id'])}</code>
 <span class="tag">{e(v['layer'])}</span></summary>
-<p>{e(v['description'])}</p>
+<p>{prose(v['description'])}</p>
 <dl>
 <dt>concept</dt><dd><code>{e(v['concept'])}</code></dd>
 <dt>Lean interface</dt><dd><code>{e(v['interface'] or 'none')}</code></dd>
@@ -1140,7 +1507,7 @@ reduction: open head (pinned, external)</span>
 <dt>derivation</dt><dd><code>{e(d['derivationText'])}</code></dd>
 <dt>premises cited</dt><dd><ul>{leaves}</ul></dd>
 <dt>premise family</dt><dd>{e(d['premiseFamily'])} ({e(d['relation'])})</dd>
-<dt>note</dt><dd>{e(d['note'])}</dd>
+<dt>note</dt><dd>{prose(d['note'])}</dd>
 </dl></details>""")
         panel = graph_panel(
             "Computed closure (view-only)",
@@ -1164,47 +1531,63 @@ reduction: open head (pinned, external)</span>
         bes = catalog.get("backendEvidence", [])
         if not bes:
             return ""
+        # Every record shares one source, one artifact and one set of dependencies.
+        # Stating those once and showing only what differs per record keeps the
+        # provenance complete without printing it ten times.
+        first = bes[0]["source"]
+        deps0 = first["dependencies"]
+        shared = (
+            f'<p class="shared">All records below come from '
+            f'<code>{e(first["repository"])}</code> at export revision '
+            f'<code>{e(first["exportRevision"])}</code>, artifact '
+            f'<code>{e(first["artifactRevision"])}</code> '
+            f'(<a href="https://github.com/{e(first["repository"])}/blob/'
+            f'{e(first["artifactRevision"])}/evidence/rmlib-bridge-evidence.json">raw '
+            f'artifact</a>, vendored at <code>{e(first["artifactPath"])}</code>), '
+            f'checked against reverse-mathlib <code>{e(deps0["reverse-mathlib"])}</code>, '
+            f'Foundation <code>{e(deps0["Foundation"])}</code>, mathlib '
+            f'<code>{e(deps0["mathlib"])}</code> on toolchain '
+            f'<code>{e(first["toolchain"])}</code>, by the Lean kernel with the three '
+            f'standard axioms permitted. Any record differing in any of these carries '
+            f'its own line.</p>')
         cards = []
         for r in bes:
-            src = r["source"]
-            chk = r["checking"]
+            src, chk = r["source"], r["checking"]
             deps = src["dependencies"]
-            trust = (f"mechanism <code>{e(chk.get('mechanism') or '(none)')}</code>; "
-                     f"audit <code>{e(chk.get('audit') or '(none)')}</code>; allowed "
-                     f"axioms <code>{e(', '.join(chk.get('allowedAxioms', [])))}</code>; "
-                     f"theorem <code>{e(r.get('theorem') or '(none)')}</code>; export "
-                     f"<code>{e(r['export'])}</code>")
-            down = (f"<dt>downgraded</dt><dd>{e(r['downgraded'])}</dd>"
-                    if r.get("downgraded") else "")
-            cards.append(f"""<details class="card" data-family="backend">
-<summary><strong>[{e(r['kind'])}]</strong> <code>{e(r['id'])}</code>
-<span class="tag">{e(r['status'])}</span></summary>
-<dl>
-<dt>statement</dt><dd>{e(r['display']['rendered'])}</dd>
-<dt>source</dt><dd><code>{e(src['repository'])}</code> — export/check
-<code>{e(src['exportRevision'])}</code>, artifact
-<code>{e(src['artifactRevision'])}</code>
-(<a href="https://github.com/{e(src['repository'])}/blob/{e(src['artifactRevision'])}/evidence/rmlib-bridge-evidence.json">raw artifact</a>;
-vendored at <code>{e(src['artifactPath'])}</code>)</dd>
-<dt>dependencies</dt><dd>reverse-mathlib <code>{e(deps['reverse-mathlib'])}</code>;
-Foundation <code>{e(deps['Foundation'])}</code>; mathlib
-<code>{e(deps['mathlib'])}</code>; toolchain <code>{e(src['toolchain'])}</code></dd>
-<dt>checking</dt><dd>{trust}</dd>{down}
-</dl></details>""")
+            rows = [("statement", e(r["display"]["rendered"])),
+                    ("checking theorem",
+                     f"<code>{e(r.get('theorem') or '(none)')}</code>"),
+                    ("export", f"<code>{e(r['export'])}</code>")]
+            differs = []
+            if src["repository"] != first["repository"] or \
+                    src["exportRevision"] != first["exportRevision"] or \
+                    src["artifactRevision"] != first["artifactRevision"] or \
+                    deps != deps0 or src["toolchain"] != first["toolchain"]:
+                differs.append(("source", f"<code>{e(src['repository'])}</code> at "
+                                f"<code>{e(src['exportRevision'])}</code>, artifact "
+                                f"<code>{e(src['artifactRevision'])}</code>"))
+            if chk.get("mechanism") != first.get("checking", {}).get("mechanism"):
+                differs.append(("checked by", f"<code>{e(chk.get('mechanism') or '')}</code>"))
+            if r.get("downgraded"):
+                differs.append(("downgraded", e(r["downgraded"])))
+            body = "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in rows + differs)
+            cards.append(f"""<details class="card" data-family="backend" id="backend-{e(r['id'])}">
+<summary><code>{e(r['id'])}</code>
+<span class="tag" data-boilerplate>{e(prose_verification(r['status']))}</span></summary>
+<dl>{body}</dl></details>""")
         return section(
-            "backend-sec", "Backend evidence", len(cards), "\n".join(cards),
-            "<p><em>External checked backend records (the ω-semantics bridge), with "
-            "interface fingerprints recomputed locally at ingestion. Kept distinct: "
-            "checked forward context realization (one-way — never unrestricted "
-            "semantic RCA₀ claims); checked unconditional statement adapters; "
-            "converse context adequacy still pending; each nonderivability is "
-            "calculus-relative (Henkin-safe and the pinned standard calculus "
-            "l2VarWitnessLK.v1, independently sound — the typed comparison record "
-            "carries no embedding and licenses no derivability transfer). "
-            "No local certified fact, no graph edge, no port, no closure edge; the "
-            "validated semantic-countermodel and standard-calculus nonderivability "
-            "records contribute exactly the backend-qualified all-model and "
-            "syntactic scoped results.</em></p>\n")
+            "backend-sec", "Results from the semantics bridge", len(cards),
+            shared + "\n" + "\n".join(cards),
+            "<p><em>Results checked in the external Lean development that formalizes "
+            "the syntax and semantics of second-order arithmetic, ingested with the "
+            "statement fingerprint recomputed here. Three kinds are kept apart: that "
+            "every Turing ideal realizes the theory, which is one direction only; that "
+            "a formal sentence and a property used here agree at every second-order "
+            "part; and that a sentence is not derivable in a named calculus. The "
+            "converse direction, that every model of the theory is a Turing ideal, is "
+            "not proved, so nothing here may be read as an unqualified statement about "
+            "RCA₀. These records contribute the two results shown on the "
+            "<a href=\"index.html#bridge\">atlas</a> and nothing else.</em></p>\n")
 
     def corpus_section() -> str:
         corpus = catalog.get("corpus")
@@ -1215,8 +1598,8 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             cards.append(f"""<details class="card" data-family="corpus">
 <summary><strong>{e(gloss(a['scope'], 80))}</strong> — <code>{e(a['id'])}</code>
 <span class="tag">audit</span></summary>
-<dl><dt>scope</dt><dd>{e(a['scope'])}</dd>
-<dt>outcome</dt><dd><strong>{e(a['outcome'])}</strong></dd></dl></details>""")
+<dl><dt>scope</dt><dd>{prose(a['scope'])}</dd>
+<dt>outcome</dt><dd><strong>{prose(a['outcome'])}</strong></dd></dl></details>""")
         for c in corpus.get("claims", []):
             subjects = ", ".join(f"<code>{e(x)}</code> <span class=\"tag\">concept</span>"
                                  for x in c.get("concepts", []))
@@ -1237,7 +1620,7 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
         for b in corpus.get("bridges", []):
             cards.append(f"""<details class="card" data-family="corpus">
 <summary><strong>{e(gloss(b['requirement'], 80))}</strong> — <code>{e(b['id'])}</code>
-<span class="tag">MISSING — unproved required bridge</span></summary>
+<span class="tag">not proved: a correspondence this atlas needs</span></summary>
 <dl>
 <dt>from family</dt><dd><code>{e(b['fromFamily'])}</code></dd>
 <dt>to exact target</dt><dd><code>{e(b['target']['id'])}</code> ({e(b['target']['kind'])})</dd>
@@ -1249,7 +1632,7 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             "findings, a separate family: never fact-graph edges, never certified "
             "counts. An absence finding means <strong>not found in this pinned "
             "corpus snapshot</strong>, never a mathematical negation; a "
-            "<strong>MISSING</strong> bridge is an unproved required bridge, never "
+            "correspondence listed as unproved is one this atlas needs and has not proved, never "
             "evidence that no bridge exists. Pinned sources and presentation "
             "families are in the <a href=\"#reference\">reference</a>.</em></p>\n")
 
@@ -1261,133 +1644,279 @@ Foundation <code>{e(deps['Foundation'])}</code>; mathlib
             parts.append(
                 f'<div class="refitem" id="ctx-{e(c["id"])}"><code>{e(c["id"])}</code> '
                 f'<span class="tag">base {e(str(c.get("base", "")))} · scope '
-                f'{e(str(c.get("scope", "")))}</span><br/>{e(c["description"])} '
+                f'{e(str(c.get("scope", "")))}</span><br/>{prose(c["description"])} '
                 f'— context predicate <code>{e(c.get("contextDecl") or "")}</code></div>')
         notions = catalog.get("reducibilityNotions", [])
         if notions:
             parts.append("<h3>Reducibility notions</h3>")
             for n_ in notions:
                 parts.append(f'<div class="refitem"><code>{e(n_["id"])}</code><br/>'
-                             f'{e(n_["description"])}</div>')
+                             f'{prose(n_["description"])}</div>')
         corpus = catalog.get("corpus", {})
         if corpus.get("sources"):
             parts.append("<h3>Pinned corpus sources</h3><ul>")
             for src in corpus["sources"]:
                 parts.append(f"<li><code>{e(src['namespace'])}</code> @ "
-                             f"<code>{e(src['pin'])}</code> — {e(src['description'])}</li>")
+                             f"<code>{e(src['pin'])}</code> — {prose(src['description'])}</li>")
             parts.append("</ul>")
         if corpus.get("presentationFamilies"):
             parts.append("<h3>Presentation families</h3><ul>")
             for f_ in corpus["presentationFamilies"]:
-                parts.append(f"<li><code>{e(f_['id'])}</code> — {e(f_['description'])}</li>")
+                parts.append(f"<li><code>{e(f_['id'])}</code> — {prose(f_['description'])}</li>")
             parts.append("</ul>")
         return "\n".join(parts)
 
-    return f"""<!DOCTYPE html>
+    def fact_summary(f_: dict) -> str:
+        """One sentence saying what the result asserts, in ordinary mathematical
+        English. A curated sentence is used when the catalog carries one;
+        otherwise the sentence is composed from the principles and the context, so
+        a newly registered result is never silently unlabelled."""
+        if f_.get("summary"):
+            return f_["summary"]
+        def mid_sentence(name: str) -> str:
+            """A formulation name opening with an article is capitalised as a
+            heading; inside a sentence the article is not."""
+            first, _, rest = name.partition(" ")
+            return f"{first.lower()} {rest}" if first in ("The", "A", "An") else name
+
+        lhs = mid_sentence(variant_display(f_.get("lhs", [""])[0]))
+        rhs = mid_sentence(variant_display(f_.get("rhs", [""])[0]))
+        where = ("over every Turing ideal"
+                 if f_.get("context", {}).get("scope") == "omegaModels"
+                 else prose_scope(f_.get("context", {}).get("scope")))
+        where = where[:1].upper() + where[1:]
+        if f_["kind"] == "equivalence":
+            return f"{where}, {lhs} is equivalent to {rhs}."
+        if f_["kind"] == "nonImplication":
+            return (f"{where}, {lhs} does not imply {rhs}; an explicit countermodel "
+                    f"witnesses the failure.")
+        return f"{where}, {lhs} implies {rhs}."
+
+    def bridge_summary(x: dict) -> str:
+        """One sentence for a result checked in the external bridge, stated at the
+        exact objects it is about.
+
+        These results concern a named theory and a named sentence in that bridge,
+        under a named model class or a named calculus. Rendering them as claims
+        about RCA₀ and weak Kőnig's lemma would promote them past what was proved:
+        whether the bridge's theory captures RCA₀ is exactly the direction that
+        remains open.
+        """
+        if x.get("summary"):
+            return x["summary"]
+        theory = f'<code>{e(x.get("theory", "the bridge theory"))}</code>'
+        sentence = f'<code>{e(x.get("sentence", "the sentence"))}</code>'
+        qualifier = f'<code>{e(x.get("qualifierId", ""))}</code>'
+        if x.get("kind") == "semanticCountermodel":
+            return (f"There is a model of the bridge theory {theory} in which its "
+                    f"sentence {sentence} fails, among the structures {qualifier}.")
+        if x.get("kind") == "calculusNonderivability":
+            return (f"The bridge sentence {sentence} is not derivable from the bridge "
+                    f"theory {theory} in the calculus {qualifier}.")
+        return e(x.get("statement", ""))
+
+    def methods_sections() -> str:
+        """How each kind of checking works. Implementation vocabulary belongs on
+        this surface, because the machinery is the subject."""
+        return f"""<h2 id="kernel">Results proved in Lean</h2>
+<p>A principle is stated as a property of the second-order part of an ω-model: a
+collection of subsets of ℕ closed downwards under Turing reducibility and under
+recursive join, which is what a Turing ideal is. A result is a Lean theorem quantified
+over all such parts, and it is accepted only when the Lean kernel checks it and the
+axiom audit finds nothing beyond propositional extensionality, quotient soundness and
+choice.</p>
+<p>Each result also records which lemmas its proof reaches and which it must avoid.
+These dependency conditions are checked at build time, so a proof cannot quietly start
+using the theorem it is supposed to be independent of.</p>
+<h2 id="ambient">Factorizations in ambient Lean</h2>
+<p>Some results are proved in ordinary Lean over the standard natural numbers rather
+than at a second-order part. They show how one proof factors through another and carry
+no model-theoretic scope, so they never contribute to the counts on the atlas.</p>
+<h2 id="imported">Reductions from a separate development</h2>
+<p>Weihrauch reductions are proved in a separate Lean development for computable
+analysis and recorded here with the revision they were checked at and the name of the
+checking theorem. They are read as evidence, never as axioms: nothing in this
+repository assumes them.</p>
+<h2 id="bridge">The semantics bridge</h2>
+<p>A second Lean development formalizes the syntax and the semantics of second-order
+arithmetic. Two things are checked there and imported: that every Turing ideal
+realizes an explicit theory on ω-structures, and that a formal sentence and the
+property used here agree at every second-order part. The reverse direction, that every
+model of the theory is a Turing ideal, is not proved, so no result here may be read as
+an unqualified statement about RCA₀.</p>
+<p>Records are ingested with a fingerprint of the statement recomputed locally, so a
+record whose statement drifted from the one this atlas expects fails ingestion instead
+of being displayed.</p>
+<h2 id="derived">Consequences drawn by composition</h2>
+<p>Composing two results gives a third. Those consequences are displayed as explicit
+derivations, each with the premises it used, and they are counted nowhere. They are
+written by hand rather than searched for, so the atlas never shows a chain nobody
+examined.</p>
+<h2 id="corpus">Findings quoted from the literature</h2>
+<p>Statements from the literature are recorded with their source, the exact locator,
+and the wording as it appears there. A finding that something is absent from a source
+means only that it was not found in the pinned snapshot. Where a classification in the
+literature concerns a formulation different from the one proved here, the translation
+that would be needed is named and marked as unproved.</p>
+<h2 id="graphs-methods">How the pictures are drawn</h2>
+<p>Every arrow is one recorded result. Nothing is inferred from the drawing: there is
+no transitive closure in the canonical graphs, and where a principle is placed above
+another without an arrow, the placement comes from a recorded literature finding and
+is labelled as such.</p>"""
+
+    # ---- shared page shell ---------------------------------------------
+    def surfaces_nav(current: str) -> str:
+        items = [("index.html", "Atlas"), ("reference.html", "Reference"),
+                 ("methods.html", "Methods")]
+        parts = []
+        for href, label in items:
+            parts.append(f"<strong>{e(label)}</strong>" if href == current
+                         else f'<a href="{e(href)}">{e(label)}</a>')
+        return ('<nav class="surfaces">' + " · ".join(parts)
+                + ' · <a href="https://github.com/cameronfreer/reverse-mathlib">'
+                  "cameronfreer/reverse-mathlib</a></nav>")
+
+    def shell(page: str, title: str, body: str, script: str = "") -> str:
+        return f"""<!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>reverse-mathlib atlas</title>
+<title>{e(title)}</title>
 <style>
-* {{ box-sizing: border-box; }}
-body {{ font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
-       margin: 0; padding: 1.25rem 1rem 3rem; color: #1a1a1a; background: #fafafa;
-       line-height: 1.5; }}
-main {{ max-width: 56rem; margin: 0 auto; }}
-h1 {{ font-size: 1.5rem; }}
-h2 {{ font-size: 1.2rem; margin-top: 2rem; border-bottom: 1px solid #ddd;
-      padding-bottom: 0.3rem; }}
-h3 {{ font-size: 1rem; margin: 0 0 0.5rem; overflow-wrap: anywhere; }}
-h4 {{ font-size: 0.9rem; margin: 0.75rem 0 0.25rem; }}
-code {{ font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-        font-size: 0.85em; background: #f0f0f0; padding: 0.1em 0.3em;
-        border-radius: 3px; overflow-wrap: anywhere; }}
-.card {{ background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
-         padding: 0.9rem 1.1rem; margin: 0.75rem 0; }}
-.card p {{ margin: 0.4rem 0; }}
-.tag {{ font-size: 0.72rem; font-weight: normal; color: #555; background: #eee;
-        border-radius: 10px; padding: 0.1rem 0.55rem; vertical-align: middle;
-        white-space: nowrap; }}
-dl {{ display: grid; grid-template-columns: max-content 1fr; gap: 0.15rem 0.9rem;
-      margin: 0.5rem 0; }}
-dt {{ color: #666; font-size: 0.85rem; }}
-dd {{ margin: 0; overflow-wrap: anywhere; }}
-ul {{ margin: 0.3rem 0; padding-left: 1.2rem; }}
-li {{ margin: 0.25rem 0; overflow-wrap: anywhere; }}
-#principles {{ background: #f4f8fc; border: 1px solid #cfe0ef; border-radius: 6px;
-  padding: 0.4rem 1.1rem 0.9rem; margin: 1rem 0 1.5rem; }}
-#principles h2 {{ margin-top: 0.5rem; }}
-.principles {{ font-size: 1.02rem; }}
-.principles dt {{ margin-top: 0.6rem; }}
-.principles dd {{ margin: 0.2rem 0 0 1.2rem; max-width: 62rem; }}
-.banner {{ background: #fff6df; border: 1px solid #e6cf8a; padding: 0.75rem 1rem;
-           border-radius: 6px; overflow-wrap: anywhere; }}
-.banner p {{ margin: 0.3rem 0; }}
-figure.graph {{ margin: 0.75rem 0; text-align: center; }}
-figure.graph img {{ max-width: 100%; height: auto; }}
-figcaption {{ color: #666; font-size: 0.8rem; }}
-.scroll {{ overflow-x: auto; }}
-details summary {{ cursor: pointer; color: #666; font-size: 0.85rem; }}
-details p {{ font-size: 0.85rem; color: #444; }}
-details.card > summary, details.graphpanel > summary {{ color: #1a1a1a;
-    font-size: 0.95rem; overflow-wrap: anywhere; }}
-details.graphpanel {{ background: #fff; border: 1px solid #e2e2e2;
-    border-radius: 6px; padding: 0.6rem 0.9rem; margin: 0.75rem 0; }}
-.meta {{ color: #555; font-size: 0.85rem; overflow-wrap: anywhere; }}
-.refitem {{ background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
-    padding: 0.6rem 0.9rem; margin: 0.5rem 0; font-size: 0.9rem;
-    overflow-wrap: anywhere; }}
-.scount {{ font-size: 0.8rem; color: #666; font-weight: normal; }}
-.legend {{ display: flex; flex-direction: column; gap: 0.3rem; font-size: 0.78rem;
-    color: #555; background: #fff; border: 1px solid #e2e2e2; border-radius: 6px;
-    padding: 0.5rem 0.9rem; margin: 0.5rem 0; }}
-.legend .lg {{ display: flex; align-items: center; gap: 0.45rem; }}
-.legend svg {{ flex: none; }}
-footer {{ color: #666; font-size: 0.8rem; margin-top: 2.5rem;
-          border-top: 1px solid #ddd; padding-top: 0.75rem;
-          overflow-wrap: anywhere; }}
-a {{ color: #205ea6; }}
+{SITE_CSS}
 </style></head><body><main>
-<h1>reverse-mathlib atlas</h1>
-<p><a href="https://github.com/cameronfreer/reverse-mathlib">cameronfreer/reverse-mathlib</a></p>
-<div class="banner"><p><strong>Honesty note:</strong> this atlas displays five families
-of evidence, permanently distinct, plus a computed closure that is a view, not
-evidence. No <code>RCA₀ ⊢ …</code> turnstile theorem exists at any scope; scopes are
-never promoted, and derived closure results are computed, never registered.</p>
-<details><summary>Full epistemics statement (what each family is and is not)</summary>
-<p>Every edge in the <em>ambient factorizations</em> panel is a kernel-checked relative
-certificate in unrestricted Lean over standard ℕ — ambient factorization, proof
-architecture, not strength. The <em>certified facts</em> are kernel-checked over every
-Turing ideal; the identification of Turing ideals with RCA₀'s ω-models is
-literature-backed. The <em>backend</em> records come from the external checked
-ω-semantics bridge to FormalizedFormalLogic/Foundation: the forward context
-realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on
-ω-structures) and exact statement adapters for ŴKL/EFILC/Hall are <strong>checked</strong>
-at pinned revisions with interface fingerprints recomputed locally, while converse
-context adequacy remains pending; nonderivability is recorded in both the Henkin-safe
-calculus and the pinned standard calculus l2VarWitnessLK.v1, independently sound, with
-a typed comparison record that carries no embedding and licenses no derivability
-transfer. The <em>imported reductions</em> are Weihrauch reductions checked in a separate
-machine-model repository at pinned revisions and ingested as external evidence, never
-axioms. The <em>corpus</em> holds reported literature findings at pinned snapshots, with
-missing presentation bridges named explicitly; an absence finding means not found in
-the pinned snapshot, never a mathematical negation. The <em>computed closure</em> is a
-view: typed proof trees over the certified and imported leaves, hand-declared and
-typechecked, never registered and never counted. The <em>concept projection</em> is a
-noncanonical, lossy, direct-only overview; the per-family graphs are canonical, and
-they are never flattened into one.</p></details></div>
-<p class="summary"><strong>Checked scoped results:</strong>
-ω-model: {scoreboard_cell(catalog, 'omegaModels')} ·
-all-model: {scoreboard_cell(catalog, 'allModels')} ·
-syntactic: {scoreboard_cell(catalog, 'provability')}</p>
-<p class="summary"><strong>Counts (each family separate):</strong>
-{len(catalog['concepts'])} concepts · {len(catalog['statementVariants'])} variants ·
-{len([f for f in catalog.get('facts', []) if f.get('evidence')])} certified facts
-(ω-model) · {len(catalog['ports'])} ports ·
-{len(catalog.get('importedReductions', []))} imported reductions ·
-{len(catalog.get('backendEvidence', []))} backend evidence records ·
-{len([x for x in views.get('computed-closure', {}).get('edges', []) if x.get('family') == 'computedClosure'])} computed edges (view-only) ·
-{len(catalog.get('corpus', {}).get('claims', []))} corpus claims ·
-{len(catalog.get('corpus', {}).get('bridges', []))} missing bridges</p>
+<h1>{e(title)}</h1>
+{surfaces_nav(page)}
+{body}
+<footer>{"The data behind these pages: " if page == "index.html" else "Canonical data: "}
+<a href="catalog.direct.json"><code>catalog.direct.json</code></a>
+{"" if page == "index.html" else f'(schema <code>{e(catalog["schema"])}</code>) '}—
+Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
+{"" if page == "index.html" else "There is no timestamp by design: the data depends only on the environment and the revisions above."}</footer>
+</main>{script}</body></html>
+"""
+
+    # ---- the atlas: what is proved, over what, and how it was checked ----
+    def public_scoreboard() -> str:
+        omega = len([f_ for f_ in catalog.get("facts", []) if f_.get("evidence")
+                     and f_.get("context", {}).get("scope") == "omegaModels"])
+        counter = len([x for x in catalog.get("scopedResults", [])
+                       if x.get("kind") == "semanticCountermodel"])
+        nonderiv = len([x for x in catalog.get("scopedResults", [])
+                        if x.get("kind") == "calculusNonderivability"])
+        return f"""<ul class="scoreboard">
+<li>Proved in Lean over Turing-ideal ω-models: <strong>{omega}</strong></li>
+<li>Countermodels over general second-order structures: <strong>{counter}</strong>,
+checked in the pinned external Lean bridge</li>
+<li>Nonderivability results relative to a fixed proof calculus:
+<strong>{nonderiv}</strong>, checked in the pinned external Lean bridge</li>
+</ul>"""
+
+    def public_results_table() -> str:
+        facts = [f_ for f_ in catalog.get("facts", []) if f_.get("evidence")]
+        rows = []
+        for f_ in sorted(facts, key=lambda x: x["id"]):
+            lhs = f_.get("lhs", [""])[0]
+            rhs = f_.get("rhs", [""])[0]
+            sym = RELATION_SYMBOL.get(f_["kind"], "⇒")
+            label = f"{variant_display(lhs)} {sym} {variant_display(rhs)}"
+            ctx = f_.get("context", {})
+            summary = fact_summary(f_)
+            rows.append(
+                f"<tr><td><strong>{e(label)}</strong><br/>"
+                f'<span class="meta">{e(summary)}</span></td>'
+                f'<td class="how" data-boilerplate>'
+                f'{e(prose_verification("kernelChecked"))}<br/>'
+                f'{e(prose_scope(ctx.get("scope")))}</td>'
+                f'<td class="how">{chip(f_["id"], "fact-" + f_["id"])}</td></tr>')
+        return ('<div class="wrapscroll"><table class="results">'
+                "<thead><tr><th>Result</th><th>How it was checked</th>"
+                "<th>Reference</th></tr></thead><tbody>"
+                + "\n".join(rows) + "</tbody></table></div>")
+
+    def public_bridge_results() -> str:
+        items = []
+        for x in catalog.get("scopedResults", []):
+            rec = x.get("sourceId", "")
+            items.append(
+                f"<li>{bridge_summary(x)} "
+                f"<span class=\"meta\">({e(prose_scope(x.get('scope')))})</span> "
+                f"{chip(rec, 'backend-' + rec) if rec else ''}</li>")
+        if not items:
+            return ""
+        return "<ul>" + "\n".join(items) + "</ul>"
+
+    def public_graph() -> str:
+        v = views["concept-projection"]
+        # The legend explains the picture, so it appears only when the picture
+        # does. Graphviz is optional: without it the atlas still states its
+        # results, and the reference surface carries the edge lists.
+        has_img = "concept-projection" in view_svgs
+        img = (f'<figure class="graph"><img src="concept-projection.svg" '
+               f'alt="Directed graph of the principles in this atlas: '
+               f'{len(v["nodes"])} principles joined by {len(v["edges"])} results, '
+               f'with weak Kőnig\'s lemma and its equivalents grouped in the centre, '
+               f'the base theory below, and the jump principles above."/></figure>'
+               if has_img else "")
+        if not has_img:
+            return ""
+        return f"""<h2 id="graph">The principles and how they relate</h2>
+<p>Most boxes are principles; the lowest is the base context these results are stated
+over, not a principle. Boxes inside an enclosure are formulations of one principle.
+Arrows are recorded results, and there are more of them than the table below lists: the
+table gives the results proved over ω-models, while the picture also carries reductions
+proved in a separate development and factorizations in ambient Lean, which show how one
+argument is built from another and are not claims about strength. Height follows
+strength for the ω-model arrows only: a principle drawn above another is stronger, or is
+placed there by the literature where no comparison has been proved here.</p>
+{img}
+{legend_html()}
+<p class="meta">Exact endpoints, certificates and downloads for every arrow are on the
+<a href="reference.html#graphs">reference page</a>.</p>"""
+
+    def proved_box() -> str:
+        return f"""<div id="proved"><h2>What is — and is not — proved</h2>
+<p>Every result on this page was checked by a machine. The seven ω-model results are
+Lean theorems: each says that over every Turing ideal, one principle implies another,
+is equivalent to it, or fails to imply it. A failure is always witnessed by an explicit
+countermodel, never asserted as underivability.</p>
+<p>Turing ideals are the second-order parts of ω-models of RCA₀. That identification is
+standard in the literature ([Sim09] VIII.1) and is quoted here, not proved. No result on
+these pages is a claim about derivability in RCA₀. The nonderivability result is about a
+named theory and a named sentence inside the bridge, in one named calculus; whether that
+theory captures RCA₀ is the direction that remains unproved, and until it is proved the
+result may not be read as being about RCA₀ itself.</p>
+<p>Results reached by composing others are shown as derivations on the reference page
+and are counted nowhere. Findings quoted from the literature are recorded with their
+source and are never treated as proved here; where a translation between two
+formulations would be needed and has not been proved, the atlas says so rather than
+assuming it. How each kind of checking works is described under
+<a href="methods.html">methods</a>.</p></div>"""
+
+    index_body = f"""<p class="lede">A machine-checked atlas of principles from
+reverse mathematics. Each principle is stated at a second-order part of an ω-model,
+each relation between principles is a Lean theorem checked by the kernel, and every
+statement of provenance on these pages is separated from what has actually been
+proved.</p>
+{public_scoreboard()}
+{public_graph()}
+{principles_section(catalog)}
+<h2 id="results">Results</h2>
+{public_results_table()}
+<h2 id="bridge">Results from the external bridge</h2>
+<p>Two further results are checked in a separate Lean development that formalizes the
+syntax and semantics of second-order arithmetic. They are stated about a theory and a
+sentence defined in that development, under a named class of structures or a named
+calculus, and they are not statements about RCA₀ or about weak Kőnig's lemma as such.</p>
+{public_bridge_results()}
+{proved_box()}"""
+
+    methods_body = f"""<p class="lede">How each kind of result on this atlas is
+checked, and what a reader is entitled to conclude from it.</p>
+{methods_sections()}"""
+
+    reference_body = f"""<p class="lede">Exact identifiers, formulations, Lean
+statements, certificates, revisions and corpus records. The project's internal
+vocabulary is used here deliberately: this surface is the dictionary.</p>
 <p class="filters">Filter:
 <input type="text" id="ftext" placeholder="text, ids, theorems…" oninput="applyFilter()">
 <select id="ffam" onchange="applyFilter()"><option value="">all families</option>
@@ -1396,18 +1925,17 @@ syntactic: {scoreboard_cell(catalog, 'provability')}</p>
 <noscript>(filtering needs JavaScript; all content below is fully visible without
 it)</noscript></p>
 <nav class="toc"><strong>Contents:</strong>
-<a href="#overview">Overview</a> ·
-<a href="#principles">Principles</a> ·
+<a href="#overview">Concept projection</a> ·
 <a href="#facts-sec">Certified facts</a> ·
 <a href="#graphs">Canonical graphs</a> ·
 <a href="#concepts-sec">Concepts</a> ·
 <a href="#variants-sec">Variants</a> ·
-<a href="#ports-sec">Ports</a> ·
+<a href="#ports-sec">Proof analyses</a> ·
 <a href="#imports-sec">Imported reductions</a> ·
-<a href="#backend-sec">Backend evidence</a> ·
+<a href="#backend-sec">Bridge records</a> ·
 <a href="#computed-sec">Computed closure</a> ·
 <a href="#corpus-sec">Corpus audits</a> ·
-<a href="#reference">Reference</a></nav>
+<a href="#reference">Dictionaries</a></nav>
 {projection_section()}
 {facts_section()}
 {canonical_graphs_section()}
@@ -1418,43 +1946,23 @@ it)</noscript></p>
 {backend_section()}
 {computed_section()}
 {corpus_section()}
-{reference_section()}
-<footer>Canonical data: <a href="catalog.direct.json">catalog.direct.json</a>
-(schema <code>{e(catalog["schema"])}</code>) —
-Lean {e(deps["leanVersion"])}, mathlib <code>{e(deps["mathlibRevision"])}</code>.
-No timestamp by design: the catalog depends only on the environment and the pin.</footer>
-</main><script>
-/* Filtering changes visibility only; the canonical data is catalog.direct.json. */
-function applyFilter() {{
-  var t = document.getElementById('ftext').value.toLowerCase();
-  var f = document.getElementById('ffam').value;
-  document.querySelectorAll('.card').forEach(function (c) {{
-    var okT = !t || c.textContent.toLowerCase().indexOf(t) >= 0;
-    var okF = !f || c.getAttribute('data-family') === f;
-    c.style.display = (okT && okF) ? '' : 'none';
-  }});
-  document.querySelectorAll('section[data-sec]').forEach(function (s) {{
-    var cards = s.querySelectorAll('.card'), shown = 0;
-    cards.forEach(function (c) {{ if (c.style.display !== 'none') shown += 1; }});
-    var badge = s.querySelector('.scount');
-    if (badge) {{
-      badge.textContent = (shown === cards.length)
-        ? '(' + cards.length + ')'
-        : '(' + shown + ' of ' + cards.length + ' shown)';
-    }}
-    s.style.display = (cards.length > 0 && shown === 0) ? 'none' : '';
-  }});
-}}
-</script>
-</body></html>
-"""
+{reference_section()}"""
+
+    return {
+        "index.html": shell("index.html", "reverse-mathlib atlas", index_body),
+        "methods.html": shell("methods.html", "reverse-mathlib atlas: methods",
+                              methods_body),
+        "reference.html": shell("reference.html", "reverse-mathlib atlas: reference",
+                                reference_body,
+                                script="<script>" + FILTER_SCRIPT + "</script>"),
+    }
 
 
 
 # ---------------------------------------------------------------------------
 # Typed computed closure (view-only)
 #
-# A derivation is a typed PROOF TREE, never a flat premise list: premise
+# A derivation is a typed proof tree, never a flat premise list: premise
 # orientation is part of the term, and every rule node must compose at the exact
 # endpoint ids. Rule vocabularies are FAMILY-SPECIFIC — a rule is looked up in
 # its family's table, so applying a Weihrauch weakening to an ω fact (or vice
@@ -1499,9 +2007,8 @@ COMPUTED_DERIVATIONS = [
                    "turingIdealOmega",
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "WKLω → Hallω: the certified equivalence used forward, then the "
-                "certified EFILCω → Hallω implication. A display derivation only — "
-                "Hall's reversal remains an audited open question, and no fact is "
-                "registered.",
+                "certified EFILCω → Hallω implication. Hall's reversal remains an "
+                "open question.",
     },
     {
         "id": "computed.weihrauch.hallLeWkl",
@@ -1531,8 +2038,7 @@ COMPUTED_DERIVATIONS = [
                    "turingIdealOmega",
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "bounded-Kőnigω → Hallω: the certified bounded-Kőnig ⇔ WKL "
-                "equivalence used forward, then the WKLω → Hallω chain. A display "
-                "derivation only — no fact is registered.",
+                "equivalence used forward, then the WKLω → Hallω chain.",
     },
     {
         "id": "computed.omega.recCoreNotBoundedKonig",
@@ -1546,8 +2052,7 @@ COMPUTED_DERIVATIONS = [
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "RCA₀-core ⊭ω bounded-Kőnigω: the certified REC countermodel for "
                 "binary WKL transported along bounded-Kőnig → WKL (the countermodel "
-                "refutes the source of any implication into the refuted target). A "
-                "display derivation only — no fact is registered.",
+                "refutes the source of any implication into the refuted target).",
     },
     {
         "id": "computed.omega.recCoreNotEfilc",
@@ -1561,8 +2066,7 @@ COMPUTED_DERIVATIONS = [
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "RCA₀-core ⊭ω EFILCω: the certified REC countermodel for binary WKL "
                 "transported along EFILC → WKL (the reverse elimination of the "
-                "certified equivalence). A display derivation only — no fact is "
-                "registered.",
+                "certified equivalence).",
     },
     {
         "id": "computed.omega.matchingImpliesHall",
@@ -1581,9 +2085,9 @@ COMPUTED_DERIVATIONS = [
         "note": "2-regular matchingω → one-sided Hallω: the certified matching ⇔ WKL "
                 "equivalence used forward, then the WKLω → Hallω chain. An "
                 "intra-concept display derivation between the two countableHall "
-                "presentations — NOT a presentation bridge: the recorded "
+                "presentations — not a presentation correspondence: the recorded "
                 "perfectMatchingToOneSidedOmega bridge (an exact correspondence, not "
-                "a one-way ω implication) stays MISSING, and no fact is registered.",
+                "a one-way ω implication) has not been proved, and no fact is registered.",
     },
     {
         "id": "computed.omega.recCoreNotMatching",
@@ -1598,13 +2102,12 @@ COMPUTED_DERIVATIONS = [
             "contexts": ["rca0.turingIdealOmega"]},
         "note": "RCA₀-core ⊭ω 2-regular matchingω: the certified REC countermodel "
                 "for binary WKL transported along matching → WKL (the forward "
-                "elimination of the certified equivalence). A display derivation "
-                "only — no fact is registered.",
+                "elimination of the certified equivalence).",
     },
 ]
 
 
-# Canonical direct-edge constructors. ONE definition per family, shared by the
+# Canonical direct-edge constructors. One definition per family, shared by the
 # canonical views and by any view that displays a direct record (so a displayed
 # premise never becomes a skinny duplicate missing its provenance).
 OMEGA_EDGE_LABELS = {"equivalence": "⊨ω", "implication": "⊨ω",
@@ -1717,7 +2220,7 @@ def _compose_contexts(a: dict, b: dict):
 
 def eval_derivation(term, index: dict) -> dict:
     """Evaluate a proof term to its judgment, checking family, rule vocabulary,
-    relation, and EXACT endpoint composition at every node."""
+    relation, and exact endpoint composition at every node."""
     if not isinstance(term, list) or not term or not isinstance(term[0], str):
         raise DerivationError(f"malformed proof term {term!r}")
     head, args = term[0], term[1:]
@@ -1864,10 +2367,10 @@ def build_computed_closure(catalog: dict) -> dict:
         nodes.update([ed["lhs"], ed["rhs"]])
     return {
         "view": "computed-closure", "family": "computedClosure",
-        "comment": "TYPED COMPUTED CLOSURE, view-only. Each derived edge is the "
-                   "conclusion of an explicit proof TREE (premise orientation is part "
+        "comment": "Derived edges, shown but never recorded. Each derived edge is the "
+                   "conclusion of an explicit proof tree, in which premise orientation is part "
                    "of the term), typechecked at every node against family-specific "
-                   "rule vocabularies and EXACT endpoint composition. No generic "
+                   "rule vocabularies and exact endpoint composition. No generic "
                    "reachability: derivations are hand-declared, never searched. "
                    "Derived edges are computedView — never certified, never imported, "
                    "never a registered fact, never in any certified count; the "
@@ -2327,9 +2830,9 @@ def build_family_views(catalog: dict) -> dict:
         "concept-projection": {
             "view": "concept-projection", "family": "mixed-direct-only",
             "baseContextConcepts": sorted(base_context_concepts(catalog)),
-            "comment": "NONCANONICAL, LOSSY projection to concept granularity; every "
+            "comment": "a lossy projection to concept granularity, not the canonical record; every "
                        "edge keeps family, scope, exact endpoint ids, and status; NO "
-                       "TRANSITIVE CLOSURE — only validated display merges with named "
+                       "transitive closure, only validated display merges with named "
                        "premises (antiparallel pairs; the explicit ≤sW ⇒ ≤W weakening); "
                        "missing bridges and unary form claims never render as edges. "
                        "An intra-concept calibration never renders as a concept "
@@ -2943,9 +3446,14 @@ def cmd_build(args: argparse.Namespace) -> None:
         sdir.mkdir(parents=True, exist_ok=True)
         for fn in ("graph.json", "graph.dot"):
             shutil.copy(out / "views" / vname / fn, sdir / fn)
-    page = site_html(catalog, have_svg, dot_text, view_svgs)
-    for marker in ("Canonical graphs (one per evidence family — never flattened into one)",
-                   "NONCANONICAL, LOSSY",
+    pages = site_pages(catalog, have_svg, dot_text, view_svgs)
+    # The existing content guards keep their force across the split: markers that
+    # must appear somewhere in the site are checked against the whole site, and
+    # the per-surface budgets in the readability report cover the rest.
+    page = "\n".join(pages.values())
+    for marker in ("Canonical graphs, one per kind of evidence and never "
+                   "flattened together",
+                   "a lossy projection to concept granularity, not the canonical record",
                    "only validated display merges with named premises",
                    "Filtering changes visibility only",
                    "Semantic contexts",
@@ -2964,15 +3472,26 @@ def cmd_build(args: argparse.Namespace) -> None:
             sys.exit(f"rmlib-zoo build: retired claim present: {retired!r} — the "
                      "comparison is recorded (independent soundness, no embedding, "
                      "no derivability transfer)")
-    legend_count = page.count('<div class="legend"')
-    if legend_count != 1:
-        sys.exit(f"rmlib-zoo build: expected exactly one legend placement (under the "
-                 f"concept overview; the canonical graphs refer back to it), found "
-                 f"{legend_count}")
-    expected_imgs = (1 if have_svg else 0) + len(view_svgs)
-    if page.count("<img ") != expected_imgs:
-        sys.exit(f"rmlib-zoo build: expected exactly one <img> per rendered graph "
-                 f"panel ({expected_imgs}), found {page.count('<img ')}")
+    # one legend per surface that shows a graph: the atlas explains its picture to
+    # a reader, the reference explains its own, and neither repeats the legend
+    for name, text in pages.items():
+        legend_count = text.count('<div class="legend"')
+        shows_graph = "<img " in text
+        if legend_count != (1 if shows_graph else 0):
+            sys.exit(f"rmlib-zoo build: {name} should carry "
+                     f"{'exactly one legend' if shows_graph else 'no legend'} "
+                     f"(a legend explains a picture, so it appears only with one), "
+                     f"found {legend_count}")
+    # one image per rendered graph panel on the reference surface, and the single
+    # orientation picture on the atlas
+    expected = {"reference.html": (1 if have_svg else 0) + len(view_svgs),
+                "index.html": 1 if "concept-projection" in view_svgs else 0,
+                "methods.html": 0}
+    for name, want in expected.items():
+        got = pages[name].count("<img ")
+        if got != want:
+            sys.exit(f"rmlib-zoo build: {name} expected {want} graph image(s), "
+                     f"found {got}")
     if page.count('data-case-study="hall-efilc"') != 6:
         sys.exit("rmlib-zoo build: Hall–EFILC case study must be linked from exactly "
                  "three concept cards and three certified-fact cards")
@@ -3003,13 +3522,26 @@ def cmd_build(args: argparse.Namespace) -> None:
         # rendered-page golden markers: the corpus section must frame absence and
         # missing bridges honestly, in the canonical order the JSON fixes
         for marker in ("Corpus audits", "not found in this pinned corpus snapshot",
-                       "MISSING — unproved required bridge"):
+                       "not proved: a correspondence this atlas needs"):
             if marker not in page:
                 sys.exit(f"rmlib-zoo build: corpus section marker missing: {marker!r}")
-    (site / "index.html").write_text(page)
+    for name, text in pages.items():
+        (site / name).write_text(text)
+    # Prose measurement runs on the built pages, so what a reader meets is what
+    # gets measured. The hard budgets in READABILITY_BUDGETS are enforced here and
+    # fail the build; the advisory metrics beside them are reported every build and
+    # enforced nowhere, since a limit on sentence length or em dash density would
+    # fight good prose as readily as bad.
+    report = readability.write_report(site, budgets=READABILITY_BUDGETS)
     print(f"rmlib-zoo build: wrote {dot_path.name}"
           f"{', ' + svg_path.name if have_svg else ''}, views/ambient-standard/graph.json, "
           f"site/index.html under {out}")
+    print("rmlib-zoo readability (advisory metrics are reported, never enforced):")
+    print(readability.summarize(report))
+    if report["violations"]:
+        for v in report["violations"]:
+            print(f"rmlib-zoo readability: {v}")
+        sys.exit("rmlib-zoo build: readability budgets exceeded")
 
 
 def cmd_serve(args: argparse.Namespace) -> None:
