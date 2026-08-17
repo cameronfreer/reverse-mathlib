@@ -9,6 +9,11 @@ explicitly bounded Kőnig.
 This file develops the combinatorics first (extendibility, the finite-branching
 step), then the computability layer. Nothing here enters the spine until the whole
 slice is green.
+
+A plain `lake build` does not compile this file: the experimental root does not
+import it, and CI will not catch a break here. Build it by name:
+
+  lake build ReverseMathlibExperimental.KonigLeftmostPath
 -/
 
 namespace ReverseMathlib.Omega
