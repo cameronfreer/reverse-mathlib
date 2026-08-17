@@ -695,4 +695,238 @@ theorem extendibleSet_le_jump (T : InternalBoundedTree Ω) :
   · rw [if_neg (fun hmem => ((key c).mpr hmem) hc), if_pos hc]
   · rw [if_pos ((key c).mp hc), if_neg hc]
 
+/-! ### Link 6: the executable leftmost recursion, and its graph reduction
+
+The recursion runs against the jump of the joined base oracle and nothing else: the bound
+is recovered through `le_jump` rather than by a silent second query to the base, and each
+step takes one finite transcript of extendibility bits over the enumerated children,
+appending the first child whose bit answers `1`. The executable step is total by fiat —
+`findIdx` returns the table length on an all-zero table — and the equality with the
+`leastChild` specification is proved exactly under the extendibility invariant, so that
+fallback value never acquires semantic meaning. -/
+
+open Classical in
+/-- The executable step: append the first child value whose extendibility bit is `1` in
+the finite transcript below the recovered bound. -/
+private noncomputable def leftmostStep (T : InternalBoundedTree Ω) (c : ℕ) : ℕ :=
+  seqCode (decodeSeq c ++
+    [((List.range (T.bound.eval (decodeSeq c).length)).map fun v =>
+        charFnTot {x | ExtendibleAt T.tree.1 x} (seqCode (decodeSeq c ++ [v]))).findIdx
+      (· == 1)])
+
+open Classical in
+/-- On an extendible node the transcript's first `1` is the least extendible child, so
+the executable step meets the `leastChild` specification exactly where the invariant
+holds. -/
+private theorem leftmostStep_eq (T : InternalBoundedTree Ω) {c : ℕ}
+    (hc : ExtendibleAt T.tree.1 c) :
+    leftmostStep T c = seqCode (decodeSeq c ++ [leastChild T c]) := by
+  have hbnd : T.bound.MapsTo (decodeSeq c).length (T.bound.eval (decodeSeq c).length) :=
+    T.bound.pair_eval_mem _
+  have hlt : leastChild T c < T.bound.eval (decodeSeq c).length :=
+    leastChild_lt_bound T hbnd hc
+  obtain ⟨v0, hv0w, hv0⟩ := exists_extendible_child T hbnd hc
+  have hLC := leastChild_extendible T ⟨v0, hv0⟩
+  have hfind : ((List.range (T.bound.eval (decodeSeq c).length)).map fun v =>
+      charFnTot {x | ExtendibleAt T.tree.1 x} (seqCode (decodeSeq c ++ [v]))).findIdx
+        (· == 1) = leastChild T c := by
+    have hlen : leastChild T c < ((List.range (T.bound.eval (decodeSeq c).length)).map
+        fun v => charFnTot {x | ExtendibleAt T.tree.1 x}
+          (seqCode (decodeSeq c ++ [v]))).length := by
+      simpa using hlt
+    rw [List.findIdx_eq hlen]
+    constructor
+    · simp only [List.getElem_map, List.getElem_range]
+      simp [charFnTot, Set.mem_setOf_eq, hLC]
+    · intro j hj
+      simp only [List.getElem_map, List.getElem_range]
+      have hjext : ¬ ExtendibleAt T.tree.1 (seqCode (decodeSeq c ++ [j])) :=
+        fun hcon => absurd (leastChild_le T hcon) (by omega)
+      simp [charFnTot, Set.mem_setOf_eq, hjext]
+  rw [leftmostStep, hfind]
+
+/-- The executable leftmost recursion: iterate the step from the empty node. -/
+private noncomputable def leftmostExec (T : InternalBoundedTree Ω) : ℕ → ℕ
+  | 0 => seqCode []
+  | n + 1 => leftmostStep T (leftmostExec T n)
+
+/-- **The executable recursion computes the specification** on trees with a node at every
+level — the invariant hands each step an extendible node, where `leftmostStep_eq`
+applies. -/
+theorem leftmostExec_eq (T : InternalBoundedTree Ω)
+    (hlev : HasNodeAtEveryLevel T.tree.1) : ∀ n, leftmostExec T n = leftmostNode T n
+  | 0 => rfl
+  | n + 1 => by
+    rw [show leftmostExec T (n + 1) = leftmostStep T (leftmostExec T n) from rfl,
+      leftmostExec_eq T hlev n,
+      leftmostStep_eq T (leftmostNode_extendible T hlev n)]
+    rfl
+
+private theorem leftmostExec_eq_nat_rec (T : InternalBoundedTree Ω) (n : ℕ) :
+    leftmostExec T n = Nat.rec (motive := fun _ => ℕ) (seqCode [])
+      (fun _ ih => leftmostStep T ih) n := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [show leftmostExec T (n + 1) = leftmostStep T (leftmostExec T n) from rfl, ih]
+
+/-- **Link 6, the computation**: the executable recursion runs against the jump of the
+joined base oracle alone — extendibility bits by the one-query decision of
+`extendibleSet_le_jump`, the bound recovered through `le_jump`. -/
+theorem leftmostExec_recursiveIn (T : InternalBoundedTree Ω) :
+    Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun n => Part.some (leftmostExec T n) := by
+  classical
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  -- extendibility bits, by link 5
+  have hext : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun x => Part.some (charFnTot {x | ExtendibleAt T.tree.1 x} x) := by
+    refine (extendibleSet_le_jump T).of_eq fun x => ?_
+    rw [charFn_eq_coe]
+    rfl
+  -- the bound, recovered through the jump — never a second base oracle
+  have hbndJ : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun i => Part.some (T.bound.eval i) := by
+    have h1 : Nat.RecursiveIn {charFn (joinSet T.tree.1 T.bound.graph.1)}
+        fun i => Part.some (T.bound.eval i) :=
+      recursiveIn_of_turingReducible T.bound.eval_recursiveIn_graph
+        (right_le_joinSet _ _)
+    exact recursiveIn_of_turingReducible h1 (le_jump _)
+  have hw : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun c => Part.some (T.bound.eval (decodeSeq c).length) :=
+    recursiveIn_comp_total hbndJ (recursiveIn_of_primrec primrec_seqLength)
+  -- the step: transcript of extendibility bits over the children, first 1 wins
+  have hcand : Primrec fun m : ℕ => seqCode (decodeSeq m.unpair.1 ++ [m.unpair.2]) :=
+    primrec_seqCode.comp
+      (Primrec₂.comp (f := fun (l : List ℕ) (a : ℕ) => l ++ [a]) Primrec.list_concat
+        (primrec_decodeSeq.comp hfst) hsnd)
+  have htab := valueTable_recursiveIn_param
+    (f := fun c v => charFnTot {x | ExtendibleAt T.tree.1 x}
+      (seqCode (decodeSeq c ++ [v])))
+    (recursiveIn_comp_primrec hext hcand)
+  have hcw := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id) hw
+  have htabc : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun c => Part.some
+      (valueTable (fun v => charFnTot {x | ExtendibleAt T.tree.1 x}
+        (seqCode (decodeSeq c ++ [v]))) (T.bound.eval (decodeSeq c).length)) :=
+    (recursiveIn_comp_total htab hcw).of_eq fun c => by
+      simp only [Nat.unpair_pair, id_eq]
+  have hpost : Primrec fun z : ℕ =>
+      seqCode (decodeSeq z.unpair.1 ++ [(decodeSeq z.unpair.2).findIdx (· == 1)]) := by
+    have hidx : Primrec fun z : ℕ => (decodeSeq z.unpair.2).findIdx (· == 1) :=
+      Primrec.list_findIdx (primrec_decodeSeq.comp hsnd)
+        (Primrec.beq.comp Primrec.snd (Primrec.const 1))
+    exact primrec_seqCode.comp
+      (Primrec₂.comp (f := fun (l : List ℕ) (a : ℕ) => l ++ [a]) Primrec.list_concat
+        (primrec_decodeSeq.comp hfst) hidx)
+  have hstep : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun c => Part.some (leftmostStep T c) := by
+    have hpair := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id) htabc
+    refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun c => ?_
+    simp only [Nat.unpair_pair, id_eq, decodeSeq_valueTable]
+    rw [leftmostStep]
+  -- the recursion
+  have hstep' : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun m => Part.some (leftmostStep T m.unpair.2) :=
+    recursiveIn_comp_primrec hstep hsnd
+  have h := recursiveIn_nat_rec (base := seqCode ([] : List ℕ))
+    (step := fun _ ih => leftmostStep T ih) hstep'
+  exact h.of_eq fun n => congrArg Part.some (leftmostExec_eq_nat_rec T n).symm
+
+/-- The leftmost path read entrywise: the `n`-th value the executable recursion
+selects. -/
+noncomputable def leftmostValue (T : InternalBoundedTree Ω) (n : ℕ) : ℕ :=
+  (decodeSeq (leftmostExec T (n + 1))).getD n 0
+
+/-- The graph of the leftmost path, as `Nat.pair` codes. -/
+def leftmostGraph (T : InternalBoundedTree Ω) : Set ℕ :=
+  {m | leftmostValue T m.unpair.1 = m.unpair.2}
+
+theorem isGraphOf_leftmostGraph (T : InternalBoundedTree Ω) :
+    IsGraphOf (leftmostGraph T) (leftmostValue T) := fun x y => by
+  simp [leftmostGraph, Nat.unpair_pair, Set.mem_setOf_eq]
+
+/-- **Link 6, the reduction**: the leftmost-path graph is Turing reducible to the jump of
+the joined base oracle — the exact statement the ideal-closure packaging consumes. -/
+theorem leftmostGraph_le_jump (T : InternalBoundedTree Ω) :
+    leftmostGraph T ≤ᵀ jumpSet (joinSet T.tree.1 T.bound.graph.1) := by
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hexec1 : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun n => Part.some (leftmostExec T (n + 1)) :=
+    recursiveIn_comp_primrec (leftmostExec_recursiveIn T) Primrec.succ
+  have hval : Nat.RecursiveIn {charFn (jumpSet (joinSet T.tree.1 T.bound.graph.1))}
+      fun n => Part.some (leftmostValue T n) := by
+    have hget : Primrec fun z : ℕ => (decodeSeq z.unpair.1).getD z.unpair.2 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet hfst hsnd
+    have hpair := recursiveIn_pair_total hexec1 (recursiveIn_of_primrec Primrec.id)
+    refine (recursiveIn_comp_total (recursiveIn_of_primrec hget) hpair).of_eq fun n => ?_
+    simp only [Nat.unpair_pair, id_eq, leftmostValue]
+  have hvalm := recursiveIn_comp_primrec hval hfst
+  have hpair := recursiveIn_pair_total hvalm (recursiveIn_of_primrec Primrec.id)
+  have hpost : Primrec fun z : ℕ => if z.unpair.1 = z.unpair.2.unpair.2 then 1 else 0 :=
+    Primrec.ite (Primrec.eq.comp hfst (hsnd.comp hsnd)) (Primrec.const 1)
+      (Primrec.const 0)
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun m => ?_
+  simp only [Nat.unpair_pair, id_eq, charFn]
+  by_cases hm : leftmostValue T m.unpair.1 = m.unpair.2
+  · rw [if_pos hm, if_pos (show m ∈ leftmostGraph T from hm)]
+  · rw [if_neg hm, if_neg (show m ∉ leftmostGraph T from hm)]
+
+/-! ### The path property of the leftmost values
+
+The semantic layer the packaging consumes: every leftmost node lies in the tree, the
+nodes extend one another, and the selected values agree entrywise with every long-enough
+node. Everything here is under `HasNodeAtEveryLevel`, where the executable recursion
+meets its specification. -/
+
+/-- Extendibility at relative depth `0` returns the node itself: extendible nodes are in
+the tree. -/
+theorem mem_of_extendibleAt {S : Set ℕ} {c : ℕ} (hc : ExtendibleAt S c) : c ∈ S := by
+  obtain ⟨d, hdT, hlen, hpre⟩ := hc 0
+  have hcd : decodeSeq c = decodeSeq d :=
+    List.IsPrefix.eq_of_length hpre (by omega)
+  have : c = d := by
+    have := congrArg seqCode hcd
+    simpa using this
+  exact this ▸ hdT
+
+/-- The leftmost nodes are in the tree. -/
+theorem leftmostNode_mem (T : InternalBoundedTree Ω)
+    (hlev : HasNodeAtEveryLevel T.tree.1) (n : ℕ) : leftmostNode T n ∈ T.tree.1 :=
+  mem_of_extendibleAt (leftmostNode_extendible T hlev n)
+
+/-- Successive leftmost nodes extend one another. -/
+theorem leftmostNode_prefix (T : InternalBoundedTree Ω) {m n : ℕ} (h : m ≤ n) :
+    decodeSeq (leftmostNode T m) <+: decodeSeq (leftmostNode T n) := by
+  induction n with
+  | zero =>
+    obtain rfl := Nat.le_zero.mp h
+    exact List.prefix_rfl
+  | succ n ih =>
+    rcases Nat.eq_or_lt_of_le h with rfl | hlt
+    · exact List.prefix_rfl
+    · refine (ih (by omega)).trans ?_
+      rw [show leftmostNode T (n + 1) = seqCode (decodeSeq (leftmostNode T n) ++
+        [leastChild T (leftmostNode T n)]) from rfl]
+      rw [decodeSeq_seqCode]
+      exact List.prefix_append _ _
+
+/-- The value the path selects at `i` is entry `i` of every leftmost node long enough to
+carry it. -/
+theorem leftmostValue_eq_getD (T : InternalBoundedTree Ω)
+    (hlev : HasNodeAtEveryLevel T.tree.1) {i n : ℕ} (hin : i < n) :
+    leftmostValue T i = (decodeSeq (leftmostNode T n)).getD i 0 := by
+  rw [leftmostValue, leftmostExec_eq T hlev]
+  have hpre := leftmostNode_prefix T (show i + 1 ≤ n from hin)
+  have hi : i < (decodeSeq (leftmostNode T (i + 1))).length := by
+    rw [leftmostNode_length]
+    omega
+  have hin' : i < (decodeSeq (leftmostNode T n)).length := by
+    rw [leftmostNode_length]
+    exact hin
+  rw [List.getD_eq_getElem _ _ hi, List.getD_eq_getElem _ _ hin']
+  exact hpre.getElem hi
+
 end ReverseMathlib.Omega
