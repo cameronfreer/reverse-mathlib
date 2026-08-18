@@ -492,6 +492,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"flat-label recenter selftest failed: {name}")
     for name in selftest_rendered_arrowheads():
         problems.append(f"rendered-arrowhead comparator selftest failed: {name}")
+    for name in selftest_flat_lane_separation():
+        problems.append(f"flat-lane separation selftest failed: {name}")
     real_fail, real_checked = selftest_real_render_arrowheads()
     for name in real_fail:
         problems.append(f"real-render arrowhead fixture failed: {name}")
@@ -906,7 +908,8 @@ def selftest_flat_label_recenter() -> list[str]:
     return bad
 
 
-def render_svg(dot_path: Path, svg_path: Path) -> bool:
+def render_svg(dot_path: Path, svg_path: Path,
+               lane_offsets: dict[str, int] | None = None) -> bool:
     dot = shutil.which("dot")
     if dot is None:
         print("rmlib-zoo: graphviz `dot` not found; skipping SVG (DOT is the comparand anyway)")
@@ -915,8 +918,10 @@ def render_svg(dot_path: Path, svg_path: Path) -> bool:
     if res.returncode != 0:
         # Graphviz being absent and Graphviz erroring are different outcomes: the latter fails.
         sys.exit("rmlib-zoo: graphviz `dot` failed")
-    svg_path.write_text(recenter_flat_edge_labels(svg_path.read_text(encoding="utf-8")),
-                        encoding="utf-8")
+    svg = recenter_flat_edge_labels(svg_path.read_text(encoding="utf-8"))
+    if lane_offsets:
+        svg = separate_flat_lanes(svg, lane_offsets)
+    svg_path.write_text(svg, encoding="utf-8")
     return True
 
 
@@ -3033,6 +3038,101 @@ def selftest_base_context() -> list[str]:
     return bad
 
 
+def flat_lane_offsets(view: dict) -> dict[str, int]:
+    """Vertical separation offsets for parallel lateral-fan edges, keyed by render
+    id. The DOT stays portless — graphviz 2.43 (the deploy renderer) feeds a flat
+    edge's compass port into its arrow-type machinery and silently drops the
+    arrowhead — so the separation that ports used to provide moves into a typed
+    SVG post-pass: each fan member's whole rendered group (path, arrowheads,
+    label) is translated together, middle lane unmoved."""
+    clusters = view.get("clusters", {})
+    if not clusters:
+        return {}
+    lateral = _lateral_pairs(view, clusters)
+    offsets: dict[str, int] = {}
+    for (x, c), _side in lateral.items():
+        es = sorted((i for i, e in enumerate(view["edges"])
+                     if frozenset((_edge_concept(e, "t"), _edge_concept(e, "h")))
+                     == frozenset((x, c))),
+                    key=lambda i: (view["edges"][i].get("family", ""),
+                                   view["edges"][i].get("label", "")))
+        if len(es) <= 1:
+            continue
+        for k, i in enumerate(es):
+            e = view["edges"][i]
+            rid = _edge_render_id(e.get("family", view.get("family", "")),
+                                  _edge_concept(e, "t"), _edge_concept(e, "h"),
+                                  e.get("label", ""), e.get("kind", ""))
+            offsets[rid] = round(16 * (k - (len(es) - 1) / 2))
+    return offsets
+
+
+def separate_flat_lanes(svg: str, offsets: dict[str, int]) -> str:
+    """Apply the lane offsets: translate each identified edge group vertically as
+    one unit — path, arrowheads, and label together — so the parallel flat lanes
+    graphviz draws coincident come apart without touching any arrowhead; then
+    seat every fan member's label just above its own lane, since graphviz stacks
+    the coincident labels in its own order and the group translate alone would
+    leave them colliding across lanes."""
+    for rid, dy in offsets.items():
+        if dy:
+            svg = svg.replace(f'<g id="{rid}" class="edge">',
+                              f'<g id="{rid}" class="edge" '
+                              f'transform="translate(0,{dy})">')
+
+    def seat_label(m: "re.Match[str]") -> str:
+        g = m.group(0)
+        rid = m.group(1)
+        if rid not in offsets:
+            return g
+        path = re.search(r'<path[^>]*\bd="([^"]+)"', g)
+        text = re.search(r'(<text[^>]*\by=")([\d.eE+-]+)(")', g)
+        if not path or not text:
+            return g
+        pts = re.findall(r'[\d.eE+-]+,([\d.eE+-]+)', path.group(1))
+        if not pts:
+            return g
+        lane_y = (float(pts[0]) + float(pts[-1])) / 2
+        # above the lane for the upper and middle lanes, below for the lower —
+        # the three labels then sit in three distinct bands of the fan
+        seat = lane_y + 12 if offsets[rid] > 0 else lane_y - 4
+        return g.replace(text.group(0),
+                         f"{text.group(1)}{seat:.2f}{text.group(3)}", 1)
+
+    return re.sub(r'<g id="(rme[0-9a-f]+)" class="edge"[^>]*>[\s\S]*?</g>',
+                  seat_label, svg)
+
+
+
+def selftest_flat_lane_separation() -> list[str]:
+    """The lane post-pass is armed: an identified group with a nonzero offset
+    gains exactly one whole-group vertical translate; groups without offsets are
+    untouched. Returns the scenarios that wrongly passed."""
+    bad = []
+    svg = ('<g id="rmeaaaaaaaaaa" class="edge"><path d="M0,0C1,1 2,2 3,3"/></g>'
+           '<g id="rmebbbbbbbbbb" class="edge"><path d="M0,9C1,9 2,9 3,9"/></g>')
+    svgl = ('<g id="rmeaaaaaaaaaa" class="edge">'
+            '<path d="M0,-100C1,-100 2,-100 3,-100"/>'
+            '<text x="1" y="-90">L</text></g>'
+            '<g id="rmebbbbbbbbbb" class="edge">'
+            '<path d="M0,-100C1,-100 2,-100 3,-100"/>'
+            '<text x="1" y="-95">M</text></g>')
+    out = separate_flat_lanes(svgl, {"rmeaaaaaaaaaa": -16, "rmebbbbbbbbbb": 0})
+    if '<g id="rmeaaaaaaaaaa" class="edge" transform="translate(0,-16)">' not in out:
+        bad.append("an offset lane did not gain its whole-group translate")
+    if '<g id="rmebbbbbbbbbb" class="edge">' not in out:
+        bad.append("the zero-offset middle lane wrongly gained a translate")
+    if not ('y="-104.00"' in out and out.count('y="-104.00"') == 2):
+        bad.append("fan labels were not seated just above their own lanes")
+    out2 = separate_flat_lanes(svgl, {"rmeaaaaaaaaaa": 16, "rmebbbbbbbbbb": 0})
+    if 'y="-88.00"' not in out2:
+        bad.append("the lower lane's label was not seated below its lane")
+    if separate_flat_lanes(svgl, {}) != svgl:
+        bad.append("empty offsets changed the render")
+    return bad
+
+
+
 def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]:
     """Match every identified DOT edge to its rendered SVG group BY RENDER ID and
     require at least as many rendered arrow glyphs (polygons/polylines) as the
@@ -3050,7 +3150,7 @@ def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]
         return (["the DOT draws edges but identifies none — render ids are the "
                  "gate's matching key and must never be stripped"], True)
     groups = {m.group(1): m.group(0) for m in
-              re.finditer(r'<g id="(rme[0-9a-f]+)" class="edge">[\s\S]*?</g>',
+              re.finditer(r'<g id="(rme[0-9a-f]+)" class="edge"[^>]*>[\s\S]*?</g>',
                           svg_text)}
     for line in dot_text.splitlines():
         m = re.search(r'id="(rme[0-9a-f]+)"', line)
@@ -3256,25 +3356,27 @@ def selftest_projection_layout() -> list[str]:
         bad.append("the certified ⊨ω edge must take the portless middle lane, "
                    "both port attributes absent — a straight arrow whenever an "
                    "arrow can be straight")
-    others = [ln for ln in mut if ln not in flatln]
-    if not (len(others) == 2 and all(
-            ("tailport=" in ln) != ("headport=" in ln) for ln in others)):
-        bad.append("the outer lateral lanes must carry exactly one compass port "
-                   "each, at the external endpoint — a port on the clipped end "
-                   "makes graphviz drop the arrowhead there")
-    lanes = {re.search(r"(?:tailport|headport)=(\w+)", ln).group(1)
-             for ln in others if re.search(r"(?:tailport|headport)=", ln)}
-    if len(lanes) != 2:
-        bad.append("the outer lateral lanes did not get two distinct external ports")
+    if any(re.search(r"(?:tailport|headport)=", ln) for ln in mut):
+        bad.append("a lateral lane carries a compass port — graphviz 2.43 feeds "
+                   "flat-edge port names into its arrow-type machinery and drops "
+                   "the arrowhead; separation belongs to the SVG lane post-pass")
+    offs = flat_lane_offsets(view)
+    mutoffs = sorted(dy for rid, dy in offs.items()
+                     if any(f'id="{rid}"' in ln for ln in mut))
+    if mutoffs != [-16, 0, 16]:
+        bad.append("the three-lane fan does not get symmetric offsets for its "
+                   "outer lanes with the middle unmoved")
     # a two-edge fan keeps both port pairs: dropping ports from one of two
     # would pick a straight edge arbitrarily
     mut2 = [ln for ln in lines if ln.startswith(('"mutN" -> "blob2.bottom"',
                                                  '"blob2.bottom" -> "mutN"'))]
     if not (len(mut2) == 2 and all("minlen=0" in ln and
-            (("tailport=" in ln) != ("headport=" in ln)) for ln in mut2)):
-        bad.append("a two-edge lateral fan must carry one external-end port per "
-                   "edge — full portlessness is defined only for the middle of "
-                   "three, and a clipped-end port drops the arrowhead")
+            not re.search(r"(?:tailport|headport)=", ln) for ln in mut2)):
+        bad.append("a two-edge lateral fan must stay portless with flat anchoring")
+    mut2offs = sorted(dy for rid, dy in offs.items()
+                      if any(f'id="{rid}"' in ln for ln in mut2))
+    if mut2offs != [-8, 8]:
+        bad.append("a two-edge fan must separate by symmetric nonzero offsets")
     over = dict(view)
     over["edges"] = view["edges"] + [
         {"family": "importedReduction", "label": "≤W",
@@ -3578,7 +3680,11 @@ def _edge_concept(e: dict, end: str) -> str:
 
 # Facing-side compass lanes for fanning a lateral pair's parallel flat edges
 # (external-node port, member port), top lane first.
-_FLAT_LANES = [("nw", "ne"), ("w", "e"), ("sw", "se")]
+# The legibility cap on parallel lateral edges: three lanes (one straight middle,
+# two offset by the SVG separation pass). Ports played this role once; graphviz
+# 2.43 feeds flat-edge port names into its arrow-type machinery and drops the
+# arrowheads, so the DOT stays portless and separation lives in the post-pass.
+_MAX_FLAT_LANES = 3
 
 
 def _lateral_pairs(view: dict, clusters: dict) -> dict[tuple[str, str], str]:
@@ -3638,27 +3744,19 @@ def view_dot(name: str, view: dict) -> str:
                      == frozenset((x, c))),
                     key=lambda i: (view["edges"][i].get("family", ""),
                                    view["edges"][i].get("label", "")))
-        if len(es) > len(_FLAT_LANES):
-            # fail closed rather than wrap: a fourth parallel edge would reuse the
-            # first lane's ports and silently draw two edges on top of each other
+        if len(es) > _MAX_FLAT_LANES:
+            # fail closed rather than crowd: a fourth parallel lane has no
+            # legible seat in the offset fan
             raise ValueError(
                 f"lateral pair {x} <-> {c} has {len(es)} parallel edges but only "
-                f"{len(_FLAT_LANES)} distinct routing lanes exist")
+                f"{_MAX_FLAT_LANES} legible lanes exist")
         for k, i in enumerate(es):
             attr = ", minlen=0"
-            if len(es) > 1 and not (len(es) == 3 and k == 1):
-                # outer lanes fan through a compass port at the EXTERNAL endpoint
-                # only — a port on the cluster-clipped endpoint makes graphviz
-                # drop the arrowhead at the lhead/ltail boundary clip (the lost
-                # open ≤W head). ONLY the middle of a three-edge fan stays fully
-                # portless — a straight arrow whenever an arrow can be straight.
-                xp, _mp = _FLAT_LANES[k]
-                if side == "left":
-                    _mp, xp = xp, _mp
-                if _edge_concept(view["edges"][i], "t") == x:
-                    attr += f", tailport={xp}"
-                else:
-                    attr += f", headport={xp}"
+            # NO compass ports anywhere in a lateral fan: graphviz 2.43 (the
+            # deploy renderer) feeds a flat edge's port name into its arrow-type
+            # machinery ('Arrow type \"sw\" unknown - ignoring') and drops the
+            # arrowhead entirely — the lost open ≤W head. Parallel flat edges
+            # separate on their own; the gate below holds every declared end.
             lat_edge[i] = attr
     left_nodes = {x for (x, c), side in lateral.items() if side == "left"}
     for n in sorted(left_nodes):
@@ -3905,7 +4003,8 @@ def cmd_build(args: argparse.Namespace) -> None:
         (vdir / "graph.json").write_text(
             json.dumps(view, indent=1, sort_keys=True, ensure_ascii=False) + "\n")
         (vdir / "graph.dot").write_text(view_dot(vname, view))
-        if render_svg(vdir / "graph.dot", vdir / "graph.svg"):
+        if render_svg(vdir / "graph.dot", vdir / "graph.svg",
+                      flat_lane_offsets(view)):
             view_svgs.add(vname)
     dot_text = to_dot(catalog)
     dot_path = out / "ambient-factorizations.dot"
