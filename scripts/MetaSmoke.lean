@@ -1438,7 +1438,7 @@ info: facts (12):
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
   injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — recorded, no evidence linked
-    note: Over every Turing ideal, injection-range existence in its exact injection-graph formulation is equivalent to closure under the Turing jump. The literature places this pair above weak Kőnig's lemma; no comparison with WKL is proved here. Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
+    note: Over every Turing ideal, injection-range existence in its exact injection-graph formulation is equivalent to closure under the Turing jump. The literature places this pair above weak Kőnig's lemma; the certified comparison edge to the WKL circle arrived with the eighth fact (jumpClosureBoundedKonigOmega). Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
   jumpClosureBoundedKonigOmega [implication | theory rca0 omegaModels] jumpClosure.turingIdealClosure.turingIdealOmega => wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega — recorded, no evidence linked
     note: Over every Turing ideal, jump closure gives explicitly bounded Kőnig: the leftmost path of an internally presented explicitly bounded tree is computable from the jump of the tree joined with its bound graph. An upper implication only — the first certified comparison edge between the jump family and the WKL circle. The strictness of the comparison (an ω-model of WKL₀ that is not jump closed) stays a literature-backed reading of the corpus-recorded low-basis claim (Hirst thesis §1.4, Theorem 1.6) and is not certified here; no separation is claimed
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
@@ -2524,6 +2524,8 @@ direction of the seventh fact. -/
   ReverseMathlib.Omega.extendibleSet_le_jump
 #rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
   ReverseMathlib.Omega.leftmostExec_eq
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.leftmostGraph_le_jump
 #rm_assert_not_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
   [ReverseMathlib.Omega.range_le_jump, ReverseMathlib.Omega.jumpEnum_recursiveIn,
    ReverseMathlib.Omega.jumpEnumGraph_le, ReverseMathlib.Omega.range_jumpEnum,
@@ -2550,6 +2552,8 @@ direction of the seventh fact. -/
   ReverseMathlib.Omega.extendibleSet_le_jump
 #rm_assert_proof_depends ReverseMathlib.Omega.leftmostExec_recursiveIn
   ReverseMathlib.Omega.le_jump
+#rm_assert_proof_depends ReverseMathlib.Omega.leftmostGraph_le_jump
+  ReverseMathlib.Omega.leftmostExec_recursiveIn
 #rm_assert_proof_depends ReverseMathlib.Omega.leftmostExec_eq
   ReverseMathlib.Omega.leftmostStep_eq
 

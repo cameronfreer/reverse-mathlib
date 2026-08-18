@@ -1940,7 +1940,11 @@ implies, whose own strength may remain unresolved.</p>
 <a href="reference.html#graphs">reference page</a>.</p>"""
 
     def proved_box() -> str:
-        n_omega = len(catalog.get("facts", []))
+        # the scoreboard's typed filter: certified facts at ω-model scope
+        # (kernelChecked by construction) — a future fact at another scope
+        # must never inflate this sentence
+        n_omega = len([f for f in catalog.get("facts", []) if f.get("evidence")
+                       and f.get("context", {}).get("scope") == "omegaModels"])
         spelled = {6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
                    11: "eleven", 12: "twelve"}.get(n_omega, str(n_omega))
         return f"""<div id="proved"><h2>What is — and is not — proved</h2>
@@ -3186,6 +3190,32 @@ def selftest_projection_layout() -> list[str]:
                 {"concepts": ["jumpClosure"], "above": "wkl",
                  "order": {"claim": "orderClaim", "reading": "r"}}]:
             bad.append("literature-band validation mangled a valid band")
+        # a band restored alongside a certified comparison edge: an otherwise
+        # fully valid band must be rejected once a certified fact links a band
+        # concept to the target — the certified edge is the ordering mechanism
+        conflict_catalog = dict(fake_catalog)
+        conflict_catalog["statementVariants"] = [
+            {"id": "ns:jumpClosure.v", "concept": "ns:jumpClosure"},
+            {"id": "ns:wkl.v", "concept": "ns:wkl"}]
+        conflict_catalog["facts"] = [
+            {"id": "comparisonFact", "kind": "implication",
+             "evidence": [{"certificate": "c"}],
+             "lhs": ["ns:jumpClosure.v"], "rhs": ["ns:wkl.v"]}]
+        try:
+            literature_bands(conflict_catalog, {"wkl"})
+            bad.append("a literature band coexisting with a certified comparison "
+                       "edge was accepted instead of rejected")
+        except ValueError:
+            pass
+        # an UNCERTIFIED recorded fact retires nothing: the same band stays valid
+        recorded_only = dict(conflict_catalog)
+        recorded_only["facts"] = [
+            {"id": "comparisonFact", "kind": "implication", "evidence": [],
+             "lhs": ["ns:jumpClosure.v"], "rhs": ["ns:wkl.v"]}]
+        try:
+            literature_bands(recorded_only, {"wkl"})
+        except ValueError:
+            bad.append("a merely recorded (uncertified) fact wrongly retired a band")
     finally:
         LITERATURE_BANDS[:] = saved
     return bad
@@ -3222,13 +3252,21 @@ LITERATURE_BANDS: list = []
 def literature_bands(catalog: dict, cluster_names: set) -> list:
     """Validate LITERATURE_BANDS against the pinned corpus, fail-closed. Every
     cited claim must be registered; every band concept must be tagged by a
-    cited claim; the target must render as an enclosure; and — the part that
+    cited claim; the target must render as an enclosure; the part that
     justifies the *above* relation rather than mere identification — the band's
-    `order` record must name a registered claim that itself tags the target and
-    at least one band concept, with a nonempty reading. Returns the validated
-    bands with placement plus the order record (the view never carries a drawn
-    edge for a band)."""
+    `order` record — must name a registered claim that itself tags the target
+    and at least one band concept, with a nonempty reading; and no band may
+    coexist with a certified fact linking a band concept to the target — a
+    certified comparison retires the band, and a duplicate ordering mechanism
+    is an error, never a fallback. Returns the validated bands with placement
+    plus the order record (the view never carries a drawn edge for a band)."""
     claims = {c["id"]: c for c in catalog.get("corpus", {}).get("claims", [])}
+    variant_concept = {v["id"].split(":", 1)[-1]: v.get("concept", "").split(":", 1)[-1]
+                       for v in catalog.get("statementVariants", [])}
+
+    def endpoint_concepts(f: dict) -> set:
+        return {variant_concept.get(vid.split(":", 1)[-1], "")
+                for side in ("lhs", "rhs") for vid in (f.get(side) or [])}
 
     def tags(cid: str, why: str) -> set:
         if cid not in claims:
@@ -3238,6 +3276,17 @@ def literature_bands(catalog: dict, cluster_names: set) -> list:
 
     out = []
     for band in LITERATURE_BANDS:
+        for f in catalog.get("facts", []):
+            if not f.get("evidence"):
+                continue
+            eps = endpoint_concepts(f)
+            hit = eps & set(band["concepts"])
+            if band["above"] in eps and hit:
+                raise ValueError(
+                    f"literature band above {band['above']} coexists with the "
+                    f"certified fact {f['id']} linking {sorted(hit)} to the "
+                    "target — a certified comparison retires the band; a "
+                    "duplicate ordering mechanism is forbidden")
         tagged: set = set()
         for cid in band["claims"]:
             tagged |= tags(cid, "concept identification")

@@ -103,8 +103,9 @@ rm_fact injectionRangeExistenceJumpOmega equivalence where
   rhs := [jumpClosure.turingIdealClosure.turingIdealOmega]
   note := "Over every Turing ideal, injection-range existence in its exact \
     injection-graph formulation is equivalent to closure under the Turing jump. \
-    The literature places this pair above weak Kőnig's lemma; no comparison with \
-    WKL is proved here. \
+    The literature places this pair above weak Kőnig's lemma; the certified \
+    comparison edge to the WKL circle arrived with the eighth fact \
+    (jumpClosureBoundedKonigOmega). \
     Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the \
     pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, \
     literature-backed). No ACA-labeled endpoint or fact: no \

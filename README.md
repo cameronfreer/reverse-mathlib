@@ -11,7 +11,7 @@ preserve the proof, and never confuse the two.*
 [Hall–EFILC case study](docs/hall-efilc-case-study.md) ·
 [Roadmap](ROADMAP.md)
 
-> **Scoreboard — checked scoped results: ω-model: 7 (kernelChecked); all-model: 1
+> **Scoreboard — checked scoped results: ω-model: 8 (kernelChecked); all-model: 1
 > (backendChecked); syntactic: 1 (backendChecked).** The all-model entry is the exact
 > backend-checked `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂
 > structures; the syntactic entry is the exact backend-checked
@@ -52,7 +52,7 @@ separation, never a turnstile underivability claim.
 | `wklTwoRegularMatchingOmega` | 2-regular matchingω ⇔ WKLω | enumerated-neighborhood refinement of Shafer/Hirst; the perfect-matching-to-one-sided presentation bridge stays MISSING |
 | `disjointRangeSeparationWklOmega` | disjoint-range separationω ⇔ WKLω | the exact injection-graph presentation (Hirst Thm 1.2 (ii)); never generic Σ⁰₁ separation — formula-coded adapters unproved |
 | `injectionRangeExistenceJumpOmega` | injection-range existenceω ⇔ jump closureω | the jump-family equivalence (Hirst Thm 1.4, verified in the pinned primary source); the jump side is a semantic closure property, and no ACA-labeled endpoint or fact is registered — the jump-ideal identification stays literature-backed |
-| `jumpClosureBoundedKonigOmega` | jump closureω → bounded-Kőnigω | the first certified comparison edge between the jump family and the WKL circle, via the leftmost path computed from the jump of tree ⊕ bound; upper implication only — strictness (a WKL model that is not jump closed) stays literature-backed, and no separation is claimed |
+| `jumpClosureBoundedKonigOmega` | jump closureω → bounded-Kőnigω | the first certified comparison edge between the jump family and the WKL circle, via the leftmost path computed from the jump of tree ⊕ bound graph; upper implication only — strictness (a WKL model that is not jump closed) stays literature-backed, and no separation is claimed |
 
 Detailed presentation caveats, certificate names, and pending bridges live on the atlas
 cards and registration notes — each fact's card is the authority for its exact claim.
