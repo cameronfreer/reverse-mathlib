@@ -3219,8 +3219,10 @@ def selftest_lane_separation_check() -> list[str]:
 def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]:
     """Match every identified DOT edge to its rendered SVG group BY RENDER ID and
     require at least as many rendered arrow glyphs (polygons/polylines) as the
-    edge's declared arrow ends — `dir=both` declares two, everything else one; a
-    tee end may render more than one element, so the comparison is `>=`, failing
+    edge's declared arrow ends, computed from `dir` + `arrowhead` + `arrowtail`
+    (`both` → tail and head, `back` → tail, `none` → neither, default → head;
+    `arrowhead=none`/`arrowtail=none` silence an active end); a tee end may
+    render more than one element, so the comparison is `>=`, failing
     only on fewer. Returns `(problems, checked)`: `checked` is False when the SVG
     is not a real graphviz render (the local mock emits no geometry), and the
     caller must SAY the geometry was not checked rather than claim a pass."""
@@ -3363,8 +3365,8 @@ def selftest_rendered_arrowheads() -> list[str]:
 def selftest_real_render_arrowheads() -> tuple[list, bool]:
     """Against a REAL renderer (graphviz emitting its banner), the synthetic
     cluster/parallel-lane projection must keep every declared arrow end — the
-    external-endpoint-only port rule is what makes that true at the clipped
-    boundary. Returns `(failures, checked)`; unchecked when no real renderer is
+    fully portless lateral lanes are what make that true at the clipped
+    boundary (2.43 drops arrows for a compass port on either end). Returns `(failures, checked)`; unchecked when no real renderer is
     on PATH (a mock renderer is detected by its missing banner), which the
     caller reports rather than claiming a pass."""
     dotbin = shutil.which("dot")
@@ -3515,8 +3517,8 @@ def selftest_projection_layout() -> list[str]:
     if mutoffs != [-16, 0, 16]:
         bad.append("the three-lane fan does not get symmetric offsets for its "
                    "outer lanes with the middle unmoved")
-    # a two-edge fan keeps both port pairs: dropping ports from one of two
-    # would pick a straight edge arbitrarily
+    # a two-edge fan is portless like every fan; it separates by two
+    # symmetric offsets in the SVG post-pass
     mut2 = [ln for ln in lines if ln.startswith(('"mutN" -> "blob2.bottom"',
                                                  '"blob2.bottom" -> "mutN"'))]
     if not (len(mut2) == 2 and all("minlen=0" in ln and
@@ -3902,8 +3904,9 @@ def view_dot(name: str, view: dict) -> str:
             # NO compass ports anywhere in a lateral fan: graphviz 2.43 (the
             # deploy renderer) feeds a flat edge's port name into its arrow-type
             # machinery ('Arrow type \"sw\" unknown - ignoring') and drops the
-            # arrowhead entirely — the lost open ≤W head. Parallel flat edges
-            # separate on their own; the gate below holds every declared end.
+            # arrowhead entirely — the lost open ≤W head. Parallel lanes
+            # separate in the identified SVG post-pass (flat_lane_offsets /
+            # separate_flat_lanes); the arrowhead gate holds every declared end.
             lat_edge[i] = attr
     left_nodes = {x for (x, c), side in lateral.items() if side == "left"}
     for n in sorted(left_nodes):
