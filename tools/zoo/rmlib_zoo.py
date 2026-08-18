@@ -3063,8 +3063,12 @@ def flat_lane_offsets(view: dict) -> list[dict[str, int]]:
     id. The DOT stays portless — graphviz 2.43 (the deploy renderer) feeds a flat
     edge's compass port into its arrow-type machinery and silently drops the
     arrowhead — so the separation that ports used to provide moves into a typed
-    SVG post-pass: each fan member's whole rendered group (path, arrowheads,
-    label) is translated together, middle lane unmoved."""
+    SVG post-pass. The values here are TARGET SLOTS relative to the rendered
+    fan's mean y (middle slot zero, outers symmetric); the post-pass translates
+    each member's whole rendered group (path, arrowheads, label) by the
+    difference between its slot target and its actual drawn position — so even
+    the middle-slot group may move when the renderer drew the fan off its own
+    mean."""
     clusters = view.get("clusters", {})
     if not clusters:
         return []
@@ -3090,12 +3094,15 @@ def flat_lane_offsets(view: dict) -> list[dict[str, int]]:
 
 
 def separate_flat_lanes(svg: str, offsets: list[dict[str, int]]) -> str:
-    """Apply the lane offsets: translate each identified edge group vertically as
-    one unit — path, arrowheads, and label together — so the parallel flat lanes
-    graphviz draws coincident come apart without touching any arrowhead; then
-    seat every fan member's label just above its own lane, since graphviz stacks
-    the coincident labels in its own order and the group translate alone would
-    leave them colliding across lanes."""
+    """Apply the lane slots: translate each identified edge group vertically as
+    one unit — path, arrowheads, and label together — by the difference between
+    its slot target (fan mean plus slot) and its drawn position. This normalizes
+    BOTH renderer behaviors: coincident fans (fontless labels) spread out to the
+    bands, and pre-spread fans (label boxes reserving routing space) are left at
+    or nudged to the same bands, with no arrowhead touched either way; then every
+    fan member's label seats in its own band, since the engine stacks coincident
+    labels in its own order and the group translate alone would leave them
+    colliding across lanes."""
     # RELATIVE normalization: the renderer may pre-spread parallel lanes (label
     # boxes reserve routing space under some fonts) or draw them coincident, so
     # blind absolute offsets cannot band them evenly. Read each member's actual
@@ -3169,7 +3176,7 @@ def selftest_flat_lane_separation() -> list[str]:
     if '<g id="rmeaaaaaaaaaa" class="edge" transform="translate(0,-16)">' not in out:
         bad.append("an offset lane did not gain its whole-group translate")
     if '<g id="rmebbbbbbbbbb" class="edge">' not in out:
-        bad.append("the zero-offset middle lane wrongly gained a translate")
+        bad.append("a group already on its band wrongly gained a translate")
     if not ('y="-104.00"' in out and out.count('y="-104.00"') == 2):
         bad.append("fan labels were not seated just above their own lanes")
     out2 = separate_flat_lanes(svgl, [{"rmeaaaaaaaaaa": 16, "rmebbbbbbbbbb": 0}])
@@ -3182,10 +3189,12 @@ def selftest_flat_lane_separation() -> list[str]:
 
 
 def check_lane_separation(svg: str, view: dict) -> list:
-    """The stored render must carry the lane post-pass: every expected nonzero
-    offset appears as its identified group's whole-group translate, the middle
-    lane stays untranslated, and each fan label sits in its own band (above its
-    lane, below for the bottom lane). Raw renderer output that silently missed
+    """The stored render must carry the lane post-pass: every member's
+    whole-group translate must equal the difference between its slot target
+    (the rendered fan's mean y plus its slot) and its drawn position — zero
+    only when the renderer already banded it — and each fan label sits in its
+    own band (above its lane, below for the bottom lane). Raw renderer output
+    that silently missed
     the pass fails here — not only on visual inspection."""
     problems = []
     for fan in flat_lane_offsets(view):
@@ -3564,8 +3573,8 @@ def selftest_projection_layout() -> list[str]:
     mutoffs = sorted(dy for rid, dy in offs.items()
                      if any(f'id="{rid}"' in ln for ln in mut))
     if mutoffs != [-16, 0, 16]:
-        bad.append("the three-lane fan does not get symmetric offsets for its "
-                   "outer lanes with the middle unmoved")
+        bad.append("the three-lane fan does not get symmetric outer slots "
+                   "around a zero middle slot")
     # a two-edge fan is portless like every fan; it separates by two
     # symmetric offsets in the SVG post-pass
     mut2 = [ln for ln in lines if ln.startswith(('"mutN" -> "blob2.bottom"',
