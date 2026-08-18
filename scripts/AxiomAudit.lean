@@ -99,7 +99,16 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.frontier_recursiveIn_join,
    ``ReverseMathlib.Omega.extendibleSet_le_jump,
    ``ReverseMathlib.Omega.leftmostGraph_le_jump,
-   ``ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt]
+   ``ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt,
+   -- Kőnig slice B (#50): the level-bound reduction, the injection tree's internality
+   -- and path correctness, the complemented range decoder, and the three named theorems
+   ``ReverseMathlib.Omega.levelBoundGraph_le_jump,
+   ``ReverseMathlib.Omega.finitelyBranchingKonigAt_of_jumpClosedAt,
+   ``ReverseMathlib.Omega.injectionTree_le_graph,
+   ``ReverseMathlib.Omega.path_determines_range,
+   ``ReverseMathlib.Omega.notMapsToZero_le_graph,
+   ``ReverseMathlib.Omega.injectionRangeExistenceAt_of_finitelyBranchingKonigAt,
+   ``ReverseMathlib.Omega.jumpClosedAt_of_finitelyBranchingKonigAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
