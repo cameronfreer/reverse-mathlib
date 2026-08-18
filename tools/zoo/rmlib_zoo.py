@@ -3058,7 +3058,7 @@ def selftest_base_context() -> list[str]:
     return bad
 
 
-def flat_lane_offsets(view: dict) -> dict[str, int]:
+def flat_lane_offsets(view: dict) -> list[dict[str, int]]:
     """Vertical separation offsets for parallel lateral-fan edges, keyed by render
     id. The DOT stays portless — graphviz 2.43 (the deploy renderer) feeds a flat
     edge's compass port into its arrow-type machinery and silently drops the
@@ -3067,9 +3067,9 @@ def flat_lane_offsets(view: dict) -> dict[str, int]:
     label) is translated together, middle lane unmoved."""
     clusters = view.get("clusters", {})
     if not clusters:
-        return {}
+        return []
     lateral = _lateral_pairs(view, clusters)
-    offsets: dict[str, int] = {}
+    fans: list[dict[str, int]] = []
     for (x, c), _side in lateral.items():
         es = sorted((i for i, e in enumerate(view["edges"])
                      if frozenset((_edge_concept(e, "t"), _edge_concept(e, "h")))
@@ -3078,32 +3078,60 @@ def flat_lane_offsets(view: dict) -> dict[str, int]:
                                    view["edges"][i].get("label", "")))
         if len(es) <= 1:
             continue
+        offsets: dict[str, int] = {}
         for k, i in enumerate(es):
             e = view["edges"][i]
             rid = _edge_render_id(e.get("family", view.get("family", "")),
                                   _edge_concept(e, "t"), _edge_concept(e, "h"),
                                   e.get("label", ""), e.get("kind", ""))
             offsets[rid] = round(16 * (k - (len(es) - 1) / 2))
-    return offsets
+        fans.append(offsets)
+    return fans
 
 
-def separate_flat_lanes(svg: str, offsets: dict[str, int]) -> str:
+def separate_flat_lanes(svg: str, offsets: list[dict[str, int]]) -> str:
     """Apply the lane offsets: translate each identified edge group vertically as
     one unit — path, arrowheads, and label together — so the parallel flat lanes
     graphviz draws coincident come apart without touching any arrowhead; then
     seat every fan member's label just above its own lane, since graphviz stacks
     the coincident labels in its own order and the group translate alone would
     leave them colliding across lanes."""
-    for rid, dy in offsets.items():
-        if dy:
-            svg = svg.replace(f'<g id="{rid}" class="edge">',
-                              f'<g id="{rid}" class="edge" '
-                              f'transform="translate(0,{dy})">')
+    # RELATIVE normalization: the renderer may pre-spread parallel lanes (label
+    # boxes reserve routing space under some fonts) or draw them coincident, so
+    # blind absolute offsets cannot band them evenly. Read each member's actual
+    # rendered y, target the fan's mean plus the lane slot, translate by the
+    # difference.
+    def path_y(rid: str) -> float | None:
+        m = re.search(rf'<g id="{rid}" class="edge"[^>]*>[\s\S]*?</g>', svg)
+        if not m:
+            return None
+        d = re.search(r'<path[^>]*\bd="([^"]+)"', m.group(0))
+        if not d:
+            return None
+        pts = re.findall(r'[\d.eE+-]+,([\d.eE+-]+)', d.group(1))
+        return (float(pts[0]) + float(pts[-1])) / 2 if pts else None
+
+    for fan in offsets:
+        members = list(fan.items())
+        ys = {rid: path_y(rid) for rid, _ in members}
+        known = [y for y in ys.values() if y is not None]
+        if not known:
+            continue
+        mean = sum(known) / len(known)
+        for rid, dy in members:
+            if ys[rid] is None:
+                continue
+            delta = round(mean + dy - ys[rid])
+            if delta:
+                svg = svg.replace(f'<g id="{rid}" class="edge">',
+                                  f'<g id="{rid}" class="edge" '
+                                  f'transform="translate(0,{delta})">')
 
     def seat_label(m: "re.Match[str]") -> str:
         g = m.group(0)
         rid = m.group(1)
-        if rid not in offsets:
+        fan_dy = next((f[rid] for f in offsets if rid in f), None)
+        if fan_dy is None:
             return g
         path = re.search(r'<path[^>]*\bd="([^"]+)"', g)
         text = re.search(r'(<text[^>]*\by=")([\d.eE+-]+)(")', g)
@@ -3115,7 +3143,7 @@ def separate_flat_lanes(svg: str, offsets: dict[str, int]) -> str:
         lane_y = (float(pts[0]) + float(pts[-1])) / 2
         # above the lane for the upper and middle lanes, below for the lower —
         # the three labels then sit in three distinct bands of the fan
-        seat = lane_y + 12 if offsets[rid] > 0 else lane_y - 4
+        seat = lane_y + 12 if fan_dy > 0 else lane_y - 4
         return g.replace(text.group(0),
                          f"{text.group(1)}{seat:.2f}{text.group(3)}", 1)
 
@@ -3137,17 +3165,17 @@ def selftest_flat_lane_separation() -> list[str]:
             '<g id="rmebbbbbbbbbb" class="edge">'
             '<path d="M0,-100C1,-100 2,-100 3,-100"/>'
             '<text x="1" y="-95">M</text></g>')
-    out = separate_flat_lanes(svgl, {"rmeaaaaaaaaaa": -16, "rmebbbbbbbbbb": 0})
+    out = separate_flat_lanes(svgl, [{"rmeaaaaaaaaaa": -16, "rmebbbbbbbbbb": 0}])
     if '<g id="rmeaaaaaaaaaa" class="edge" transform="translate(0,-16)">' not in out:
         bad.append("an offset lane did not gain its whole-group translate")
     if '<g id="rmebbbbbbbbbb" class="edge">' not in out:
         bad.append("the zero-offset middle lane wrongly gained a translate")
     if not ('y="-104.00"' in out and out.count('y="-104.00"') == 2):
         bad.append("fan labels were not seated just above their own lanes")
-    out2 = separate_flat_lanes(svgl, {"rmeaaaaaaaaaa": 16, "rmebbbbbbbbbb": 0})
+    out2 = separate_flat_lanes(svgl, [{"rmeaaaaaaaaaa": 16, "rmebbbbbbbbbb": 0}])
     if 'y="-88.00"' not in out2:
         bad.append("the lower lane's label was not seated below its lane")
-    if separate_flat_lanes(svgl, {}) != svgl:
+    if separate_flat_lanes(svgl, []) != svgl:
         bad.append("empty offsets changed the render")
     return bad
 
@@ -3160,30 +3188,38 @@ def check_lane_separation(svg: str, view: dict) -> list:
     lane, below for the bottom lane). Raw renderer output that silently missed
     the pass fails here — not only on visual inspection."""
     problems = []
-    for rid, dy in flat_lane_offsets(view).items():
-        m = re.search(rf'<g id="{rid}" class="edge"([^>]*)>([\s\S]*?)</g>', svg)
-        if not m:
-            problems.append(f"lane {rid} has no rendered group")
+    for fan in flat_lane_offsets(view):
+        found: dict[str, tuple] = {}
+        for rid in fan:
+            m = re.search(rf'<g id="{rid}" class="edge"([^>]*)>([\s\S]*?)</g>', svg)
+            if not m:
+                problems.append(f"lane {rid} has no rendered group")
+                continue
+            attrs, body = m.group(1), m.group(2)
+            tr = re.search(r'transform="translate\(0,(-?\d+)\)"', attrs)
+            path = re.search(r'<path[^>]*\bd="([^"]+)"', body)
+            pts = re.findall(r'[\d.eE+-]+,([\d.eE+-]+)', path.group(1)) if path else []
+            if not pts:
+                continue
+            raw_y = (float(pts[0]) + float(pts[-1])) / 2
+            found[rid] = (int(tr.group(1)) if tr else 0, raw_y, body)
+        if not found:
             continue
-        attrs, body = m.group(1), m.group(2)
-        tr = re.search(r'transform="translate\(0,(-?\d+)\)"', attrs)
-        if dy and (not tr or int(tr.group(1)) != dy):
-            problems.append(f"lane {rid} misses its translate(0,{dy}) — the "
-                            "separation post-pass did not run on this render")
-            continue
-        if not dy and tr:
-            problems.append(f"middle lane {rid} wrongly carries a translate")
-        path = re.search(r'<path[^>]*\bd="([^"]+)"', body)
-        text = re.search(r'<text[^>]*\by="([\d.eE+-]+)"', body)
-        if not path or not text:
-            continue
-        pts = re.findall(r'[\d.eE+-]+,([\d.eE+-]+)', path.group(1))
-        if not pts:
-            continue
-        lane_y = (float(pts[0]) + float(pts[-1])) / 2
-        seat = lane_y + 12 if dy > 0 else lane_y - 4
-        if abs(float(text.group(1)) - seat) > 0.51:
-            problems.append(f"lane {rid} label is not seated in its own band")
+        mean = sum(y for _, y, _ in found.values()) / len(found)
+        for rid, (applied, raw_y, body) in found.items():
+            expected = round(mean + fan[rid] - raw_y)
+            if applied != expected:
+                problems.append(
+                    f"lane {rid} carries translate {applied} where its band "
+                    f"needs {expected} — the separation post-pass did not "
+                    "normalize this render")
+                continue
+            text = re.search(r'<text[^>]*\by="([\d.eE+-]+)"', body)
+            if not text:
+                continue
+            seat = raw_y + 12 if fan[rid] > 0 else raw_y - 4
+            if abs(float(text.group(1)) - seat) > 0.51:
+                problems.append(f"lane {rid} label is not seated in its own band")
     return problems
 
 
@@ -3193,23 +3229,36 @@ def selftest_lane_separation_check() -> list[str]:
     label fails. Returns the scenarios that wrongly passed."""
     bad = []
     view = _synthetic_projection_view()
-    offs = flat_lane_offsets(view)
+    fans = flat_lane_offsets(view)
 
-    def grp(rid: str, dy: int, seat_ok: bool = True) -> str:
-        tr = f' transform="translate(0,{dy})"' if dy else ""
-        seat = -100.0 + (12 if dy > 0 else -4)
-        y = seat if seat_ok else -100.0
+    def grp(rid: str, tr_dy: int, path_y: float, seat_dy: int,
+            seat_ok: bool = True) -> str:
+        tr = f' transform="translate(0,{tr_dy})"' if tr_dy else ""
+        seat = path_y + (12 if seat_dy > 0 else -4)
+        y = seat if seat_ok else path_y
         return (f'<g id="{rid}" class="edge"{tr}>'
-                f'<path d="M0,-100C1,-100 2,-100 3,-100"/>'
+                f'<path d="M0,{path_y:g}C1,{path_y:g} 2,{path_y:g} 3,{path_y:g}"/>'
                 f'<text x="1" y="{y:.2f}">L</text></g>')
 
-    good = "".join(grp(r, d) for r, d in offs.items())
+    # coincident input: every member drawn at the fan mean, translate = slot
+    good = "".join(grp(r, d, -100.0, d) for fan in fans for r, d in fan.items())
     if check_lane_separation(good, view):
-        bad.append("a separated render was wrongly flagged")
-    raw = "".join(grp(r, 0) for r in offs)
-    if not any("did not run" in x for x in check_lane_separation(raw, view)):
-        bad.append("a raw render missing the separation pass was not flagged")
-    unseated = "".join(grp(r, d, seat_ok=False) for r, d in offs.items())
+        bad.append("a normalized coincident render was wrongly flagged")
+    # pre-spread input: members already drawn apart; translate must be the
+    # difference to the band, here zero — extra blind offsets must be flagged
+    spread = "".join(grp(r, 0, -100.0 + d, d)
+                     for fan in fans for r, d in fan.items())
+    if check_lane_separation(spread, view):
+        bad.append("a render the renderer itself banded was wrongly flagged")
+    blind = "".join(grp(r, d, -100.0 + d, d)
+                    for fan in fans for r, d in fan.items())
+    if not any("normalize" in x for x in check_lane_separation(blind, view)):
+        bad.append("blind absolute offsets on a pre-spread render were accepted")
+    raw = "".join(grp(r, 0, -100.0, d) for fan in fans for r, d in fan.items())
+    if not any("normalize" in x for x in check_lane_separation(raw, view)):
+        bad.append("a raw coincident render missing the pass was not flagged")
+    unseated = "".join(grp(r, d, -100.0, d, seat_ok=False)
+                       for fan in fans for r, d in fan.items())
     if not any("band" in x for x in check_lane_separation(unseated, view)):
         bad.append("unseated fan labels were not flagged")
     return bad
@@ -3511,7 +3560,7 @@ def selftest_projection_layout() -> list[str]:
         bad.append("a lateral lane carries a compass port — graphviz 2.43 feeds "
                    "flat-edge port names into its arrow-type machinery and drops "
                    "the arrowhead; separation belongs to the SVG lane post-pass")
-    offs = flat_lane_offsets(view)
+    offs = {rid: dy for fan in flat_lane_offsets(view) for rid, dy in fan.items()}
     mutoffs = sorted(dy for rid, dy in offs.items()
                      if any(f'id="{rid}"' in ln for ln in mut))
     if mutoffs != [-16, 0, 16]:
