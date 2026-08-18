@@ -22,6 +22,8 @@ import it, and CI will not catch a break here. Build it by name:
 
 namespace ReverseMathlib.Omega
 
+open OracleCode
+
 variable {Ω : OmegaPart}
 
 /-- An internally presented finitely branching tree: an internal set of sequence codes,
@@ -90,5 +92,238 @@ def levelBoundGraph (T : InternalFinitelyBranchingTree Ω) : Set ℕ :=
 theorem isGraphOf_levelBoundGraph (T : InternalFinitelyBranchingTree Ω) :
     IsGraphOf (levelBoundGraph T) (levelBound T) := fun x y => by
   simp [levelBoundGraph, Nat.unpair_pair, Set.mem_setOf_eq]
+
+/-- The least-bound characterization the computability layer decides bit by bit. -/
+theorem levelBound_eq_iff (T : InternalFinitelyBranchingTree Ω) {i b : ℕ} :
+    levelBound T i = b ↔
+      BoundsLevel T.tree.1 i b ∧ ∀ b' < b, ¬ BoundsLevel T.tree.1 i b' := by
+  constructor
+  · rintro rfl
+    exact ⟨levelBound_boundsLevel T i,
+      fun b' hb' hcon => absurd (levelBound_le T hcon) (by omega)⟩
+  · rintro ⟨hb, hmin⟩
+    have h1 := levelBound_le T hb
+    have h2 : ¬ levelBound T i < b := fun hlt => hmin _ hlt (levelBound_boundsLevel T i)
+    omega
+
+/-! ### The least level bound is computable from the jump of the tree
+
+The failure of a candidate bound is witnessed by a single tree node, so it is
+semidecidable in the tree alone: search the node codes for an entry at the position
+reaching the candidate. Currying pins `(position, candidate)` into the searched code and
+one jump query answers each failure question; the graph bit at `(i, b)` is then a pure
+`findIdx` over the finite transcript of failure bits at candidates `0, …, b` — the first
+non-failing candidate must be exactly `b`. The oracle is `jumpSet T.tree.1` and nothing
+else, exactly the pinned graph-level statement. -/
+
+open Classical in
+/-- The failure test on `(pair (pair i b) junk, candidate c)`: `0` exactly when `c` is a
+tree node witnessing that `b` fails to bound position `i`. The searched shape: the outer
+argument arrives as `Nat.pair (Nat.pair i b) x` through the curry coding, and the test
+reads only its first component. -/
+private noncomputable def levelFailTest (S : Set ℕ) (q : ℕ) : ℕ :=
+  if charFnTot S q.unpair.2 = 1 ∧
+      q.unpair.1.unpair.1.unpair.1 < (decodeSeq q.unpair.2).length ∧
+      q.unpair.1.unpair.1.unpair.2 ≤ (decodeSeq q.unpair.2).getD
+        q.unpair.1.unpair.1.unpair.1 0
+  then 0 else 1
+
+private theorem levelFailTest_recursiveIn (S : Set ℕ) :
+    Nat.RecursiveIn {charFn S} fun q => Part.some (levelFailTest S q) := by
+  classical
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hSb : Nat.RecursiveIn {charFn S} fun e => Part.some (charFnTot S e) := by
+    refine (Nat.RecursiveIn.oracle (O := {charFn S}) (charFn S) rfl).of_eq fun e => ?_
+    rw [charFn_eq_coe]
+    rfl
+  have hbit := recursiveIn_comp_primrec hSb hsnd
+  have hpair := recursiveIn_pair_total hbit (recursiveIn_of_primrec Primrec.id)
+  -- pure post-processing of (membership bit, original input)
+  have hpost : Primrec fun z : ℕ =>
+      if z.unpair.1 = 1 ∧
+          z.unpair.2.unpair.1.unpair.1.unpair.1 <
+            (decodeSeq z.unpair.2.unpair.2).length ∧
+          z.unpair.2.unpair.1.unpair.1.unpair.2 ≤
+            (decodeSeq z.unpair.2.unpair.2).getD
+              z.unpair.2.unpair.1.unpair.1.unpair.1 0
+      then 0 else 1 := by
+    have hq : Primrec fun z : ℕ => z.unpair.2 := hsnd
+    have hi : Primrec fun z : ℕ =>
+        z.unpair.2.unpair.1.unpair.1.unpair.1 :=
+      hfst.comp (hfst.comp (hfst.comp hsnd))
+    have hb : Primrec fun z : ℕ =>
+        z.unpair.2.unpair.1.unpair.1.unpair.2 :=
+      hsnd.comp (hfst.comp (hfst.comp hsnd))
+    have hc : Primrec fun z : ℕ => z.unpair.2.unpair.2 := hsnd.comp hsnd
+    have hlen : Primrec fun z : ℕ => (decodeSeq z.unpair.2.unpair.2).length :=
+      primrec_seqLength.comp hc
+    have hget : Primrec fun z : ℕ =>
+        (decodeSeq z.unpair.2.unpair.2).getD
+          z.unpair.2.unpair.1.unpair.1.unpair.1 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet hc hi
+    exact Primrec.ite
+      ((PrimrecPred.and (Primrec.eq.comp hfst (Primrec.const 1))
+        (PrimrecPred.and (Primrec.nat_lt.comp hi hlen)
+          (Primrec.nat_le.comp hb hget))))
+      (Primrec.const 0) (Primrec.const 1)
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun q => ?_
+  simp only [Nat.unpair_pair, id_eq, levelFailTest]
+
+/-- **The graph-level reduction of the pin**: the least level-bound function's graph is
+Turing reducible to the jump of the tree alone. One curry-coded jump query per failure
+bit, a finite transcript at candidates `0, …, b`, and a pure `findIdx`. -/
+theorem levelBoundGraph_le_jump (T : InternalFinitelyBranchingTree Ω) :
+    levelBoundGraph T ≤ᵀ jumpSet T.tree.1 := by
+  classical
+  obtain ⟨e, he⟩ := exists_code.mp
+    (Nat.RecursiveIn.rfind (levelFailTest_recursiveIn T.tree.1))
+  -- one jump query decides each failure question
+  have key : ∀ p : ℕ, (¬ BoundsLevel T.tree.1 p.unpair.1 p.unpair.2 ↔
+      Encodable.encode (OracleCode.curry e p) ∈ jumpSet T.tree.1) := by
+    intro p
+    rw [mem_jumpSet_iff, Denumerable.ofNat_encode, ← charFn_eq_coe, eval_curry, he,
+      Nat.rfind_dom]
+    simp only [Part.map_eq_map, Part.map_some]
+    constructor
+    · intro hfail
+      rw [BoundsLevel] at hfail
+      push Not at hfail
+      obtain ⟨c, hc, hlen, hge⟩ := hfail
+      refine ⟨c, ?_, fun {m} _ => trivial⟩
+      rw [Part.mem_some_iff, eq_comm, decide_eq_true_eq, levelFailTest]
+      simp only [Nat.unpair_pair]
+      rw [if_pos ⟨by simp [charFnTot, hc], hlen, hge⟩]
+    · rintro ⟨c, hc, -⟩ hb
+      rw [Part.mem_some_iff] at hc
+      have := hc.symm
+      rw [levelFailTest] at this
+      split at this
+      · rename_i h
+        simp only [Nat.unpair_pair] at h
+        obtain ⟨hmem, hlen, hge⟩ := h
+        have hcS : c ∈ T.tree.1 := by
+          by_contra hno
+          simp [charFnTot, hno] at hmem
+        exact absurd (hb c hcS hlen) (by omega)
+      · exact absurd this (by simp)
+  -- the transcript of failure bits at candidates 0..b, then a pure findIdx
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hJb : Nat.RecursiveIn {charFn (jumpSet T.tree.1)} fun x => Part.some
+      (charFnTot (jumpSet T.tree.1) x) := by
+    refine (Nat.RecursiveIn.oracle (O := {charFn (jumpSet T.tree.1)})
+      (charFn (jumpSet T.tree.1)) rfl).of_eq fun x => ?_
+    rw [charFn_eq_coe]
+    rfl
+  have hquery : Primrec fun m : ℕ => Encodable.encode
+      (OracleCode.curry e (Nat.pair m.unpair.1 m.unpair.2)) :=
+    Primrec.encode.comp (primrec₂_curry.comp (_root_.Primrec.const e)
+      (Primrec₂.comp (f := Nat.pair) Primrec₂.natPair hfst hsnd))
+  have hfb : Nat.RecursiveIn {charFn (jumpSet T.tree.1)} fun m => Part.some
+      (charFnTot (jumpSet T.tree.1) (Encodable.encode
+        (OracleCode.curry e (Nat.pair m.unpair.1 m.unpair.2)))) :=
+    recursiveIn_comp_primrec hJb hquery
+  have htab := valueTable_recursiveIn_param
+    (f := fun i b' => charFnTot (jumpSet T.tree.1) (Encodable.encode
+      (OracleCode.curry e (Nat.pair i b')))) hfb
+  have hib : Nat.RecursiveIn {charFn (jumpSet T.tree.1)} fun m => Part.some
+      (Nat.pair m.unpair.1 (m.unpair.2 + 1)) :=
+    recursiveIn_of_primrec (Primrec₂.comp (f := Nat.pair) Primrec₂.natPair hfst
+      (Primrec.succ.comp hsnd))
+  have htabm : Nat.RecursiveIn {charFn (jumpSet T.tree.1)} fun m => Part.some
+      (valueTable (fun b' => charFnTot (jumpSet T.tree.1) (Encodable.encode
+        (OracleCode.curry e (Nat.pair m.unpair.1 b')))) (m.unpair.2 + 1)) :=
+    (recursiveIn_comp_total htab hib).of_eq fun m => by simp only [Nat.unpair_pair]
+  have hpair := recursiveIn_pair_total htabm (recursiveIn_of_primrec Primrec.id)
+  have hpost : Primrec fun z : ℕ =>
+      if (decodeSeq z.unpair.1).findIdx (· == 0) = z.unpair.2.unpair.2
+      then 1 else 0 := by
+    have hidx : Primrec fun z : ℕ => (decodeSeq z.unpair.1).findIdx (· == 0) :=
+      Primrec.list_findIdx (primrec_decodeSeq.comp hfst)
+        (Primrec.beq.comp Primrec.snd (Primrec.const 0))
+    exact Primrec.ite (Primrec.eq.comp hidx (hsnd.comp hsnd))
+      (Primrec.const 1) (Primrec.const 0)
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpair).of_eq fun m => ?_
+  simp only [Nat.unpair_pair, id_eq, decodeSeq_valueTable, charFn]
+  -- the failure bit at (i, b') is 1 exactly when b' fails
+  have hbit : ∀ i b' : ℕ, charFnTot (jumpSet T.tree.1) (Encodable.encode
+      (OracleCode.curry e (Nat.pair i b'))) =
+        if BoundsLevel T.tree.1 i b' then 0 else 1 := by
+    intro i b'
+    by_cases hbl : BoundsLevel T.tree.1 i b'
+    · have : Encodable.encode (OracleCode.curry e (Nat.pair i b')) ∉
+          jumpSet T.tree.1 := fun hmem =>
+        ((key (Nat.pair i b')).mpr (by simpa using hmem)) (by simpa using hbl)
+      simp [charFnTot, this, hbl]
+    · have : Encodable.encode (OracleCode.curry e (Nat.pair i b')) ∈
+          jumpSet T.tree.1 := by
+        have := (key (Nat.pair i b')).mp (by simpa using hbl)
+        simpa using this
+      simp [charFnTot, this, hbl]
+  -- the first non-failing candidate is the least bound
+  set i := m.unpair.1
+  set b := m.unpair.2
+  have hlist : (List.range (b + 1)).map (fun b' => charFnTot (jumpSet T.tree.1)
+      (Encodable.encode (OracleCode.curry e (Nat.pair i b')))) =
+      (List.range (b + 1)).map (fun b' => if BoundsLevel T.tree.1 i b' then 0 else 1) :=
+    List.map_congr_left fun b' _ => hbit i b'
+  rw [hlist]
+  by_cases hg : levelBound T i = b
+  · have hchar := (levelBound_eq_iff T).mp hg
+    have hfind : ((List.range (b + 1)).map
+        (fun b' => if BoundsLevel T.tree.1 i b' then 0 else 1)).findIdx (· == 0) = b := by
+      have hblen : b < ((List.range (b + 1)).map
+          (fun b' => if BoundsLevel T.tree.1 i b' then 0 else 1)).length := by
+        simp
+      rw [List.findIdx_eq hblen]
+      constructor
+      · simp only [List.getElem_map, List.getElem_range]
+        simp [hchar.1]
+      · intro j hj
+        simp only [List.getElem_map, List.getElem_range]
+        simp [hchar.2 j hj]
+    rw [if_pos hfind, if_pos (show m ∈ levelBoundGraph T from hg)]
+  · have hfind : ((List.range (b + 1)).map
+        (fun b' => if BoundsLevel T.tree.1 i b' then 0 else 1)).findIdx (· == 0) ≠ b := by
+      intro hcon
+      have hblen : b < ((List.range (b + 1)).map
+          (fun b' => if BoundsLevel T.tree.1 i b' then 0 else 1)).length := by
+        simp
+      rw [List.findIdx_eq hblen] at hcon
+      obtain ⟨hb0, hmin⟩ := hcon
+      simp only [List.getElem_map, List.getElem_range] at hb0 hmin
+      refine hg ((levelBound_eq_iff T).mpr ⟨?_, fun b' hb' => ?_⟩)
+      · by_contra hno
+        simp [hno] at hb0
+      · have := hmin b' hb'
+        by_contra hyes
+        simp [hyes] at this
+    rw [if_neg hfind, if_neg (show m ∉ levelBoundGraph T from hg)]
+
+/-! ### Packaging: jump closure gives full finitely-branching Kőnig
+
+The least level bound is internal by one `levelBoundGraph_le_jump` reduction below the
+jump of the tree; packaging it as a graph-coded internal function turns the finitely
+branching tree into an explicitly bounded one, and Slice A does the rest. -/
+
+/-- **Jump closure gives full finitely-branching Kőnig** over the Turing-ideal closure
+conditions — the forward direction of the slice. -/
+theorem finitelyBranchingKonigAt_of_jumpClosedAt {Ω : OmegaPart}
+    (hΩ : IsTuringIdeal Ω) (hJ : JumpClosedAt Ω) : FinitelyBranchingKonigAt Ω := by
+  intro T hlev
+  have hgraph : levelBoundGraph T ∈ Ω :=
+    hΩ.mem_of_reducible (hJ T.tree) (levelBoundGraph_le_jump T)
+  exact boundedKonigAt_of_jumpClosedAt hΩ hJ
+    { tree := T.tree
+      bound :=
+        ⟨⟨levelBoundGraph T, hgraph⟩,
+         fun i => ⟨levelBound T i, (isGraphOf_levelBoundGraph T i _).mpr rfl⟩,
+         fun i y y' hy hy' => ((isGraphOf_levelBoundGraph T i y).mp hy).symm.trans
+           ((isGraphOf_levelBoundGraph T i y').mp hy')⟩
+      entry_lt_bound := fun c hc i b hi hb => by
+        have hlb : levelBound T i = b := (isGraphOf_levelBoundGraph T i b).mp hb
+        exact hlb ▸ levelBound_boundsLevel T i c hc hi
+      prefix_closed := T.prefix_closed } hlev
 
 end ReverseMathlib.Omega
