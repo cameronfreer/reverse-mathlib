@@ -10,8 +10,10 @@ import ReverseMathlib.Omega.KonigLeftmostPath
 
 Full (merely) finitely-branching Kőnig at a second-order part, and its equivalence with
 jump closure over the Turing-ideal closure conditions. The concept is the levelwise-bound
-**property** (Hirst thesis Theorem 1.3: for every position there exists a bound on the
-entries there), never a supplied bound function — the supplied-data presentation is the
+**property** in Hirst's source shape (thesis Theorem 1.3: for every length there exists a
+bound on the last entry of the tree's nodes of that length; the positionwise form is
+derived through prefix closure), never a supplied bound function — the supplied-data
+presentation is the
 explicitly bounded variant registered with the fourth fact, and the two stay distinct
 concepts.
 
@@ -54,8 +56,9 @@ open OracleCode
 variable {Ω : OmegaPart}
 
 /-- An internally presented finitely branching tree: an internal set of sequence codes,
-prefix-closed through the canonical coding, whose entries at each position are bounded —
-a **property** of the bare tree (levelwise: for every position some bound exists), never
+prefix-closed through the canonical coding, levelwise bounded in the **source shape** —
+for every length some bound exists on the last entry of the nodes of that length, a
+property of the bare tree (Hirst thesis Theorem 1.3), never
 supplied data. This is the ACA-level presentation; the explicitly bounded presentation
 (`InternalBoundedTree`) carries its bound as a graph-coded internal function and is a
 different, weaker concept. -/
@@ -64,10 +67,12 @@ structure InternalFinitelyBranchingTree (Ω : OmegaPart) where
   tree : Ω.InternalSet
   /-- The tree is closed under truncation of decoded sequences. -/
   prefix_closed : ∀ c ∈ tree.1, ∀ k, seqCode ((decodeSeq c).take k) ∈ tree.1
-  /-- Levelwise boundedness, as a property: at each position some strict bound exists on
-  the decoded entries there. -/
-  levelwise_bounded : ∀ i, ∃ b, ∀ c ∈ tree.1, i < (decodeSeq c).length →
-    (decodeSeq c).getD i 0 < b
+  /-- Levelwise boundedness in the **source shape** (Hirst thesis Theorem 1.3: for every
+  length, some strict bound exists on the last entry of the tree's nodes of that
+  length). The proof-friendly positionwise form is derived, not registered —
+  `levelwise_bounded_at`, through prefix closure. -/
+  levelwise_bounded : ∀ n, ∃ k, ∀ c ∈ tree.1, (decodeSeq c).length = n →
+    (decodeSeq c).getD (n - 1) 0 < k
 
 /-- Full (merely) finitely-branching Kőnig at a second-order part: every internally
 presented finitely branching tree with a node at every level has an internal path. The
@@ -87,6 +92,22 @@ semantic meaning. -/
 def BoundsLevel (S : Set ℕ) (i b : ℕ) : Prop :=
   ∀ c ∈ S, i < (decodeSeq c).length → (decodeSeq c).getD i 0 < b
 
+/-- **The positionwise form, derived from the source shape**: prefix closure carries the
+last-entry bound at length `i + 1` to position `i` of every longer node — the prefix of
+length `i + 1` is a tree node whose last entry is the longer node's entry at `i`. -/
+theorem levelwise_bounded_at (T : InternalFinitelyBranchingTree Ω) (i : ℕ) :
+    ∃ b, BoundsLevel T.tree.1 i b := by
+  obtain ⟨k, hk⟩ := T.levelwise_bounded (i + 1)
+  refine ⟨k, fun c hc hi => ?_⟩
+  have hpre := T.prefix_closed c hc (i + 1)
+  have hlen : (decodeSeq (seqCode ((decodeSeq c).take (i + 1)))).length = i + 1 := by
+    rw [decodeSeq_seqCode, List.length_take]
+    omega
+  have := hk _ hpre hlen
+  rw [decodeSeq_seqCode, Nat.add_sub_cancel, List.getD_eq_getElem?_getD,
+    List.getElem?_take, if_pos (by omega), ← List.getD_eq_getElem?_getD] at this
+  exact this
+
 /-- The least strict bound at position `i` — the value the forward direction computes
 from the jump. -/
 noncomputable def levelBound (T : InternalFinitelyBranchingTree Ω) (i : ℕ) : ℕ :=
@@ -94,7 +115,7 @@ noncomputable def levelBound (T : InternalFinitelyBranchingTree Ω) (i : ℕ) : 
 
 theorem levelBound_boundsLevel (T : InternalFinitelyBranchingTree Ω) (i : ℕ) :
     BoundsLevel T.tree.1 i (levelBound T i) :=
-  Nat.sInf_mem (T.levelwise_bounded i)
+  Nat.sInf_mem (levelwise_bounded_at T i)
 
 theorem levelBound_le (T : InternalFinitelyBranchingTree Ω) {i b : ℕ}
     (hb : BoundsLevel T.tree.1 i b) : levelBound T i ≤ b :=
@@ -396,24 +417,31 @@ theorem injectionTree_prefix_closed {Ω : OmegaPart} (f : InternalFunction Ω) :
 /-- **Injectivity establishes levelwise boundedness**: a position has at most one
 witness, so tree entries there lie in `{0, w + 1}`. -/
 theorem injectionTree_levelwise_bounded {Ω : OmegaPart} (f : InternalFunction Ω)
-    (hf : f.IsInjective) (i : ℕ) :
-    ∃ b, ∀ c ∈ injectionTreeSet f, i < (decodeSeq c).length →
-      (decodeSeq c).getD i 0 < b := by
+    (hf : f.IsInjective) (n : ℕ) :
+    ∃ k, ∀ c ∈ injectionTreeSet f, (decodeSeq c).length = n →
+      (decodeSeq c).getD (n - 1) 0 < k := by
   classical
-  by_cases hw : ∃ w, f.MapsTo w i
+  by_cases hw : ∃ w, f.MapsTo w (n - 1)
   · obtain ⟨w, hwmap⟩ := hw
-    refine ⟨w + 2, fun c hc hi => ?_⟩
-    obtain ⟨h1, -⟩ := hc i hi
-    match hv : (decodeSeq c).getD i 0 with
+    refine ⟨w + 2, fun c hc hlen => ?_⟩
+    match hv : (decodeSeq c).getD (n - 1) 0 with
     | 0 => omega
     | u + 1 =>
-      have := hf u w i (h1 u hv) hwmap
+      have hlt : n - 1 < (decodeSeq c).length := by
+        by_contra hno
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)] at hv
+        simp at hv
+      have := hf u w (n - 1) ((hc _ hlt).1 u hv) hwmap
       omega
-  · refine ⟨1, fun c hc hi => ?_⟩
-    obtain ⟨h1, -⟩ := hc i hi
-    match hv : (decodeSeq c).getD i 0 with
+  · refine ⟨1, fun c hc hlen => ?_⟩
+    match hv : (decodeSeq c).getD (n - 1) 0 with
     | 0 => omega
-    | u + 1 => exact absurd ⟨u, h1 u hv⟩ hw
+    | u + 1 =>
+      have hlt : n - 1 < (decodeSeq c).length := by
+        by_contra hno
+        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)] at hv
+        simp at hv
+      exact absurd ⟨u, (hc _ hlt).1 u hv⟩ hw
 
 /-- Reading a function's values off positions of its own range-indexed table (local
 copy of the Slice A helper, which is private there). -/

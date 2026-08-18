@@ -47,7 +47,8 @@ open ReverseMathlib.Omega
 rm_concept finitelyBranchingKonig where
   statement := "Full finitely-branching Kőnig's lemma: every infinite finitely \
     branching tree has an infinite path — the branching bound is a property of the \
-    tree (at each position some bound on the entries exists), never supplied data"
+    tree (for every length, some bound exists on the last entries of the nodes of \
+    that length), never supplied data"
   description := "The ACA-level Kőnig concept (Hirst thesis Theorem 1.3 shape: a \
     levelwise bound exists), deliberately distinct from the explicitly bounded \
     concept whose bound is supplied as data (the wkl-equivalent presentation \
@@ -59,8 +60,9 @@ rm_statement_variant finitelyBranchingKonig.levelwiseBounded.turingIdealOmega wh
   layer := turingIdealOmega
   interface := ReverseMathlib.Omega.FinitelyBranchingKonigAt
   description := "Full finitely-branching Kőnig at a second-order part: an internal \
-    prefix-closed set of sequence codes whose entries at each position are bounded — \
-    a property, not data — with a node at every level, has a graph-coded internal \
+    prefix-closed set of sequence codes, levelwise bounded in the source shape (for \
+    every length, a bound on the last entry of the nodes of that length — a \
+    property, not data), with a node at every level, has a graph-coded internal \
     path, all stated relationally. Never the explicitly bounded presentation, whose \
     supplied bound function makes it a different (wkl-equivalent) concept"
 

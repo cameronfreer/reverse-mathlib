@@ -3031,7 +3031,8 @@ def selftest_projection_layout() -> list[str]:
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
         "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
-                  "bandC", "jumpP", "jumpQ", "jumpR", "hallN", "blob2", "mutN"],
+                  "bandC", "jumpP", "jumpQ", "jumpR", "hallN", "blob2", "mutN",
+                  "chainX", "chainY"],
         "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
@@ -3068,6 +3069,14 @@ def selftest_projection_layout() -> list[str]:
              "bidirectional": True, "lhsConcept": "jumpQ", "rhsConcept": "jumpP"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "jumpR", "rhsConcept": "jumpQ"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "chainY", "rhsConcept": "chainX"},
+            {"family": "importedReduction", "label": "≤W", "bidirectional": True,
+             "notion": "strongWeihrauch", "strongEnd": "head",
+             "lhsConcept": "jumpR", "rhsConcept": "chainX"},
+            {"family": "importedReduction", "label": "≤W", "bidirectional": True,
+             "notion": "strongWeihrauch", "strongEnd": "head",
+             "lhsConcept": "jumpR", "rhsConcept": "jumpP"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "lhsConcept": "hallN", "rhsConcept": "q"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
@@ -3178,6 +3187,16 @@ def selftest_projection_layout() -> list[str]:
             and any(ln.startswith('"jumpQ" -> "jumpR"') for ln in lines)):
         bad.append("chain equivalence edges are not emitted in chain order — "
                    "dot would seat a partner on the wrong side and bow the edge")
+    if '{rank=same; "chainX"; "chainY";}' not in dot:
+        bad.append("the second equivalence component does not chain independently")
+    if not any(ln.startswith('"jumpR" -> "chainX"') and "arrowhead=normal" in ln
+               for ln in lines):
+        bad.append("a cross-component imported edge was reversed by the chain "
+                   "rule — its filled strong end would land on the wrong endpoint")
+    if not any(ln.startswith('"jumpR" -> "jumpP"') and "arrowhead=normal" in ln
+               for ln in lines):
+        bad.append("an in-chain imported edge was reversed by the chain rule — "
+                   "only the certified equivalence edges of the chain may reorder")
     if '{rank=same; "jumpP"; "jumpQ"; "jumpR";}' not in dot:
         bad.append("plain-concept equivalence chain does not share a rank with "
                    "the hub seated between its partners")
@@ -3475,6 +3494,7 @@ def view_dot(name: str, view: dict) -> str:
         lines.append('  nodesep=0.9;')
     clusters = view.get("clusters", {})
     chain_pos: dict[str, int] = {}
+    chain_edge_idx: set[int] = set()
     anchors = {}
     base_anchors = {}
     lateral = _lateral_pairs(view, clusters) if clusters else {}
@@ -3550,7 +3570,7 @@ def view_dot(name: str, view: dict) -> str:
         # order — fail closed rather than let an edge bow around a neighbour.
         eqadj: dict[str, set] = {}
         chain_pos: dict[str, int] = {}
-        for e in view["edges"]:
+        for ci_, e in enumerate(view["edges"]):
             if (e.get("family", view.get("family", "")) == "certifiedOmegaFact"
                     and e.get("bidirectional")
                     and e.get("kind") != "nonImplication"
@@ -3558,6 +3578,7 @@ def view_dot(name: str, view: dict) -> str:
                     and _edge_concept(e, "h") not in clusters
                     and _edge_concept(e, "t") not in base_nodes
                     and _edge_concept(e, "h") not in base_nodes):
+                chain_edge_idx.add(ci_)
                 eqadj.setdefault(_edge_concept(e, "t"), set()).add(_edge_concept(e, "h"))
                 eqadj.setdefault(_edge_concept(e, "h"), set()).add(_edge_concept(e, "t"))
         chained: set = set()
@@ -3601,10 +3622,13 @@ def view_dot(name: str, view: dict) -> str:
         src = _edge_concept(e, "t")
         tgt = _edge_concept(e, "h")
         extra = ", dir=both" if e.get("bidirectional") else ""
-        if (bottom_up and e.get("bidirectional") and src in chain_pos
-                and tgt in chain_pos and chain_pos[src] > chain_pos[tgt]):
-            # dot seats a flat edge's tail left of its head, so a chain edge is
-            # emitted in chain order — dir=both makes the swap invisible
+        if (bottom_up and ei in chain_edge_idx
+                and chain_pos[src] > chain_pos[tgt]):
+            # dot seats a flat edge's tail left of its head, so a CHAIN edge is
+            # emitted in chain order — dir=both makes the swap invisible. Exact
+            # edge indices only: an unrelated bidirectional edge between chained
+            # concepts keeps its direction, or asymmetric strongEnd metadata
+            # would render the filled end on the wrong endpoint
             src, tgt = tgt, src
         if ei in lat_edge:
             # lateral pair: flat edge into the rank-minimal member, clipped at
