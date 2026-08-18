@@ -79,8 +79,8 @@ READABILITY_BUDGETS: dict = {
         "maxSections": 8,
     },
     "reference": {
-        "maxIdentifierLeaks": 96,
-        "maxEnumTokensInProse": 11,
+        "maxIdentifierLeaks": 79,
+        "maxEnumTokensInProse": 8,
         "maxDuplicateSentences": 4,
         "maxDefaultOpenWords": 2200,
     },
@@ -1562,11 +1562,12 @@ filled end is strong, the open end ordinary</span>
             leaves = "".join(f"<li><code>{e(l)}</code></li>" for l in d["leaves"])
             cards.append(f"""<details class="card" data-family="computed">
 <summary><strong><code>{e(d['lhs'])}</code> {e(d['label'])} <code>{e(d['rhs'])}</code></strong>
-— <code>{e(d['id'])}</code> <span class="tag">{e(d['status'])}</span></summary>
+— <code>{e(d['id'])}</code> <span class="tag"><code>{e(d['status'])}</code></span></summary>
 <dl>
 <dt>derivation</dt><dd><code>{e(d['derivationText'])}</code></dd>
 <dt>premises cited</dt><dd><ul>{leaves}</ul></dd>
-<dt>premise family</dt><dd>{e(d['premiseFamily'])} ({e(d['relation'])})</dd>
+<dt>premise family</dt><dd><code>{e(d['premiseFamily'])}</code>
+(<code>{e(d['relation'])}</code>)</dd>
 <dt>note</dt><dd>{prose(d['note'])}</dd>
 </dl></details>""")
         panel = graph_panel(
@@ -1919,23 +1920,35 @@ checked in the pinned external Lean bridge</li>
                if has_img else "")
         if not has_img:
             return ""
+        band_clause = (", or is placed there by the literature where no comparison "
+                       "has been proved here" if v.get("literatureBands") else "")
         return f"""<h2 id="graph">The principles and how they relate</h2>
 <p>Most boxes are principles; the lowest is the base context these results are stated
 over, not a principle. Boxes inside an enclosure are formulations of one principle.
 Arrows are recorded results, and there are more of them than the table below lists: the
 table gives the results proved over ω-models, while the picture also carries reductions
 proved in a separate development and factorizations in ambient Lean, which show how one
-argument is built from another and are not claims about strength. Height follows
-strength for the ω-model arrows only: a principle drawn above another is stronger, or is
-placed there by the literature where no comparison has been proved here.</p>
+argument is built from another and are not claims about strength. The direction of an
+arrow carries the mathematics; height is layout. The base context sits at the bottom,
+and a principle joined to the central circle by a one-way arrow sits above it: an arrow
+pointing down into the circle marks a principle proved at least as strong as the
+circle{band_clause}, while an arrow pointing up out of the circle marks one the circle
+implies, whose own strength may remain unresolved.</p>
 {img}
 {legend_html()}
 <p class="meta">Exact endpoints, certificates and downloads for every arrow are on the
 <a href="reference.html#graphs">reference page</a>.</p>"""
 
     def proved_box() -> str:
+        # the scoreboard's typed filter: certified facts at ω-model scope
+        # (kernelChecked by construction) — a future fact at another scope
+        # must never inflate this sentence
+        n_omega = len([f for f in catalog.get("facts", []) if f.get("evidence")
+                       and f.get("context", {}).get("scope") == "omegaModels"])
+        spelled = {6: "six", 7: "seven", 8: "eight", 9: "nine", 10: "ten",
+                   11: "eleven", 12: "twelve"}.get(n_omega, str(n_omega))
         return f"""<div id="proved"><h2>What is — and is not — proved</h2>
-<p>Every result on this page was checked by a machine. The seven ω-model results are
+<p>Every result on this page was checked by a machine. The {spelled} ω-model results are
 Lean theorems: each says that over every Turing ideal, one principle implies another,
 is equivalent to it, or fails to imply it. A failure is always witnessed by an explicit
 countermodel, never asserted as underivability.</p>
@@ -2163,6 +2176,21 @@ COMPUTED_DERIVATIONS = [
         "note": "RCA₀-core ⊭ω 2-regular matchingω: the certified REC countermodel "
                 "for binary WKL transported along matching → WKL (the forward "
                 "elimination of the certified equivalence).",
+    },
+    {
+        "id": "computed.omega.jumpClosureImpliesWkl",
+        "term": ["transitivity",
+                 ["fact", "jumpClosureBoundedKonigOmega"],
+                 ["equivalenceElimForward", ["fact", "boundedKonigWklOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "jumpClosure.turingIdealClosure.turingIdealOmega",
+            "rhs": "wkl.binaryTree.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "jump closureω → WKLω: the certified jump closure → bounded-Kőnig "
+                "implication, then the bounded-Kőnig ⇔ WKL equivalence used "
+                "forward. The binary-tree consequence stays derived-only — no "
+                "direct specialization fact is registered.",
     },
 ]
 
@@ -2986,7 +3014,7 @@ def selftest_projection_layout() -> list[str]:
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
         "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
-                  "bandC"],
+                  "bandC", "jumpP", "jumpQ", "hallN"],
         "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
@@ -3011,7 +3039,13 @@ def selftest_projection_layout() -> list[str]:
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "ordE", "rhsConcept": "blob"},
             {"family": "ambientFactorization", "label": "ambient",
-             "lhsConcept": "p", "rhsConcept": "ordE"}],
+             "lhsConcept": "p", "rhsConcept": "ordE"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "lhsConcept": "jumpP", "rhsConcept": "blob"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "jumpQ", "rhsConcept": "jumpP"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "lhsConcept": "hallN", "rhsConcept": "q"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
@@ -3087,6 +3121,22 @@ def selftest_projection_layout() -> list[str]:
     if '"blob.top" -> "bandC" [style=invis, minlen=1];' not in dot:
         bad.append("literature band misses the invisible lift above the "
                    "enclosure's top member")
+    if not any(ln.startswith('"blob.top" -> "jumpP"') and "dir=back" in ln
+               and 'ltail="cluster_0"' in ln and "minlen=1" in ln
+               and f'label="{TURNSTILE_PAD}⊨ω"' in ln for ln in lines):
+        bad.append("certified implication into the enclosure misses the "
+                   "rank-reversed lift above the top member")
+    if any(ln.startswith('"jumpP" ->') for ln in lines):
+        bad.append("certified implication into the enclosure was emitted "
+                   "unreversed as well")
+    if '{rank=same; "jumpQ"; "jumpP";}' not in dot:
+        bad.append("plain-concept equivalence pair does not share a rank")
+    if not any(ln.startswith('"hallN" -> "q"') and "dir=back" not in ln
+               for ln in lines):
+        bad.append("one-directional implication between plain concepts was "
+                   "wrongly rewritten")
+    if any("rank=same" in ln and "hallN" in ln for ln in lines):
+        bad.append("one-directional plain implication wrongly rank-equalized")
     fake_catalog = {"corpus": {"claims": [
         {"id": "goodClaim", "concepts": ["ns:injectionRangeExistence",
                                          "ns:jumpClosure"]},
@@ -3140,6 +3190,32 @@ def selftest_projection_layout() -> list[str]:
                 {"concepts": ["jumpClosure"], "above": "wkl",
                  "order": {"claim": "orderClaim", "reading": "r"}}]:
             bad.append("literature-band validation mangled a valid band")
+        # a band restored alongside a certified comparison edge: an otherwise
+        # fully valid band must be rejected once a certified fact links a band
+        # concept to the target — the certified edge is the ordering mechanism
+        conflict_catalog = dict(fake_catalog)
+        conflict_catalog["statementVariants"] = [
+            {"id": "ns:jumpClosure.v", "concept": "ns:jumpClosure"},
+            {"id": "ns:wkl.v", "concept": "ns:wkl"}]
+        conflict_catalog["facts"] = [
+            {"id": "comparisonFact", "kind": "implication",
+             "evidence": [{"certificate": "c"}],
+             "lhs": ["ns:jumpClosure.v"], "rhs": ["ns:wkl.v"]}]
+        try:
+            literature_bands(conflict_catalog, {"wkl"})
+            bad.append("a literature band coexisting with a certified comparison "
+                       "edge was accepted instead of rejected")
+        except ValueError:
+            pass
+        # an UNCERTIFIED recorded fact retires nothing: the same band stays valid
+        recorded_only = dict(conflict_catalog)
+        recorded_only["facts"] = [
+            {"id": "comparisonFact", "kind": "implication", "evidence": [],
+             "lhs": ["ns:jumpClosure.v"], "rhs": ["ns:wkl.v"]}]
+        try:
+            literature_bands(recorded_only, {"wkl"})
+        except ValueError:
+            bad.append("a merely recorded (uncertified) fact wrongly retired a band")
     finally:
         LITERATURE_BANDS[:] = saved
     return bad
@@ -3164,33 +3240,33 @@ def _edge_label(label: str) -> str:
 # record naming the registered corpus claim that relates the band to the
 # target, plus the reading it licenses. Validated fail-closed by
 # literature_bands().
-LITERATURE_BANDS = [
-    {"concepts": ["injectionRangeExistence", "jumpClosure"], "above": "wkl",
-     "claims": ["hirstInjectionRangeAca", "hirstJumpIdealOmegaModels"],
-     "order": {
-         "claim": "hirstLowWklOmegaModel",
-         "reading": "The cited claim exhibits an ω-model of WKL₀ all of whose "
-                    "sets are low; no jump ideal is low (a jump ideal contains "
-                    "0', which is not low), so a WKL₀ ω-model need not be jump "
-                    "closed. That is the literature basis for placing the "
-                    "jump-closure band above the WKL circle. The converse "
-                    "direction (jump closure gives WKL) is textbook ACA₀ ⇒ "
-                    "WKL₀, literature-backed and NOT certified here; no "
-                    "comparison edge is drawn, and this record licenses "
-                    "placement only"}},
-]
+# The jump-family band was retired when the eighth fact certified the comparison it
+# had only licensed by literature: jumpClosureBoundedKonigOmega draws the edge, and
+# height now follows the certified arrow (the rank-reversed implication rule in
+# `view_dot`). The machinery and its fail-closed validation stay armed for any
+# future band; a band and a certified comparison edge for the same placement must
+# never coexist — that would be a duplicate ordering mechanism.
+LITERATURE_BANDS: list = []
 
 
 def literature_bands(catalog: dict, cluster_names: set) -> list:
     """Validate LITERATURE_BANDS against the pinned corpus, fail-closed. Every
     cited claim must be registered; every band concept must be tagged by a
-    cited claim; the target must render as an enclosure; and — the part that
+    cited claim; the target must render as an enclosure; the part that
     justifies the *above* relation rather than mere identification — the band's
-    `order` record must name a registered claim that itself tags the target and
-    at least one band concept, with a nonempty reading. Returns the validated
-    bands with placement plus the order record (the view never carries a drawn
-    edge for a band)."""
+    `order` record — must name a registered claim that itself tags the target
+    and at least one band concept, with a nonempty reading; and no band may
+    coexist with a certified fact linking a band concept to the target — a
+    certified comparison retires the band, and a duplicate ordering mechanism
+    is an error, never a fallback. Returns the validated bands with placement
+    plus the order record (the view never carries a drawn edge for a band)."""
     claims = {c["id"]: c for c in catalog.get("corpus", {}).get("claims", [])}
+    variant_concept = {v["id"].split(":", 1)[-1]: v.get("concept", "").split(":", 1)[-1]
+                       for v in catalog.get("statementVariants", [])}
+
+    def endpoint_concepts(f: dict) -> set:
+        return {variant_concept.get(vid.split(":", 1)[-1], "")
+                for side in ("lhs", "rhs") for vid in (f.get(side) or [])}
 
     def tags(cid: str, why: str) -> set:
         if cid not in claims:
@@ -3200,6 +3276,17 @@ def literature_bands(catalog: dict, cluster_names: set) -> list:
 
     out = []
     for band in LITERATURE_BANDS:
+        for f in catalog.get("facts", []):
+            if not f.get("evidence"):
+                continue
+            eps = endpoint_concepts(f)
+            hit = eps & set(band["concepts"])
+            if band["above"] in eps and hit:
+                raise ValueError(
+                    f"literature band above {band['above']} coexists with the "
+                    f"certified fact {f['id']} linking {sorted(hit)} to the "
+                    "target — a certified comparison retires the band; a "
+                    "duplicate ordering mechanism is forbidden")
         tagged: set = set()
         for cid in band["claims"]:
             tagged |= tags(cid, "concept identification")
@@ -3396,6 +3483,22 @@ def view_dot(name: str, view: dict) -> str:
                 extra += f', lhead="{tag}"'
                 tgt = node
             extra += lat_edge[ei]
+        elif (bottom_up and fam == "certifiedOmegaFact"
+                and e.get("kind") != "nonImplication" and not e.get("bidirectional")
+                and src not in clusters and tgt in clusters):
+            # A certified one-directional implication out of a plain concept into an
+            # enclosure witnesses that the concept is at least as strong as the whole
+            # equivalence circle, so height follows the certified arrow: the concept
+            # sits strictly above the enclosure's top-rank member, and the edge is
+            # emitted rank-reversed (dir=back) so the drawn arrowhead still enters
+            # the enclosure it points into. This is the certified successor of the
+            # literature-band lift, keyed to a fact instead of a recorded reading.
+            top = _cluster_top_anchor(clusters[tgt])
+            _n, tag = anchors[tgt]
+            lines.append(f'  "{top}" -> "{src}" '
+                         f'[label="{_edge_label(e.get("label", ""))}", '
+                         f'{style}, dir=back, ltail="{tag}", minlen=1];')
+            continue
         else:
             enclosure_touch = False
             if src in anchors:
@@ -3463,6 +3566,20 @@ def view_dot(name: str, view: dict) -> str:
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                      f'{style}{extra}];')
+    if bottom_up:
+        for e in view["edges"]:
+            if (e.get("family", view.get("family", "")) == "certifiedOmegaFact"
+                    and e.get("bidirectional")
+                    and e.get("kind") != "nonImplication"
+                    and _edge_concept(e, "t") not in clusters
+                    and _edge_concept(e, "h") not in clusters
+                    and _edge_concept(e, "t") not in base_nodes
+                    and _edge_concept(e, "h") not in base_nodes):
+                # certified equivalence between plain concepts: equal strength
+                # renders at equal height, so the pair shares a rank and the
+                # equivalence edge lies flat between them
+                lines.append(f'  {{rank=same; "{_edge_concept(e, "t")}"; '
+                             f'"{_edge_concept(e, "h")}";}}')
     for band in view.get("literatureBands", []):
         cl = clusters.get(band["above"])
         if not cl:

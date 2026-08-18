@@ -874,7 +874,7 @@ renders its honest verdict. -/
 -- countermodel record) and the one backend-qualified syntactic scoped result (the bridge's standard-calculus nonderivability). The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 7; variants: 12; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 7; variants: 12; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 8 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1293,7 +1293,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 8; variants: 14; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 14; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 8 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1425,7 +1425,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (11):
+info: facts (12):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: Over every Turing ideal, the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   disjointRangeSeparationWklOmega [equivalence | theory rca0 omegaModels] disjointRangeSeparation.injectionGraphs.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
@@ -1438,7 +1438,9 @@ info: facts (11):
   fixImpOmega [implication | theory fixRca0 omegaModels] smokePropVariant+smokeVariant => smokePropVariant — recorded, no evidence linked
   fixRed [reducibility | uniform fixWeihrauch] smokeProblemA <= smokeProblemB [representative] — recorded, no evidence linked
   injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — recorded, no evidence linked
-    note: Over every Turing ideal, injection-range existence in its exact injection-graph formulation is equivalent to closure under the Turing jump. The literature places this pair above weak Kőnig's lemma; no comparison with WKL is proved here. Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
+    note: Over every Turing ideal, injection-range existence in its exact injection-graph formulation is equivalent to closure under the Turing jump. The literature places this pair above weak Kőnig's lemma; the certified comparison edge to the WKL circle arrived with the eighth fact (jumpClosureBoundedKonigOmega). Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
+  jumpClosureBoundedKonigOmega [implication | theory rca0 omegaModels] jumpClosure.turingIdealClosure.turingIdealOmega => wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega — recorded, no evidence linked
+    note: Over every Turing ideal, jump closure gives explicitly bounded Kőnig: the leftmost path of an internally presented explicitly bounded tree is computable from the jump of the tree joined with its bound graph. An upper implication only — the first certified comparison edge between the jump family and the WKL circle. The strictness of the comparison (an ω-model of WKL₀ that is not jump closed) stays a literature-backed reading of the corpus-recorded low-basis claim (Hirst thesis §1.4, Theorem 1.6) and is not certified here; no separation is claimed
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
@@ -1646,7 +1648,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 8; variants: 16; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 7 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 16; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 8 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1898,7 +1900,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (16):
+info: facts (17):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1933,6 +1935,10 @@ info: facts (16):
     via ReverseMathlib.Ports.injectionRange_jumpClosure_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the two named direction theorems: injectionRangeExistenceAt_of_jumpClosedAt (jump closure → range existence, through range_le_jump and ideal downward closure) and jumpClosedAt_of_injectionRangeExistenceAt (range existence → jump closure, through jumpEnumGraph_le, the total injective packaging, and range_jumpEnum); both route spines and their mutual exclusion are pinned by dependency gates in scripts/MetaSmoke.lean
       realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+  jumpClosureBoundedKonigOmega [implication | theory rca0 omegaModels] jumpClosure.turingIdealClosure.turingIdealOmega => wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.jumpClosure_boundedKonig_omega_implication [context rca0.turingIdealOmega]
+      note: The named direction theorem boundedKonigAt_of_jumpClosedAt, through the leftmost-path route spine: frontier_recursiveIn_join, extendibleSet_le_jump, le_jump, and leftmostExec_eq, then ideal closure. The route and this composition are pinned by dependency gates in scripts/MetaSmoke.lean, including the independence of le_jump from range_le_jump
+      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
       note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1949,11 +1955,11 @@ info: facts (16):
 #guard_msgs in
 #revmath_facts
 
--- The headline counts UNIQUE certified facts: the three fixture ω facts plus the seven
+-- The headline counts UNIQUE certified facts: the three fixture ω facts plus the eight
 -- production ω facts, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 11 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2056,7 +2062,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 11 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2165,7 +2171,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 11 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2417,7 +2423,7 @@ rm_ingest_bridge_evidence "fixtures/backend/syntactic_duplicate_payload.json" ar
 -- validated semantic-countermodel record contributes exactly the explicitly
 -- backend-qualified all-model scoped result, and nothing else.
 /--
-info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 8; variants: 17; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 11 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2496,5 +2502,59 @@ goes through its own reduction spine and never through the opposite direction. -
 #rm_assert_not_proof_depends ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
   [ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt,
    ReverseMathlib.Omega.range_le_jump]
+
+/-! ### The eighth fact's route gates (issue #50, slice A)
+
+The implication certificate reaches the named direction theorem, whose proof goes
+through the leftmost-path spine: the general self-jump reduction, the frontier
+computation in the joined base oracle, the one-query extendibility decision (with
+`frontier_ne_nil_iff` as its semantic bridge), and the executable-spec equality.
+The self-jump reduction stays independent of the range-to-jump reduction, and the
+direction theorem reaches neither the jump-enumeration machinery nor either
+direction of the seventh fact. -/
+
+#rm_assert_proof_depends ReverseMathlib.Ports.jumpClosure_boundedKonig_omega_implication
+  ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.le_jump
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.frontier_recursiveIn_join
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.extendibleSet_le_jump
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.leftmostExec_eq
+#rm_assert_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  ReverseMathlib.Omega.leftmostGraph_le_jump
+#rm_assert_not_proof_depends ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt
+  [ReverseMathlib.Omega.range_le_jump, ReverseMathlib.Omega.jumpEnum_recursiveIn,
+   ReverseMathlib.Omega.jumpEnumGraph_le, ReverseMathlib.Omega.range_jumpEnum,
+   ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt,
+   ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.le_jump
+  ReverseMathlib.Omega.OracleCode.exists_code
+#rm_assert_proof_depends ReverseMathlib.Omega.le_jump
+  ReverseMathlib.Omega.mem_jumpSet_iff
+#rm_assert_proof_depends ReverseMathlib.Omega.le_jump
+  ReverseMathlib.Omega.OracleCode.eval_curry
+#rm_assert_not_proof_depends ReverseMathlib.Omega.le_jump
+  [ReverseMathlib.Omega.range_le_jump]
+
+#rm_assert_proof_depends ReverseMathlib.Omega.extendibleSet_le_jump
+  ReverseMathlib.Omega.frontier_recursiveIn_join
+#rm_assert_proof_depends ReverseMathlib.Omega.extendibleSet_le_jump
+  ReverseMathlib.Omega.frontier_ne_nil_iff
+#rm_assert_proof_depends ReverseMathlib.Omega.extendibleSet_le_jump
+  ReverseMathlib.Omega.OracleCode.exists_code
+
+#rm_assert_proof_depends ReverseMathlib.Omega.leftmostExec_recursiveIn
+  ReverseMathlib.Omega.extendibleSet_le_jump
+#rm_assert_proof_depends ReverseMathlib.Omega.leftmostExec_recursiveIn
+  ReverseMathlib.Omega.le_jump
+#rm_assert_proof_depends ReverseMathlib.Omega.leftmostGraph_le_jump
+  ReverseMathlib.Omega.leftmostExec_recursiveIn
+#rm_assert_proof_depends ReverseMathlib.Omega.leftmostExec_eq
+  ReverseMathlib.Omega.leftmostStep_eq
 
 end RMSmoke

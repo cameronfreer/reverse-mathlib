@@ -91,7 +91,15 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.TreeSeparation.fGraph_le_tree,
    ``ReverseMathlib.Omega.TreeSeparation.gGraph_le_tree,
    ``ReverseMathlib.Omega.TreeSeparation.pathSet_le_sep,
-   ``ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt]
+   ``ReverseMathlib.Omega.weakKonigAt_of_disjointRangeSeparationAt,
+   -- Kőnig slice A (#50): the self-jump reduction, the frontier computation in the
+   -- joined base oracle, the one-query extendibility decision, the leftmost-path
+   -- graph reduction, and the packaged direction theorem
+   ``ReverseMathlib.Omega.le_jump,
+   ``ReverseMathlib.Omega.frontier_recursiveIn_join,
+   ``ReverseMathlib.Omega.extendibleSet_le_jump,
+   ``ReverseMathlib.Omega.leftmostGraph_le_jump,
+   ``ReverseMathlib.Omega.boundedKonigAt_of_jumpClosedAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
