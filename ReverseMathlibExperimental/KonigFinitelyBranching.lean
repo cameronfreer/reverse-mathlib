@@ -455,4 +455,251 @@ theorem path_determines_range {Ω : OmegaPart} (f : InternalFunction Ω)
     have hgd : (decodeSeq c).getD v 0 = 0 := hagree v (by omega) _ hp0
     exact (hcT v (by omega)).2 hgd w (by omega) hw
 
+/-! ### Internality of the injection tree
+
+`injectionTree_le_graph` establishes internality independently of the semantic path
+proof: membership is a finite oracle transcript — one witness bit per position (the
+single query of the pin) plus the bounded zero-clause grid — and a pure verifier that
+finds no violation. -/
+
+/-- Membership restated on the bits a program reads: clause 1 as one witness query per
+nonzero entry, clause 2 as the bounded `(w, i)` grid under the linear coding
+`j = i * n + w`. -/
+private theorem injectionNodeOk_iff_bits {Ω : OmegaPart} (f : InternalFunction Ω)
+    (c : ℕ) : InjectionNodeOk f c ↔
+      (∀ i < (decodeSeq c).length, (decodeSeq c).getD i 0 ≠ 0 →
+        f.MapsTo ((decodeSeq c).getD i 0 - 1) i) ∧
+      (∀ j < (decodeSeq c).length * (decodeSeq c).length,
+        (decodeSeq c).getD (j / (decodeSeq c).length) 0 = 0 →
+          ¬ f.MapsTo (j % (decodeSeq c).length) (j / (decodeSeq c).length)) := by
+  constructor
+  · intro h
+    refine ⟨fun i hi hne => ?_, fun j hj h0 hmap => ?_⟩
+    · obtain ⟨h1, -⟩ := h i hi
+      have : (decodeSeq c).getD i 0 = ((decodeSeq c).getD i 0 - 1) + 1 := by omega
+      exact h1 _ this
+    · have hn : 0 < (decodeSeq c).length := by
+        by_contra hz
+        simp [Nat.eq_zero_of_not_pos hz] at hj
+      have hjdiv : j / (decodeSeq c).length < (decodeSeq c).length :=
+        Nat.div_lt_iff_lt_mul hn |>.mpr hj
+      obtain ⟨-, h2⟩ := h _ hjdiv
+      exact h2 h0 _ (Nat.mod_lt _ hn) hmap
+  · rintro ⟨h1, h2⟩ i hi
+    refine ⟨fun w hw => ?_, fun h0 w hwn hmap => ?_⟩
+    · have := h1 i hi (by omega)
+      have hw1 : (decodeSeq c).getD i 0 - 1 = w := by omega
+      exact hw1 ▸ this
+    · have hn : 0 < (decodeSeq c).length := by omega
+      have hj : i * (decodeSeq c).length + w <
+          (decodeSeq c).length * (decodeSeq c).length := by
+        have h1' : i + 1 ≤ (decodeSeq c).length := hi
+        calc i * (decodeSeq c).length + w
+            < (i + 1) * (decodeSeq c).length := by
+              rw [Nat.add_mul, Nat.one_mul]
+              omega
+          _ ≤ (decodeSeq c).length * (decodeSeq c).length :=
+              Nat.mul_le_mul_right _ h1'
+      have hdiv : (i * (decodeSeq c).length + w) / (decodeSeq c).length = i := by
+        rw [Nat.add_comm, Nat.add_mul_div_right _ _ hn, Nat.div_eq_of_lt hwn]
+        omega
+      have hmod : (i * (decodeSeq c).length + w) % (decodeSeq c).length = w := by
+        rw [Nat.add_comm, Nat.add_mul_mod_self_right]
+        exact Nat.mod_eq_of_lt hwn
+      exact h2 _ hj (by rwa [hdiv]) (by rwa [hdiv, hmod])
+
+/-- **The injection tree is one reduction below the injection's graph** — internality,
+independent of the semantic path proof. Per node: a transcript of one witness bit per
+position and the bounded zero-clause grid, then a pure two-`findIdx` verifier. -/
+theorem injectionTree_le_graph {Ω : OmegaPart} (f : InternalFunction Ω) :
+    injectionTreeSet f ≤ᵀ f.graph.1 := by
+  classical
+  have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
+  have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
+  have hGb : Nat.RecursiveIn {charFn f.graph.1} fun x => Part.some
+      (charFnTot f.graph.1 x) := by
+    refine (Nat.RecursiveIn.oracle (O := {charFn f.graph.1})
+      (charFn f.graph.1) rfl).of_eq fun x => ?_
+    rw [charFn_eq_coe]
+    rfl
+  have hlen : Primrec fun c : ℕ => (decodeSeq c).length := primrec_seqLength
+  -- the witness-bit transcript: at (c, i), the graph bit at (entry i - 1, i)
+  have hwq : Primrec fun m : ℕ => Nat.pair
+      ((decodeSeq m.unpair.1).getD m.unpair.2 0 - 1) m.unpair.2 :=
+    Primrec₂.comp (f := Nat.pair) Primrec₂.natPair
+      (Primrec.nat_sub.comp
+        (Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet
+          hfst hsnd)
+        (Primrec.const 1)) hsnd
+  have htabA := valueTable_recursiveIn_param
+    (f := fun c i => charFnTot f.graph.1
+      (Nat.pair ((decodeSeq c).getD i 0 - 1) i))
+    (recursiveIn_comp_primrec hGb hwq)
+  have hcl : Nat.RecursiveIn {charFn f.graph.1} fun c => Part.some
+      (Nat.pair (id c) (decodeSeq c).length) :=
+    recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id)
+      (recursiveIn_of_primrec hlen)
+  have htabAc : Nat.RecursiveIn {charFn f.graph.1} fun c => Part.some
+      (valueTable (fun i => charFnTot f.graph.1
+        (Nat.pair ((decodeSeq c).getD i 0 - 1) i)) (decodeSeq c).length) :=
+    (recursiveIn_comp_total htabA hcl).of_eq fun c => by simp only [Nat.unpair_pair, id_eq]
+  -- the grid transcript: at (c, j), the graph bit at (j % n, j / n)
+  have hgq : Primrec fun m : ℕ => Nat.pair
+      (m.unpair.2 % (decodeSeq m.unpair.1).length)
+      (m.unpair.2 / (decodeSeq m.unpair.1).length) :=
+    Primrec₂.comp (f := Nat.pair) Primrec₂.natPair
+      (Primrec.nat_mod.comp hsnd (primrec_seqLength.comp hfst))
+      (Primrec.nat_div.comp hsnd (primrec_seqLength.comp hfst))
+  have htabB := valueTable_recursiveIn_param
+    (f := fun c j => charFnTot f.graph.1
+      (Nat.pair (j % (decodeSeq c).length) (j / (decodeSeq c).length)))
+    (recursiveIn_comp_primrec hGb hgq)
+  have hcn2 : Nat.RecursiveIn {charFn f.graph.1} fun c => Part.some
+      (Nat.pair (id c) ((decodeSeq c).length * (decodeSeq c).length)) :=
+    recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id)
+      (recursiveIn_of_primrec (Primrec.nat_mul.comp hlen hlen))
+  have htabBc : Nat.RecursiveIn {charFn f.graph.1} fun c => Part.some
+      (valueTable (fun j => charFnTot f.graph.1
+        (Nat.pair (j % (decodeSeq c).length) (j / (decodeSeq c).length)))
+        ((decodeSeq c).length * (decodeSeq c).length)) :=
+    (recursiveIn_comp_total htabB hcn2).of_eq fun c => by
+      simp only [Nat.unpair_pair, id_eq]
+  -- package (c, (tableA, tableB)) and verify purely
+  have hpack := recursiveIn_pair_total (recursiveIn_of_primrec Primrec.id)
+    (recursiveIn_pair_total htabAc htabBc)
+  have hpost : Primrec fun z : ℕ =>
+      if ((List.range (decodeSeq z.unpair.1).length).map fun i =>
+            if (decodeSeq z.unpair.1).getD i 0 ≠ 0 ∧
+                (decodeSeq z.unpair.2.unpair.1).getD i 0 ≠ 1
+            then 1 else 0).findIdx (· == 1) = (decodeSeq z.unpair.1).length ∧
+          ((List.range ((decodeSeq z.unpair.1).length *
+              (decodeSeq z.unpair.1).length)).map fun j =>
+            if (decodeSeq z.unpair.1).getD
+                  (j / (decodeSeq z.unpair.1).length) 0 = 0 ∧
+                (decodeSeq z.unpair.2.unpair.2).getD j 0 = 1
+            then 1 else 0).findIdx (· == 1) =
+            (decodeSeq z.unpair.1).length * (decodeSeq z.unpair.1).length
+      then 1 else 0 := by
+    have hc : Primrec fun z : ℕ => z.unpair.1 := hfst
+    have hn : Primrec fun z : ℕ => (decodeSeq z.unpair.1).length :=
+      primrec_seqLength.comp hfst
+    have hgetc : Primrec₂ fun z i : ℕ => (decodeSeq z.unpair.1).getD i 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet
+        (hfst.comp Primrec.fst) Primrec.snd
+    have hgetA : Primrec₂ fun z i : ℕ => (decodeSeq z.unpair.2.unpair.1).getD i 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet
+        ((hfst.comp hsnd).comp Primrec.fst) Primrec.snd
+    have hgetB : Primrec₂ fun z i : ℕ => (decodeSeq z.unpair.2.unpair.2).getD i 0 :=
+      Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0) primrec_seqGet
+        ((hsnd.comp hsnd).comp Primrec.fst) Primrec.snd
+    have hlistA : Primrec fun z : ℕ =>
+        (List.range (decodeSeq z.unpair.1).length).map fun i =>
+          if (decodeSeq z.unpair.1).getD i 0 ≠ 0 ∧
+              (decodeSeq z.unpair.2.unpair.1).getD i 0 ≠ 1
+          then 1 else 0 :=
+      Primrec.list_map (Primrec.list_range.comp hn)
+        (Primrec.ite (PrimrecPred.and
+            (PrimrecPred.not (Primrec.eq.comp hgetc (Primrec.const 0)))
+            (PrimrecPred.not (Primrec.eq.comp hgetA (Primrec.const 1))))
+          (Primrec.const 1) (Primrec.const 0))
+    have hlistB : Primrec fun z : ℕ =>
+        (List.range ((decodeSeq z.unpair.1).length *
+            (decodeSeq z.unpair.1).length)).map fun j =>
+          if (decodeSeq z.unpair.1).getD (j / (decodeSeq z.unpair.1).length) 0 = 0 ∧
+              (decodeSeq z.unpair.2.unpair.2).getD j 0 = 1
+          then 1 else 0 :=
+      Primrec.list_map (Primrec.list_range.comp (Primrec.nat_mul.comp hn hn))
+        (Primrec.ite (PrimrecPred.and
+            (Primrec.eq.comp
+              (Primrec₂.comp (f := fun n i : ℕ => (decodeSeq n).getD i 0)
+                primrec_seqGet (hfst.comp Primrec.fst)
+                (Primrec.nat_div.comp Primrec.snd (hn.comp Primrec.fst)))
+              (Primrec.const 0))
+            (Primrec.eq.comp hgetB (Primrec.const 1)))
+          (Primrec.const 1) (Primrec.const 0))
+    exact Primrec.ite (PrimrecPred.and
+        (Primrec.eq.comp
+          (Primrec.list_findIdx hlistA
+            (Primrec.beq.comp Primrec.snd (Primrec.const 1))) hn)
+        (Primrec.eq.comp
+          (Primrec.list_findIdx hlistB
+            (Primrec.beq.comp Primrec.snd (Primrec.const 1)))
+          (Primrec.nat_mul.comp hn hn)))
+      (Primrec.const 1) (Primrec.const 0)
+  refine (recursiveIn_comp_total (recursiveIn_of_primrec hpost) hpack).of_eq fun c => ?_
+  simp only [Nat.unpair_pair, id_eq, decodeSeq_valueTable, charFn]
+  -- the verifier accepts exactly the tree nodes
+  have hbitsA : ∀ i, i < (decodeSeq c).length →
+      (((List.range (decodeSeq c).length).map fun i' =>
+        charFnTot f.graph.1
+          (Nat.pair ((decodeSeq c).getD i' 0 - 1) i')).getD i 0 =
+        charFnTot f.graph.1 (Nat.pair ((decodeSeq c).getD i 0 - 1) i)) :=
+    fun i hi => map_range_getD' _ hi 0
+  have hsem : (((List.range (decodeSeq c).length).map fun i =>
+      if (decodeSeq c).getD i 0 ≠ 0 ∧
+          ((List.range (decodeSeq c).length).map fun i' =>
+            charFnTot f.graph.1
+              (Nat.pair ((decodeSeq c).getD i' 0 - 1) i')).getD i 0 ≠ 1
+      then 1 else 0).findIdx (· == 1) = (decodeSeq c).length ∧
+      ((List.range ((decodeSeq c).length * (decodeSeq c).length)).map fun j =>
+        if (decodeSeq c).getD (j / (decodeSeq c).length) 0 = 0 ∧
+            ((List.range ((decodeSeq c).length * (decodeSeq c).length)).map fun j' =>
+              charFnTot f.graph.1 (Nat.pair (j' % (decodeSeq c).length)
+                (j' / (decodeSeq c).length))).getD j 0 = 1
+        then 1 else 0).findIdx (· == 1) =
+        (decodeSeq c).length * (decodeSeq c).length) ↔
+      InjectionNodeOk f c := by
+    rw [injectionNodeOk_iff_bits]
+    have hA : ∀ (L : ℕ) (g : ℕ → ℕ),
+        (((List.range L).map g).findIdx (· == 1) = L ↔ ∀ j < L, g j ≠ 1) := by
+      intro L g
+      have key : (((List.range L).map g).findIdx (· == 1) =
+          ((List.range L).map g).length) ↔ ∀ j < L, g j ≠ 1 := by
+        rw [List.findIdx_eq_length]
+        constructor
+        · intro h j hj
+          have := h (g j) (List.mem_map.mpr ⟨j, List.mem_range.mpr hj, rfl⟩)
+          simpa using this
+        · rintro h x hx
+          obtain ⟨j, hj, rfl⟩ := List.mem_map.mp hx
+          simpa using h j (List.mem_range.mp hj)
+      rwa [show ((List.range L).map g).length = L from by simp] at key
+    have hone : ∀ x : ℕ, charFnTot f.graph.1 x = 1 ↔ x ∈ f.graph.1 := by
+      intro x
+      by_cases h : x ∈ f.graph.1 <;> simp [charFnTot, h]
+    constructor
+    · rintro ⟨h1, h2⟩
+      rw [hA] at h1 h2
+      constructor
+      · intro i hi hne
+        have hgi := h1 i hi
+        rw [hbitsA i hi] at hgi
+        by_contra hno
+        have hb : charFnTot f.graph.1
+            (Nat.pair ((decodeSeq c).getD i 0 - 1) i) ≠ 1 :=
+          fun h => hno ((hone _).mp h)
+        exact hgi (by rw [if_pos ⟨hne, hb⟩])
+      · intro j hj h0 hmap
+        have hgj := h2 j hj
+        rw [map_range_getD' _ hj 0] at hgj
+        exact hgj (by rw [if_pos ⟨h0, (hone _).mpr hmap⟩])
+    · rintro ⟨h1, h2⟩
+      rw [hA, hA]
+      refine ⟨fun i hi => ?_, fun j hj => ?_⟩
+      · rw [hbitsA i hi]
+        by_cases hne : (decodeSeq c).getD i 0 = 0
+        · rw [if_neg (fun hcon => hcon.1 hne)]
+          omega
+        · rw [if_neg (fun hcon => hcon.2 ((hone _).mpr (h1 i hi hne)))]
+          omega
+      · rw [map_range_getD' _ hj 0]
+        by_cases h0 : (decodeSeq c).getD (j / (decodeSeq c).length) 0 = 0
+        · rw [if_neg (fun hcon => (h2 j hj h0) ((hone _).mp hcon.2))]
+          omega
+        · rw [if_neg (fun hcon => h0 hcon.1)]
+          omega
+  by_cases hc : c ∈ injectionTreeSet f
+  · rw [if_pos (hsem.mpr hc), if_pos hc]
+  · rw [if_neg (fun hyes => hc (hsem.mp hyes)), if_neg hc]
+
 end ReverseMathlib.Omega
