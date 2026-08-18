@@ -366,4 +366,73 @@ theorem injectionTree_prefix_closed {Ω : OmegaPart} (f : InternalFunction Ω) :
   rw [decodeSeq_seqCode, List.length_take] at hw
   exact h2 (by rwa [hgd] at h0) w (by omega) hmap
 
+/-- **Injectivity establishes levelwise boundedness**: a position has at most one
+witness, so tree entries there lie in `{0, w + 1}`. -/
+theorem injectionTree_levelwise_bounded {Ω : OmegaPart} (f : InternalFunction Ω)
+    (hf : f.IsInjective) (i : ℕ) :
+    ∃ b, ∀ c ∈ injectionTreeSet f, i < (decodeSeq c).length →
+      (decodeSeq c).getD i 0 < b := by
+  classical
+  by_cases hw : ∃ w, f.MapsTo w i
+  · obtain ⟨w, hwmap⟩ := hw
+    refine ⟨w + 2, fun c hc hi => ?_⟩
+    obtain ⟨h1, -⟩ := hc i hi
+    match hv : (decodeSeq c).getD i 0 with
+    | 0 => omega
+    | u + 1 =>
+      have := hf u w i (h1 u hv) hwmap
+      omega
+  · refine ⟨1, fun c hc hi => ?_⟩
+    obtain ⟨h1, -⟩ := hc i hi
+    match hv : (decodeSeq c).getD i 0 with
+    | 0 => omega
+    | u + 1 => exact absurd ⟨u, h1 u hv⟩ hw
+
+/-- Reading a function's values off positions of its own range-indexed table (local
+copy of the Slice A helper, which is private there). -/
+private theorem map_range_getD' {α : Type*} (f : ℕ → α) {w v : ℕ} (hv : v < w)
+    (d : α) : ((List.range w).map f).getD v d = f v := by
+  rw [List.getD_eq_getElem?_getD, List.getElem?_map, List.getElem?_range hv]
+  rfl
+
+open Classical in
+/-- The truthful stage-`n` node: at position `i`, the least witness below `n` if one
+exists, else zero. -/
+private noncomputable def truthNode {Ω : OmegaPart} (f : InternalFunction Ω)
+    (n : ℕ) : ℕ :=
+  seqCode ((List.range n).map fun i =>
+    if h : ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0)
+
+/-- **Prefix closure and bounded membership establish infinitude**: the truthful stage
+node lives at every level. -/
+theorem injectionTree_hasNodeAtEveryLevel {Ω : OmegaPart} (f : InternalFunction Ω) :
+    HasNodeAtEveryLevel (injectionTreeSet f) := by
+  classical
+  intro n
+  refine ⟨truthNode f n, ?_, by simp [truthNode]⟩
+  intro i hi
+  rw [truthNode, decodeSeq_seqCode] at hi ⊢
+  simp only [List.length_map, List.length_range] at hi
+  have hgd : ((List.range n).map fun j =>
+      if h : ∃ w < n, f.MapsTo w j then sInf {w | f.MapsTo w j} + 1 else 0).getD i 0 =
+      if h : ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0 :=
+    map_range_getD' _ hi 0
+  constructor
+  · intro w hwv
+    rw [hgd] at hwv
+    split at hwv
+    · rename_i h
+      obtain ⟨w0, -, hw0⟩ := h
+      have hmem : sInf {w | f.MapsTo w i} ∈ {w | f.MapsTo w i} := Nat.sInf_mem ⟨w0, hw0⟩
+      have : w = sInf {w | f.MapsTo w i} := by omega
+      exact this ▸ hmem
+    · omega
+  · intro h0 w hwn hmap
+    rw [hgd] at h0
+    split at h0
+    · omega
+    · rename_i h
+      simp only [List.length_map, List.length_range] at hwn
+      exact h ⟨w, hwn, hmap⟩
+
 end ReverseMathlib.Omega
