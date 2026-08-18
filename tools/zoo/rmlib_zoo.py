@@ -3014,13 +3014,18 @@ def selftest_projection_layout() -> list[str]:
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
         "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
-                  "bandC", "jumpP", "jumpQ", "hallN"],
+                  "bandC", "jumpP", "jumpQ", "hallN", "blob2", "mutN"],
         "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
                      "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
                                 "bidirectional": True, "exactLhs": "blob.bottom",
-                                "exactRhs": "blob.top"}]}},
+                                "exactRhs": "blob.top"}]},
+            "blob2": {"variants": ["blob2.top", "blob2.bottom"],
+                      "edges": [{"family": "certifiedOmegaFact", "label": "⊨ω",
+                                 "bidirectional": True,
+                                 "exactLhs": "blob2.bottom",
+                                 "exactRhs": "blob2.top"}]}},
         "edges": [
             {"family": "certifiedOmegaFact", "kind": "nonImplication",
              "label": "⊭ω", "lhsConcept": "baseNode", "rhsConcept": "q"},
@@ -3045,7 +3050,11 @@ def selftest_projection_layout() -> list[str]:
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "jumpQ", "rhsConcept": "jumpP"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
-             "lhsConcept": "hallN", "rhsConcept": "q"}],
+             "lhsConcept": "hallN", "rhsConcept": "q"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "mutN", "rhsConcept": "blob2"},
+            {"family": "ambientFactorization", "label": "ambient",
+             "lhsConcept": "blob2", "rhsConcept": "mutN"}],
     }
     dot = view_dot("concept-projection", view)
     lines = [ln.strip() for ln in dot.splitlines()]
@@ -3094,14 +3103,29 @@ def selftest_projection_layout() -> list[str]:
                                                 '"blob.bottom" -> "mutM"'))]
     if not (len(mut) == 3 and all("minlen=0" in ln for ln in mut)):
         bad.append("mutual lateral pair misses flat anchoring")
+    flatln = [ln for ln in mut if f'label="{TURNSTILE_PAD}⊨ω"' in ln]
+    if not (len(flatln) == 1 and "tailport=" not in flatln[0]
+            and "headport=" not in flatln[0]):
+        bad.append("the certified ⊨ω edge must take the portless middle lane, "
+                   "both port attributes absent — a straight arrow whenever an "
+                   "arrow can be straight")
+    others = [ln for ln in mut if ln not in flatln]
+    if not (len(others) == 2 and all("tailport=" in ln and "headport=" in ln
+                                     for ln in others)):
+        bad.append("the outer lateral lanes must both carry facing port fans")
     lanes = {(re.search(r"tailport=(\w+)", ln).group(1),
-              re.search(r"headport=(\w+)", ln).group(1)) for ln in mut
+              re.search(r"headport=(\w+)", ln).group(1)) for ln in others
              if "tailport=" in ln and "headport=" in ln}
     if len(lanes) != 2:
         bad.append("the outer lateral lanes did not get two distinct port fans")
-    if len([ln for ln in mut if "tailport=" not in ln]) != 1:
-        bad.append("exactly one lateral lane (the middle) must stay portless — "
-                   "a straight arrow whenever an arrow can be straight")
+    # a two-edge fan keeps both port pairs: dropping ports from one of two
+    # would pick a straight edge arbitrarily
+    mut2 = [ln for ln in lines if ln.startswith(('"mutN" -> "blob2.bottom"',
+                                                 '"blob2.bottom" -> "mutN"'))]
+    if not (len(mut2) == 2 and all("minlen=0" in ln and "tailport=" in ln
+                                   and "headport=" in ln for ln in mut2)):
+        bad.append("a two-edge lateral fan must keep both port pairs — "
+                   "portlessness is defined only for the middle of three")
     over = dict(view)
     over["edges"] = view["edges"] + [
         {"family": "importedReduction", "label": "≤W",
@@ -3424,10 +3448,12 @@ def view_dot(name: str, view: dict) -> str:
                 f"{len(_FLAT_LANES)} distinct routing lanes exist")
         for k, i in enumerate(es):
             attr = ", minlen=0"
-            if len(es) > 1 and _FLAT_LANES[k] != ("w", "e"):
-                # outer lanes fan through facing compass ports; the middle lane
-                # stays portless — a straight arrow whenever an arrow can be
-                # straight, exactly like the single-edge pendant case
+            if len(es) > 1 and not (len(es) == 3 and k == 1):
+                # outer lanes fan through facing compass ports; ONLY the middle
+                # of a three-edge fan stays portless — a straight arrow whenever
+                # an arrow can be straight, exactly like the single-edge pendant
+                # case. A two-edge fan keeps both port pairs: dropping ports from
+                # one of two would pick a straight edge arbitrarily.
                 xp, mp = _FLAT_LANES[k]
                 if side == "left":
                     xp, mp = mp, xp
