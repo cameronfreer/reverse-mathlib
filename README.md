@@ -11,7 +11,7 @@ preserve the proof, and never confuse the two.*
 [Hall–EFILC case study](docs/hall-efilc-case-study.md) ·
 [Roadmap](ROADMAP.md)
 
-> **Scoreboard — checked scoped results: ω-model: 8 (kernelChecked); all-model: 1
+> **Scoreboard — checked scoped results: ω-model: 9 (kernelChecked); all-model: 1
 > (backendChecked); syntactic: 1 (backendChecked).** The all-model entry is the exact
 > backend-checked `Rca0Theory ⊭ wklSentence` over all general (Henkin-style) L₂
 > structures; the syntactic entry is the exact backend-checked
@@ -38,7 +38,7 @@ preserve the proof, and never confuse the two.*
 
 ## Certified results
 
-All eight facts are kernel-checked over **every Turing ideal** against the
+All nine facts are kernel-checked over **every Turing ideal** against the
 `rca0.turingIdealOmega` context; the identification of Turing ideals with RCA₀'s
 ω-models is literature-backed. A `⊭ω` fact is a countermodel-witnessed model-class
 separation, never a turnstile underivability claim.
@@ -53,6 +53,7 @@ separation, never a turnstile underivability claim.
 | `disjointRangeSeparationWklOmega` | disjoint-range separationω ⇔ WKLω | the exact injection-graph presentation (Hirst Thm 1.2 (ii)); never generic Σ⁰₁ separation — formula-coded adapters unproved |
 | `injectionRangeExistenceJumpOmega` | injection-range existenceω ⇔ jump closureω | the jump-family equivalence (Hirst Thm 1.4, verified in the pinned primary source); the jump side is a semantic closure property, and no ACA-labeled endpoint or fact is registered — the jump-ideal identification stays literature-backed |
 | `jumpClosureBoundedKonigOmega` | jump closureω → bounded-Kőnigω | the first certified comparison edge between the jump family and the WKL circle, via the leftmost path computed from the jump of tree ⊕ bound graph; upper implication only — strictness (a WKL model that is not jump closed) stays literature-backed, and no separation is claimed |
+| `finitelyBranchingKonigJumpOmega` | full finitely-branching Kőnigω ⇔ jump closureω | the ACA-level Kőnig calibration (Hirst Thm 1.3 shape): the branching bound is a property, never supplied data — the supplied-data presentation is the wkl-equivalent bounded concept; the reversal composes through injection-range existence and fact 7's checked direction, with the intermediate implication kept as proof architecture, never a registered fact |
 
 Detailed presentation caveats, certificate names, and pending bridges live on the atlas
 cards and registration notes — each fact's card is the authority for its exact claim.
