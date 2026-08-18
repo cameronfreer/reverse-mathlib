@@ -326,4 +326,44 @@ theorem finitelyBranchingKonigAt_of_jumpClosedAt {Ω : OmegaPart}
         exact hlb ▸ levelBound_boundsLevel T i c hc hi
       prefix_closed := T.prefix_closed } hlev
 
+/-! ### The reversal, stage one: the injection tree
+
+The route (user-pinned): `FinitelyBranchingKonigAt → InjectionRangeExistenceAt →
+JumpClosedAt`, with the intermediate implication owned by
+`injectionRangeExistenceAt_of_finitelyBranchingKonigAt` (this construction) and the
+final theorem a short composition through fact 7's direction; the intermediate is proof
+architecture, never a registered fact.
+
+A node guesses, for each position `i` below its length, whether `i` is a value of the
+injection: entry `0` means "no witness below the node's length", entry `w + 1` names the
+witness by the **single query** `f.MapsTo w i` — never an unbounded range search. The
+zero clause is falsifiable at deeper levels, so along a path the guesses become truth:
+that is `path_determines_range`. -/
+
+/-- Membership of a node in the injection tree: each nonzero entry names its witness by
+one graph query, and each zero entry asserts no witness below the node's length —
+bounded quantification only. -/
+def InjectionNodeOk {Ω : OmegaPart} (f : InternalFunction Ω) (c : ℕ) : Prop :=
+  ∀ i < (decodeSeq c).length,
+    (∀ w, (decodeSeq c).getD i 0 = w + 1 → f.MapsTo w i) ∧
+    ((decodeSeq c).getD i 0 = 0 → ∀ w < (decodeSeq c).length, ¬ f.MapsTo w i)
+
+/-- The injection tree, as a set of sequence codes. -/
+def injectionTreeSet {Ω : OmegaPart} (f : InternalFunction Ω) : Set ℕ :=
+  {c | InjectionNodeOk f c}
+
+theorem injectionTree_prefix_closed {Ω : OmegaPart} (f : InternalFunction Ω) :
+    ∀ c ∈ injectionTreeSet f, ∀ k, seqCode ((decodeSeq c).take k) ∈ injectionTreeSet f := by
+  intro c hc k i hi
+  rw [decodeSeq_seqCode, List.length_take] at hi
+  have hilen : i < (decodeSeq c).length := lt_of_lt_of_le hi (by omega)
+  have hgd : (decodeSeq (seqCode ((decodeSeq c).take k))).getD i 0 =
+      (decodeSeq c).getD i 0 := by
+    rw [decodeSeq_seqCode, List.getD_eq_getElem?_getD, List.getElem?_take,
+      if_pos (show i < k by omega), ← List.getD_eq_getElem?_getD]
+  obtain ⟨h1, h2⟩ := hc i hilen
+  refine ⟨fun w hw => h1 w (by rwa [hgd] at hw), fun h0 w hw hmap => ?_⟩
+  rw [decodeSeq_seqCode, List.length_take] at hw
+  exact h2 (by rwa [hgd] at h0) w (by omega) hmap
+
 end ReverseMathlib.Omega
