@@ -3092,14 +3092,16 @@ def selftest_projection_layout() -> list[str]:
                    "(left-side seating)")
     mut = [ln for ln in lines if ln.startswith(('"mutM" -> "blob.bottom"',
                                                 '"blob.bottom" -> "mutM"'))]
-    if not (len(mut) == 3 and all("minlen=0" in ln and "tailport=" in ln
-                                  and "headport=" in ln for ln in mut)):
-        bad.append("mutual lateral pair misses flat anchoring with fanned lanes")
+    if not (len(mut) == 3 and all("minlen=0" in ln for ln in mut)):
+        bad.append("mutual lateral pair misses flat anchoring")
     lanes = {(re.search(r"tailport=(\w+)", ln).group(1),
               re.search(r"headport=(\w+)", ln).group(1)) for ln in mut
              if "tailport=" in ln and "headport=" in ln}
-    if len(lanes) != 3:
-        bad.append("three parallel lateral edges did not get three distinct lanes")
+    if len(lanes) != 2:
+        bad.append("the outer lateral lanes did not get two distinct port fans")
+    if len([ln for ln in mut if "tailport=" not in ln]) != 1:
+        bad.append("exactly one lateral lane (the middle) must stay portless — "
+                   "a straight arrow whenever an arrow can be straight")
     over = dict(view)
     over["edges"] = view["edges"] + [
         {"family": "importedReduction", "label": "≤W",
@@ -3422,7 +3424,10 @@ def view_dot(name: str, view: dict) -> str:
                 f"{len(_FLAT_LANES)} distinct routing lanes exist")
         for k, i in enumerate(es):
             attr = ", minlen=0"
-            if len(es) > 1:
+            if len(es) > 1 and _FLAT_LANES[k] != ("w", "e"):
+                # outer lanes fan through facing compass ports; the middle lane
+                # stays portless — a straight arrow whenever an arrow can be
+                # straight, exactly like the single-edge pendant case
                 xp, mp = _FLAT_LANES[k]
                 if side == "left":
                     xp, mp = mp, xp
