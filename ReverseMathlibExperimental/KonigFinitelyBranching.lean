@@ -435,4 +435,24 @@ theorem injectionTree_hasNodeAtEveryLevel {Ω : OmegaPart} (f : InternalFunction
       simp only [List.length_map, List.length_range] at hwn
       exact h ⟨w, hwn, hmap⟩
 
+/-- **Path correctness establishes the range characterization**: along a path through
+the injection tree, a position holds zero exactly when it is not a value of the
+injection — a real witness eventually rules zero out at sufficient depth, while a
+positive path value directly supplies its witness. -/
+theorem path_determines_range {Ω : OmegaPart} (f : InternalFunction Ω)
+    {p : InternalFunction Ω} (hp : IsBoundedPathThrough p (injectionTreeSet f))
+    (v : ℕ) : ¬ p.MapsTo v 0 ↔ ∃ m, f.MapsTo m v := by
+  constructor
+  · intro h0
+    obtain ⟨u, hu⟩ := p.total v
+    rcases u with _ | w
+    · exact absurd hu h0
+    · obtain ⟨c, hcT, hclen, hagree⟩ := hp (v + 1)
+      have hgd : (decodeSeq c).getD v 0 = w + 1 := hagree v (by omega) _ hu
+      exact ⟨w, (hcT v (by omega)).1 w hgd⟩
+  · rintro ⟨w, hw⟩ hp0
+    obtain ⟨c, hcT, hclen, hagree⟩ := hp (max w v + 1)
+    have hgd : (decodeSeq c).getD v 0 = 0 := hagree v (by omega) _ hp0
+    exact (hcT v (by omega)).2 hgd w (by omega) hw
+
 end ReverseMathlib.Omega
