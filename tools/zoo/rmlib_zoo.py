@@ -494,6 +494,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"rendered-arrowhead comparator selftest failed: {name}")
     for name in selftest_flat_lane_separation():
         problems.append(f"flat-lane separation selftest failed: {name}")
+    for name in selftest_lane_separation_check():
+        problems.append(f"lane-separation presence selftest failed: {name}")
     real_fail, real_checked = selftest_real_render_arrowheads()
     for name in real_fail:
         problems.append(f"real-render arrowhead fixture failed: {name}")
@@ -642,6 +644,9 @@ def cmd_check(args: argparse.Namespace) -> None:
             head_problems, head_checked = check_rendered_arrowheads(dot, svg)
             for h in head_problems:
                 problems.append(f"view {vname}: {h}")
+            if head_checked:
+                for h in check_lane_separation(svg, view):
+                    problems.append(f"view {vname}: {h}")
             if not head_checked:
                 print(f"rmlib-zoo check: view {vname} arrowhead geometry NOT "
                       "checked — the stored SVG is not a real graphviz render")
@@ -658,6 +663,14 @@ def cmd_check(args: argparse.Namespace) -> None:
                 or svg.count('class="edge"') != len(aedges) - apairs):
             problems.append("ambient SVG node/edge counts disagree with the catalog "
                             "graph (antiparallel pairs draw once, double-headed)")
+        ambient_dot = zoo_dir(root) / "ambient-factorizations.dot"
+        if ambient_dot.exists():
+            ah, achecked = check_rendered_arrowheads(ambient_dot.read_text(), svg)
+            for h in ah:
+                problems.append(f"ambient graph: {h}")
+            if not achecked:
+                print("rmlib-zoo check: ambient arrowhead geometry NOT checked — "
+                      "the stored SVG is not a real graphviz render")
     # corpus section: a separate family with stable ids, referential integrity, and the
     # fail-closed display statuses (claims reported, bridges missing)
     corpus = catalog.get("corpus", {})
@@ -750,8 +763,10 @@ def to_dot(catalog: dict) -> str:
             tooltip = e["certificate"]
             extra = ""
         seen.add(k)
+        rid = _edge_render_id("ambientFactorization", e["source"], e["target"],
+                              AMBIENT_EDGE_LABEL, "")
         lines.append(f'  "{dot_escape(e["source"])}" -> "{dot_escape(e["target"])}" '
-                     f'[label="{AMBIENT_EDGE_LABEL}", '
+                     f'[id="{rid}", label="{AMBIENT_EDGE_LABEL}", '
                      f'tooltip="{dot_escape(tooltip)}"{extra}];')
     lines.append("}")
     return "\n".join(lines) + "\n"
@@ -818,7 +833,8 @@ def recenter_flat_edge_labels(svg: str) -> str:
         # no clear candidate anywhere on the span: retain the original placement
         return g
 
-    return re.sub(r'<g id="edge\d+" class="edge">[\s\S]*?</g>', fix_group, svg)
+    return re.sub(r'<g id="(?:edge\d+|rme[0-9a-f]+)" class="edge"[^>]*>[\s\S]*?</g>',
+                  fix_group, svg)
 
 
 def selftest_optional_graphviz() -> list[str]:
@@ -866,8 +882,8 @@ def selftest_flat_label_recenter() -> list[str]:
     condition: a stray label on a flat edge is recentered onto the visible
     span; in-span labels and non-flat edges stay untouched. Returns the
     scenarios that wrongly passed."""
-    def group(path: str, x: str) -> str:
-        return ('<g id="edge1" class="edge">\n<title>a&#45;&gt;b</title>\n'
+    def group(path: str, x: str, gid: str = "edge1") -> str:
+        return (f'<g id="{gid}" class="edge">\n<title>a&#45;&gt;b</title>\n'
                 f'<path fill="none" d="{path}"/>\n'
                 f'<text text-anchor="middle" x="{x}" y="-275.8">L</text>\n</g>')
     bad = []
@@ -875,6 +891,10 @@ def selftest_flat_label_recenter() -> list[str]:
     out = recenter_flat_edge_labels(group(flat, "614.5"))
     if 'x="635.00"' not in out:
         bad.append("stray flat label not recentered onto the visible span")
+    if 'x="635.00"' not in recenter_flat_edge_labels(
+            group(flat, "614.5", gid="rme0123456789")):
+        bad.append("an identified (rme) edge escaped the recenter pass — the "
+                   "matcher must cover render ids, not only graphviz defaults")
     if recenter_flat_edge_labels(group(flat, "630")) != group(flat, "630"):
         bad.append("in-span flat label wrongly moved")
     steep = "M626,-291.4C632,-260.1 638,-240.2 644,-215.9"
@@ -3133,6 +3153,69 @@ def selftest_flat_lane_separation() -> list[str]:
 
 
 
+def check_lane_separation(svg: str, view: dict) -> list:
+    """The stored render must carry the lane post-pass: every expected nonzero
+    offset appears as its identified group's whole-group translate, the middle
+    lane stays untranslated, and each fan label sits in its own band (above its
+    lane, below for the bottom lane). Raw renderer output that silently missed
+    the pass fails here — not only on visual inspection."""
+    problems = []
+    for rid, dy in flat_lane_offsets(view).items():
+        m = re.search(rf'<g id="{rid}" class="edge"([^>]*)>([\s\S]*?)</g>', svg)
+        if not m:
+            problems.append(f"lane {rid} has no rendered group")
+            continue
+        attrs, body = m.group(1), m.group(2)
+        tr = re.search(r'transform="translate\(0,(-?\d+)\)"', attrs)
+        if dy and (not tr or int(tr.group(1)) != dy):
+            problems.append(f"lane {rid} misses its translate(0,{dy}) — the "
+                            "separation post-pass did not run on this render")
+            continue
+        if not dy and tr:
+            problems.append(f"middle lane {rid} wrongly carries a translate")
+        path = re.search(r'<path[^>]*\bd="([^"]+)"', body)
+        text = re.search(r'<text[^>]*\by="([\d.eE+-]+)"', body)
+        if not path or not text:
+            continue
+        pts = re.findall(r'[\d.eE+-]+,([\d.eE+-]+)', path.group(1))
+        if not pts:
+            continue
+        lane_y = (float(pts[0]) + float(pts[-1])) / 2
+        seat = lane_y + 12 if dy > 0 else lane_y - 4
+        if abs(float(text.group(1)) - seat) > 0.51:
+            problems.append(f"lane {rid} label is not seated in its own band")
+    return problems
+
+
+def selftest_lane_separation_check() -> list[str]:
+    """The separation-presence checker is armed on handcrafted renders: a raw
+    render missing the post-pass fails, a separated render passes, an unseated
+    label fails. Returns the scenarios that wrongly passed."""
+    bad = []
+    view = _synthetic_projection_view()
+    offs = flat_lane_offsets(view)
+
+    def grp(rid: str, dy: int, seat_ok: bool = True) -> str:
+        tr = f' transform="translate(0,{dy})"' if dy else ""
+        seat = -100.0 + (12 if dy > 0 else -4)
+        y = seat if seat_ok else -100.0
+        return (f'<g id="{rid}" class="edge"{tr}>'
+                f'<path d="M0,-100C1,-100 2,-100 3,-100"/>'
+                f'<text x="1" y="{y:.2f}">L</text></g>')
+
+    good = "".join(grp(r, d) for r, d in offs.items())
+    if check_lane_separation(good, view):
+        bad.append("a separated render was wrongly flagged")
+    raw = "".join(grp(r, 0) for r in offs)
+    if not any("did not run" in x for x in check_lane_separation(raw, view)):
+        bad.append("a raw render missing the separation pass was not flagged")
+    unseated = "".join(grp(r, d, seat_ok=False) for r, d in offs.items())
+    if not any("band" in x for x in check_lane_separation(unseated, view)):
+        bad.append("unseated fan labels were not flagged")
+    return bad
+
+
+
 def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]:
     """Match every identified DOT edge to its rendered SVG group BY RENDER ID and
     require at least as many rendered arrow glyphs (polygons/polylines) as the
@@ -3144,20 +3227,43 @@ def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]
     if "Generated by graphviz" not in svg_text:
         return [], False
     problems = []
-    drawn = [l for l in dot_text.splitlines()
-             if " -> " in l and "style=invis" not in l]
-    if drawn and not any('id="rme' in l for l in drawn):
-        return (["the DOT draws edges but identifies none — render ids are the "
-                 "gate's matching key and must never be stripped"], True)
+    svg_ids = [m.group(1) for m in
+               re.finditer(r'<g id="(rme[0-9a-f]+)" class="edge"[^>]*>', svg_text)]
+    dupes = sorted({rid for rid in svg_ids if svg_ids.count(rid) > 1})
+    for rid in dupes:
+        problems.append(f"render id {rid} appears on {svg_ids.count(rid)} SVG "
+                        "groups — identification must be one-to-one")
     groups = {m.group(1): m.group(0) for m in
               re.finditer(r'<g id="(rme[0-9a-f]+)" class="edge"[^>]*>[\s\S]*?</g>',
                           svg_text)}
+    dot_ids: list[str] = []
     for line in dot_text.splitlines():
-        m = re.search(r'id="(rme[0-9a-f]+)"', line)
-        if not m or " -> " not in line or "style=invis" in line:
+        if " -> " not in line or "style=invis" in line:
             continue
-        rid = m.group(1)
-        expected = 2 if "dir=both" in line else 1
+        ids = re.findall(r'id="(rme[0-9a-f]+)"', line)
+        if len(ids) != 1:
+            problems.append(
+                f"drawn edge {line.strip()[:60]!r} carries {len(ids)} render "
+                "id(s) — every drawn edge must carry exactly one")
+            continue
+        rid = ids[0]
+        if rid in dot_ids:
+            problems.append(f"render id {rid} identifies more than one DOT edge")
+            continue
+        dot_ids.append(rid)
+        # expected arrow ENDS from dir + arrowhead + arrowtail: dir selects the
+        # active ends (both → tail+head, back → tail, none → neither, default →
+        # head) and arrowhead/arrowtail=none silence an active end
+        if "dir=both" in line:
+            head_active, tail_active = True, True
+        elif "dir=back" in line:
+            head_active, tail_active = False, True
+        elif "dir=none" in line:
+            head_active, tail_active = False, False
+        else:
+            head_active, tail_active = True, False
+        expected = ((1 if head_active and "arrowhead=none" not in line else 0)
+                    + (1 if tail_active and "arrowtail=none" not in line else 0))
         g = groups.get(rid)
         if g is None:
             problems.append(f"edge {rid} has no rendered group carrying its id")
@@ -3169,6 +3275,10 @@ def check_rendered_arrowheads(dot_text: str, svg_text: str) -> tuple[list, bool]
                 f"edge {rid} ({(lab.group(1).strip() if lab else '?')}) renders "
                 f"{glyphs} arrow glyph(s) where its attributes declare "
                 f"{expected} arrow end(s) — an arrowhead was dropped")
+    orphans = sorted(set(svg_ids) - set(dot_ids))
+    for rid in orphans:
+        problems.append(f"SVG group {rid} has no identified DOT edge — "
+                        "identification must be one-to-one")
     return problems, True
 
 
@@ -3208,6 +3318,45 @@ def selftest_rendered_arrowheads() -> list[str]:
              '<g id="rmeaaaaaaaaaa" class="edge"><polygon/><polygon/></g>')
     if not absent or not checked:
         bad.append("an edge with no rendered group of its id was not flagged")
+    # coverage is per edge: one unidentified edge among identified ones fails
+    dot_gap = ('digraph "t" {\n'
+               '  "a" -> "b" [id="rmeaaaaaaaaaa", label="x", dir=both];\n'
+               '  "b" -> "c" [label="y"];\n'
+               '}')
+    gap, checked = check_rendered_arrowheads(dot_gap, render(2, 1))
+    if not checked or not any("exactly one" in g for g in gap):
+        bad.append("a single unidentified drawn edge passed as checked")
+    # identification is one-to-one: duplicate SVG ids and orphan groups fail
+    dup = ('<!-- Generated by graphviz -->\n'
+           + '<g id="rmeaaaaaaaaaa" class="edge"><polygon/><polygon/></g>' * 2
+           + '<g id="rmebbbbbbbbbb" class="edge"><polygon/></g>')
+    dd, _ = check_rendered_arrowheads(dot, dup)
+    if not any("one-to-one" in d for d in dd):
+        bad.append("duplicate SVG groups for one render id were collapsed")
+    orphan = (render(2, 1)
+              + '<g id="rmecccccccccc" class="edge"><polygon/></g>')
+    oo, _ = check_rendered_arrowheads(dot, orphan)
+    if not any("no identified DOT edge" in o for o in oo):
+        bad.append("an orphan SVG group with no DOT edge was ignored")
+    # expected ends follow dir + arrowhead + arrowtail, not dir alone
+    dot_ends = ('digraph "t" {\n'
+                '  "a" -> "b" [id="rmeaaaaaaaaaa", dir=back];\n'
+                '  "b" -> "c" [id="rmebbbbbbbbbb", dir=none];\n'
+                '}')
+    ee, _ = check_rendered_arrowheads(dot_ends, render(0, 0))
+    if not any("rmeaaaaaaaaaa" in x for x in ee):
+        bad.append("dir=back was not counted as one declared end")
+    if any("rmebbbbbbbbbb" in x for x in ee):
+        bad.append("dir=none wrongly declared an arrow end")
+    dot_none = ('digraph "t" {\n'
+                '  "a" -> "b" [id="rmeaaaaaaaaaa", arrowhead=none];\n'
+                '  "b" -> "c" [id="rmebbbbbbbbbb", dir=both, arrowtail=none];\n'
+                '}')
+    nn, _ = check_rendered_arrowheads(dot_none, render(0, 0))
+    if any("rmeaaaaaaaaaa" in x for x in nn):
+        bad.append("arrowhead=none wrongly declared an arrow end")
+    if not any("rmebbbbbbbbbb" in x and "1 arrow end" in x for x in nn):
+        bad.append("dir=both with arrowtail=none must declare exactly one end")
     return bad
 
 
@@ -3678,8 +3827,6 @@ def _edge_concept(e: dict, end: str) -> str:
     return e.get("rhsConcept") or e.get("rhs") or e.get("exactRhs")
 
 
-# Facing-side compass lanes for fanning a lateral pair's parallel flat edges
-# (external-node port, member port), top lane first.
 # The legibility cap on parallel lateral edges: three lanes (one straight middle,
 # two offset by the SVG separation pass). Ports played this role once; graphviz
 # 2.43 feeds flat-edge port names into its arrow-type machinery and drops the
@@ -3874,8 +4021,9 @@ def view_dot(name: str, view: dict) -> str:
             # would render the filled end on the wrong endpoint
             src, tgt = tgt, src
         if ei in lat_edge:
-            # lateral pair: flat edge into the rank-minimal member, clipped at
-            # the enclosure boundary; fanned across compass lanes when parallel
+            # lateral pair: flat portless edge into the rank-minimal member,
+            # clipped at the enclosure boundary; parallel lanes separate in the
+            # identified SVG post-pass, never by compass ports
             if src in anchors:
                 node, _h, tag = base_anchors[src]
                 extra += f', ltail="{tag}"'
