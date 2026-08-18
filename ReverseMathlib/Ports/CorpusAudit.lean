@@ -7,6 +7,7 @@ import ReverseMathlib.Meta.Corpus
 import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.JumpClosureFact
+import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -94,6 +95,13 @@ rm_presentation_family omegaModelSemantics "ω-model semantic characterizations:
   rather than a problem formulation; only closure-property-level claims can be \
   transcribed"
 
+rm_presentation_family finitelyBranchingTreeFormulation "Finitely-branching tree \
+  formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis \
+  Chapter 1. The supplied-bound form (Theorem 1.1: a function h dominating every \
+  entry) and the levelwise-bound form (Theorem 1.3: for every length a bound on the \
+  last entries exists) are distinct presentations calibrating to different \
+  subsystems"
+
 rm_presentation_family unrepresentedFormulation "No formulation present: the corpus \
   contains no principle for this concept at the pinned revision"
 
@@ -145,6 +153,42 @@ rm_corpus_claim hirstInjectionRangeAca where
     internal injection-graph presentation against the jump-closure property; no \
     ACA-labeled endpoint or fact is registered."
 
+rm_corpus_claim hirstBoundedKonigWkl where
+  source := hirstThesisPdf "p. 6, Theorem 1.1"
+  family := finitelyBranchingTreeFormulation
+  concepts := [wkl]
+  wording := verbatim "Theorem 1.1: (RCA₀) The following are equivalent: i) WKL₀. \
+    ii) If T is a tree and h : N → N is a function such that for every τ ∈ T \
+    ∀n < lh(τ)(τ(n) < h(n)), then there is an infinite path for T. (Here lh(τ) \
+    denotes the length of τ and τ(n) denotes the nᵗʰ element of τ.)"
+  claim := "The classical WKL₀ calibration of König's lemma with a SUPPLIED \
+    dominating function h, read verbatim from the verified scan (source symbols \
+    preserved; only spacing normalized). This is the supplied-data presentation \
+    the fourth fact's explicitly bounded variant internalizes (bound as a \
+    graph-coded internal function); it is a different presentation from the \
+    levelwise-bound form of Theorem 1.3, and the two calibrate to different \
+    subsystems. Proofs are deferred there to Simpson [50], literature-backed."
+
+rm_corpus_claim hirstFinitelyBranchingKonigAca where
+  source := hirstThesisPdf "p. 7, Theorem 1.3"
+  family := finitelyBranchingTreeFormulation
+  concepts := [finitelyBranchingKonig]
+  wording := verbatim "Theorem 1.3: (RCA₀) The following are equivalent: i) ACA₀. \
+    ii) (König's Lemma) If T is a finitely branching tree, that is, \
+    ∀n ∃k ((σ ∈ T ∧ lh(σ) = n) → σ(n−1) < k), then there is an infinite path \
+    for T."
+  claim := "The classical ACA₀ calibration of full (merely) finitely-branching \
+    König, read verbatim from the verified scan (source symbols preserved; only \
+    spacing normalized; the displayed conjunction is transcribed ∧). The \
+    branching bound is a levelwise PROPERTY — for every length a bound on the \
+    last entries exists — never supplied data; the registered ninth fact's \
+    interface retains exactly these quantifiers, with the positionwise form \
+    derived through prefix closure, and the infinitude hypothesis our statement \
+    carries is stated separately in the thesis (p. 5). Proofs are deferred there \
+    to Simpson [50], literature-backed; the registered ω-fact calibrates against \
+    the jump-closure property, and no ACA-labeled endpoint or fact is \
+    registered."
+
 rm_corpus_claim hirstLowWklOmegaModel where
   source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"
   family := omegaModelSemantics
@@ -156,10 +200,12 @@ rm_corpus_claim hirstLowWklOmegaModel where
     symbols preserved; only spacing normalized; the thesis credits the \
     Shoenfield–Kreisel low basis theorem). Read against the jump-ideal claim on \
     the same page: no jump ideal is low, since it contains 0′, so a WKL₀ ω-model \
-    need not be jump closed. This is the recorded literature basis for the \
-    atlas's vertical placement of the jump-closure band above the WKL circle; \
-    the converse direction stays literature-backed and uncertified, and no \
-    comparison edge is registered."
+    need not be jump closed. This was the recorded literature basis for the \
+    atlas's former band placement of the jump family above the WKL circle; the \
+    certified comparison edge (jump closure → bounded Kőnig, the eighth fact) \
+    has since replaced the band, while this direction — a WKL₀ ω-model that is \
+    not jump closed — stays literature-backed and uncertified, and no \
+    separation edge is registered."
 
 rm_corpus_claim hirstJumpIdealOmegaModels where
   source := hirstThesisPdf "p. 8, §1.4 (ω-models)"

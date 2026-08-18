@@ -42,3 +42,4 @@ import ReverseMathlib.Omega.SeparationToPath
 import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
 import ReverseMathlib.Omega.KonigLeftmostPath
+import ReverseMathlib.Omega.KonigFinitelyBranching

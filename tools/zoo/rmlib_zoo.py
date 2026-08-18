@@ -79,7 +79,7 @@ READABILITY_BUDGETS: dict = {
         "maxSections": 8,
     },
     "reference": {
-        "maxIdentifierLeaks": 79,
+        "maxIdentifierLeaks": 70,
         "maxEnumTokensInProse": 8,
         "maxDuplicateSentences": 4,
         "maxDefaultOpenWords": 2200,
@@ -1475,7 +1475,7 @@ filled end is strong, the open end ordinary</span>
         for v in catalog["statementVariants"]:
             cards.append(f"""<details class="card">
 <summary><strong>{e(gloss(v['description']))}</strong> — <code>{e(v['id'])}</code>
-<span class="tag">{e(v['layer'])}</span></summary>
+<span class="tag"><code>{e(v['layer'])}</code></span></summary>
 <p>{prose(v['description'])}</p>
 <dl>
 <dt>concept</dt><dd><code>{e(v['concept'])}</code></dd>
@@ -2191,6 +2191,23 @@ COMPUTED_DERIVATIONS = [
                 "implication, then the bounded-Kőnig ⇔ WKL equivalence used "
                 "forward. The binary-tree consequence stays derived-only — no "
                 "direct specialization fact is registered.",
+    },
+    {
+        "id": "computed.omega.finitelyBranchingKonigImpliesWkl",
+        "term": ["transitivity",
+                 ["equivalenceElimForward", ["fact", "finitelyBranchingKonigJumpOmega"]],
+                 ["transitivity",
+                  ["fact", "jumpClosureBoundedKonigOmega"],
+                  ["equivalenceElimForward", ["fact", "boundedKonigWklOmega"]]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "finitelyBranchingKonig.levelwiseBounded.turingIdealOmega",
+            "rhs": "wkl.binaryTree.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "full Kőnigω → WKLω: the certified full-Kőnig ⇔ jump-closure "
+                "equivalence used forward, then the jump closureω → WKLω chain. "
+                "Again a display derivation and nothing more: no specialization "
+                "fact enters the register.",
     },
 ]
 
@@ -3014,7 +3031,8 @@ def selftest_projection_layout() -> list[str]:
         "view": "concept-projection", "family": "mixed-direct-only",
         "baseContextConcepts": ["baseNode"],
         "nodes": ["baseNode", "p", "q", "r", "blob", "flatP", "mutM", "ordE",
-                  "bandC", "jumpP", "jumpQ", "hallN", "blob2", "mutN"],
+                  "bandC", "jumpP", "jumpQ", "jumpR", "hallN", "blob2", "mutN",
+                  "chainX", "chainY"],
         "literatureBands": [{"concepts": ["bandC"], "above": "blob"}],
         "clusters": {
             "blob": {"variants": ["blob.top", "blob.bottom"],
@@ -3049,6 +3067,16 @@ def selftest_projection_layout() -> list[str]:
              "lhsConcept": "jumpP", "rhsConcept": "blob"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "bidirectional": True, "lhsConcept": "jumpQ", "rhsConcept": "jumpP"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "jumpR", "rhsConcept": "jumpQ"},
+            {"family": "certifiedOmegaFact", "label": "⊨ω",
+             "bidirectional": True, "lhsConcept": "chainY", "rhsConcept": "chainX"},
+            {"family": "importedReduction", "label": "≤W", "bidirectional": True,
+             "notion": "strongWeihrauch", "strongEnd": "head",
+             "lhsConcept": "jumpR", "rhsConcept": "chainX"},
+            {"family": "importedReduction", "label": "≤W", "bidirectional": True,
+             "notion": "strongWeihrauch", "strongEnd": "head",
+             "lhsConcept": "jumpR", "rhsConcept": "jumpP"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
              "lhsConcept": "hallN", "rhsConcept": "q"},
             {"family": "certifiedOmegaFact", "label": "⊨ω",
@@ -3152,11 +3180,46 @@ def selftest_projection_layout() -> list[str]:
                and f'label="{TURNSTILE_PAD}⊨ω"' in ln for ln in lines):
         bad.append("certified implication into the enclosure misses the "
                    "rank-reversed lift above the top member")
-    if any(ln.startswith('"jumpP" ->') for ln in lines):
+    if any(ln.startswith('"jumpP" -> "blob') for ln in lines):
         bad.append("certified implication into the enclosure was emitted "
                    "unreversed as well")
-    if '{rank=same; "jumpQ"; "jumpP";}' not in dot:
-        bad.append("plain-concept equivalence pair does not share a rank")
+    if not (any(ln.startswith('"jumpP" -> "jumpQ"') for ln in lines)
+            and any(ln.startswith('"jumpQ" -> "jumpR"') for ln in lines)):
+        bad.append("chain equivalence edges are not emitted in chain order — "
+                   "dot would seat a partner on the wrong side and bow the edge")
+    if '{rank=same; "chainX"; "chainY";}' not in dot:
+        bad.append("the second equivalence component does not chain independently")
+    if not any(ln.startswith('"jumpR" -> "chainX"') and "arrowhead=normal" in ln
+               for ln in lines):
+        bad.append("a cross-component imported edge was reversed by the chain "
+                   "rule — its filled strong end would land on the wrong endpoint")
+    if not any(ln.startswith('"jumpR" -> "jumpP"') and "arrowhead=normal" in ln
+               for ln in lines):
+        bad.append("an in-chain imported edge was reversed by the chain rule — "
+                   "only the certified equivalence edges of the chain may reorder")
+    if '{rank=same; "jumpP"; "jumpQ"; "jumpR";}' not in dot:
+        bad.append("plain-concept equivalence chain does not share a rank with "
+                   "the hub seated between its partners")
+    hub_fan = dict(view)
+    hub_fan["edges"] = view["edges"] + [
+        {"family": "certifiedOmegaFact", "label": "⊨ω",
+         "bidirectional": True, "lhsConcept": "jumpR", "rhsConcept": "jumpP"}]
+    try:
+        view_dot("concept-projection", hub_fan)
+        bad.append("an equivalence cycle among plain concepts was seated instead "
+                   "of rejected")
+    except ValueError:
+        pass
+    hub3 = dict(view)
+    hub3["edges"] = view["edges"] + [
+        {"family": "certifiedOmegaFact", "label": "⊨ω",
+         "bidirectional": True, "lhsConcept": "jumpQ", "rhsConcept": "hallN"}]
+    try:
+        view_dot("concept-projection", hub3)
+        bad.append("a concept equivalent to three same-rank partners was seated "
+                   "instead of rejected")
+    except ValueError:
+        pass
     if not any(ln.startswith('"hallN" -> "q"') and "dir=back" not in ln
                for ln in lines):
         bad.append("one-directional implication between plain concepts was "
@@ -3430,6 +3493,8 @@ def view_dot(name: str, view: dict) -> str:
         # boundary and a two-way reduction stops reading as one.
         lines.append('  nodesep=0.9;')
     clusters = view.get("clusters", {})
+    chain_pos: dict[str, int] = {}
+    chain_edge_idx: set[int] = set()
     anchors = {}
     base_anchors = {}
     lateral = _lateral_pairs(view, clusters) if clusters else {}
@@ -3496,12 +3561,75 @@ def view_dot(name: str, view: dict) -> str:
         if base_nodes:
             lines.append('  {rank=min; '
                          + '; '.join(f'"{n}"' for n in sorted(base_nodes)) + ';}')
+    if bottom_up:
+        # certified equivalences between plain concepts: equal strength renders at
+        # equal height, and every equivalence-joined pair sits ADJACENT on the shared
+        # rank so its edge lies flat and short — a hub equivalent to two partners
+        # seats between them. Components must be paths: a concept equivalent to
+        # three same-rank partners, or an equivalence cycle, has no flat chain
+        # order — fail closed rather than let an edge bow around a neighbour.
+        eqadj: dict[str, set] = {}
+        chain_pos: dict[str, int] = {}
+        for ci_, e in enumerate(view["edges"]):
+            if (e.get("family", view.get("family", "")) == "certifiedOmegaFact"
+                    and e.get("bidirectional")
+                    and e.get("kind") != "nonImplication"
+                    and _edge_concept(e, "t") not in clusters
+                    and _edge_concept(e, "h") not in clusters
+                    and _edge_concept(e, "t") not in base_nodes
+                    and _edge_concept(e, "h") not in base_nodes):
+                chain_edge_idx.add(ci_)
+                eqadj.setdefault(_edge_concept(e, "t"), set()).add(_edge_concept(e, "h"))
+                eqadj.setdefault(_edge_concept(e, "h"), set()).add(_edge_concept(e, "t"))
+        chained: set = set()
+        for start in sorted(eqadj):
+            if start in chained:
+                continue
+            comp = {start}
+            frontier_nodes = [start]
+            while frontier_nodes:
+                n = frontier_nodes.pop()
+                for m in eqadj[n]:
+                    if m not in comp:
+                        comp.add(m)
+                        frontier_nodes.append(m)
+            for n in comp:
+                if len(eqadj[n]) > 2:
+                    raise ValueError(
+                        f"plain-concept equivalence chain: {n} is equivalent to "
+                        f"{len(eqadj[n])} same-rank partners — no flat adjacent "
+                        "seating exists")
+            ends = sorted(n for n in comp if len(eqadj[n]) == 1)
+            if len(comp) > 1 and not ends:
+                raise ValueError(
+                    "plain-concept equivalence chain: a cycle of equivalences has "
+                    "no flat adjacent seating")
+            cur, prev = (ends[0] if ends else start), None
+            chain = [cur]
+            while True:
+                nxt = [x for x in sorted(eqadj[cur]) if x != prev]
+                if not nxt:
+                    break
+                prev, cur = cur, nxt[0]
+                chain.append(cur)
+            chained |= comp
+            for k, n in enumerate(chain):
+                chain_pos[n] = k
+            lines.append('  {rank=same; ' + '; '.join(f'"{n}"' for n in chain) + ';}')
     for ei, e in enumerate(view["edges"]):
         fam = e.get("family", view.get("family", ""))
         style = STYLE.get(fam, "style=dotted")
         src = _edge_concept(e, "t")
         tgt = _edge_concept(e, "h")
         extra = ", dir=both" if e.get("bidirectional") else ""
+        if (bottom_up and ei in chain_edge_idx
+                and chain_pos[src] > chain_pos[tgt]):
+            # dot seats a flat edge's tail left of its head, so a CHAIN edge is
+            # emitted in chain order — dir=both makes the swap invisible. Exact
+            # edge indices only: an unrelated bidirectional edge between chained
+            # concepts keeps its direction, or asymmetric strongEnd metadata
+            # would render the filled end on the wrong endpoint
+            src, tgt = tgt, src
         if ei in lat_edge:
             # lateral pair: flat edge into the rank-minimal member, clipped at
             # the enclosure boundary; fanned across compass lanes when parallel
@@ -3597,20 +3725,6 @@ def view_dot(name: str, view: dict) -> str:
             continue
         lines.append(f'  "{src}" -> "{tgt}" [label="{_edge_label(e.get("label", ""))}", '
                      f'{style}{extra}];')
-    if bottom_up:
-        for e in view["edges"]:
-            if (e.get("family", view.get("family", "")) == "certifiedOmegaFact"
-                    and e.get("bidirectional")
-                    and e.get("kind") != "nonImplication"
-                    and _edge_concept(e, "t") not in clusters
-                    and _edge_concept(e, "h") not in clusters
-                    and _edge_concept(e, "t") not in base_nodes
-                    and _edge_concept(e, "h") not in base_nodes):
-                # certified equivalence between plain concepts: equal strength
-                # renders at equal height, so the pair shares a rank and the
-                # equivalence edge lies flat between them
-                lines.append(f'  {{rank=same; "{_edge_concept(e, "t")}"; '
-                             f'"{_edge_concept(e, "h")}";}}')
     for band in view.get("literatureBands", []):
         cl = clusters.get(band["above"])
         if not cl:
