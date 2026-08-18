@@ -69,10 +69,12 @@ structure InternalFinitelyBranchingTree (Ω : OmegaPart) where
   prefix_closed : ∀ c ∈ tree.1, ∀ k, seqCode ((decodeSeq c).take k) ∈ tree.1
   /-- Levelwise boundedness in the **source shape** (Hirst thesis Theorem 1.3: for every
   length, some strict bound exists on the last entry of the tree's nodes of that
-  length). The proof-friendly positionwise form is derived, not registered —
+  length), reindexed as `length = n + 1` with last entry `getD n` so that level zero's
+  nonexistent last entry never routes through truncated subtraction and `getD`'s
+  default. The proof-friendly positionwise form is derived, not registered —
   `levelwise_bounded_at`, through prefix closure. -/
-  levelwise_bounded : ∀ n, ∃ k, ∀ c ∈ tree.1, (decodeSeq c).length = n →
-    (decodeSeq c).getD (n - 1) 0 < k
+  levelwise_bounded : ∀ n, ∃ k, ∀ c ∈ tree.1, (decodeSeq c).length = n + 1 →
+    (decodeSeq c).getD n 0 < k
 
 /-- Full (merely) finitely-branching Kőnig at a second-order part: every internally
 presented finitely branching tree with a node at every level has an internal path. The
@@ -97,14 +99,14 @@ last-entry bound at length `i + 1` to position `i` of every longer node — the 
 length `i + 1` is a tree node whose last entry is the longer node's entry at `i`. -/
 theorem levelwise_bounded_at (T : InternalFinitelyBranchingTree Ω) (i : ℕ) :
     ∃ b, BoundsLevel T.tree.1 i b := by
-  obtain ⟨k, hk⟩ := T.levelwise_bounded (i + 1)
+  obtain ⟨k, hk⟩ := T.levelwise_bounded i
   refine ⟨k, fun c hc hi => ?_⟩
   have hpre := T.prefix_closed c hc (i + 1)
   have hlen : (decodeSeq (seqCode ((decodeSeq c).take (i + 1)))).length = i + 1 := by
     rw [decodeSeq_seqCode, List.length_take]
     omega
   have := hk _ hpre hlen
-  rw [decodeSeq_seqCode, Nat.add_sub_cancel, List.getD_eq_getElem?_getD,
+  rw [decodeSeq_seqCode, List.getD_eq_getElem?_getD,
     List.getElem?_take, if_pos (by omega), ← List.getD_eq_getElem?_getD] at this
   exact this
 
@@ -418,30 +420,21 @@ theorem injectionTree_prefix_closed {Ω : OmegaPart} (f : InternalFunction Ω) :
 witness, so tree entries there lie in `{0, w + 1}`. -/
 theorem injectionTree_levelwise_bounded {Ω : OmegaPart} (f : InternalFunction Ω)
     (hf : f.IsInjective) (n : ℕ) :
-    ∃ k, ∀ c ∈ injectionTreeSet f, (decodeSeq c).length = n →
-      (decodeSeq c).getD (n - 1) 0 < k := by
+    ∃ k, ∀ c ∈ injectionTreeSet f, (decodeSeq c).length = n + 1 →
+      (decodeSeq c).getD n 0 < k := by
   classical
-  by_cases hw : ∃ w, f.MapsTo w (n - 1)
+  by_cases hw : ∃ w, f.MapsTo w n
   · obtain ⟨w, hwmap⟩ := hw
     refine ⟨w + 2, fun c hc hlen => ?_⟩
-    match hv : (decodeSeq c).getD (n - 1) 0 with
+    match hv : (decodeSeq c).getD n 0 with
     | 0 => omega
     | u + 1 =>
-      have hlt : n - 1 < (decodeSeq c).length := by
-        by_contra hno
-        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)] at hv
-        simp at hv
-      have := hf u w (n - 1) ((hc _ hlt).1 u hv) hwmap
+      have := hf u w n ((hc n (by omega)).1 u hv) hwmap
       omega
   · refine ⟨1, fun c hc hlen => ?_⟩
-    match hv : (decodeSeq c).getD (n - 1) 0 with
+    match hv : (decodeSeq c).getD n 0 with
     | 0 => omega
-    | u + 1 =>
-      have hlt : n - 1 < (decodeSeq c).length := by
-        by_contra hno
-        rw [List.getD_eq_getElem?_getD, List.getElem?_eq_none (by omega)] at hv
-        simp at hv
-      exact absurd ⟨u, (hc _ hlt).1 u hv⟩ hw
+    | u + 1 => exact absurd ⟨u, (hc n (by omega)).1 u hv⟩ hw
 
 /-- Reading a function's values off positions of its own range-indexed table (local
 copy of the Slice A helper, which is private there). -/
