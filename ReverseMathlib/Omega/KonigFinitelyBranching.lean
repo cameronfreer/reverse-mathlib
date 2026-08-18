@@ -1,23 +1,50 @@
+/-
+Copyright (c) 2026 Cameron Freer. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Cameron Freer
+-/
 import ReverseMathlib.Omega.KonigLeftmostPath
 
 /-!
-Slice B scratch (issue #50): full finitely-branching Kőnig at a second-order part, and
-the forward direction from jump closure.
+# Full finitely-branching Kőnig ⇔ jump closure (issue #50, slice B)
 
-The concept is the levelwise-bound **property** (Hirst thesis Theorem 1.3: for every
-position there exists a bound on the entries there), never a supplied bound function —
-that supplied-data presentation is the explicitly bounded variant already registered
-with the fourth fact. The forward direction computes the **least** level bound from the
-jump of the tree (graph-level reduction, internal packaging by ideal closure
-separately), turning the finitely-branching tree into an explicitly bounded one and
-reusing all of Slice A.
+Full (merely) finitely-branching Kőnig at a second-order part, and its equivalence with
+jump closure over the Turing-ideal closure conditions. The concept is the levelwise-bound
+**property** (Hirst thesis Theorem 1.3: for every position there exists a bound on the
+entries there), never a supplied bound function — the supplied-data presentation is the
+explicitly bounded variant registered with the fourth fact, and the two stay distinct
+concepts.
 
-Nothing here enters the spine until the whole slice is green.
+**Forward** (`finitelyBranchingKonigAt_of_jumpClosedAt`): the **least** level bound is
+computable from the jump of the tree alone (`levelBoundGraph_le_jump`, the pinned
+graph-level statement: one curry-coded jump query per failure bit, a finite transcript
+at candidates `0, …, b`, and a pure `findIdx` — the first non-failing candidate must be
+exactly `b`); packaging it by ideal closure turns the finitely branching tree into an
+explicitly bounded one, and slice A's `boundedKonigAt_of_jumpClosedAt` does the rest.
 
-A plain `lake build` does not compile this file: the experimental root does not
-import it, and CI will not catch a break here. Build it by name:
+**Reverse**, in two named stages (the intermediate implication is proof architecture,
+never a registered fact):
 
-  lake build ReverseMathlibExperimental.KonigFinitelyBranching
+* `injectionRangeExistenceAt_of_finitelyBranchingKonigAt` owns the injection-tree
+  construction and the path decoder. A node guesses, for each position below its length,
+  whether the position is a value of the injection: a nonzero entry names its witness by
+  the **single query** `f.MapsTo w i` — never an unbounded range search — and a zero
+  entry asserts no witness below the node's length, bounded quantification only.
+  Injectivity establishes levelwise boundedness; prefix closure and bounded membership
+  establish infinitude (the truthful stage node); `path_determines_range` establishes
+  the range characterization (a real witness eventually rules zero out at depth, a
+  positive path value directly supplies its witness); `injectionTree_le_graph`
+  establishes internality independently, and the decoded range
+  `{v | ¬ p.MapsTo v 0}` is one complemented graph query
+  (`notMapsToZero_le_graph`).
+* `jumpClosedAt_of_finitelyBranchingKonigAt` is the short composition through the
+  seventh fact's checked direction `jumpClosedAt_of_injectionRangeExistenceAt`.
+
+Route gates in `scripts/MetaSmoke.lean` pin both reverse stages, the intermediate's
+reach of `injectionTree_le_graph` and `path_determines_range`, and the exclusions: the
+intermediate touches neither range-existence nor jump machinery, and the entire reverse
+route excludes `levelBoundGraph_le_jump`, the forward theorem, and slice A's
+leftmost-path machinery.
 -/
 
 namespace ReverseMathlib.Omega
@@ -401,7 +428,7 @@ exists, else zero. -/
 private noncomputable def truthNode {Ω : OmegaPart} (f : InternalFunction Ω)
     (n : ℕ) : ℕ :=
   seqCode ((List.range n).map fun i =>
-    if h : ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0)
+    if ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0)
 
 /-- **Prefix closure and bounded membership establish infinitude**: the truthful stage
 node lives at every level. -/
@@ -414,8 +441,8 @@ theorem injectionTree_hasNodeAtEveryLevel {Ω : OmegaPart} (f : InternalFunction
   rw [truthNode, decodeSeq_seqCode] at hi ⊢
   simp only [List.length_map, List.length_range] at hi
   have hgd : ((List.range n).map fun j =>
-      if h : ∃ w < n, f.MapsTo w j then sInf {w | f.MapsTo w j} + 1 else 0).getD i 0 =
-      if h : ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0 :=
+      if ∃ w < n, f.MapsTo w j then sInf {w | f.MapsTo w j} + 1 else 0).getD i 0 =
+      if ∃ w < n, f.MapsTo w i then sInf {w | f.MapsTo w i} + 1 else 0 :=
     map_range_getD' _ hi 0
   constructor
   · intro w hwv
