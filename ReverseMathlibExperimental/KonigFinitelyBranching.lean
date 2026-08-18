@@ -702,4 +702,60 @@ theorem injectionTree_le_graph {Ω : OmegaPart} (f : InternalFunction Ω) :
   · rw [if_pos (hsem.mpr hc), if_pos hc]
   · rw [if_neg (fun hyes => hc (hsem.mp hyes)), if_neg hc]
 
+/-! ### The two named reverse theorems -/
+
+/-- The complemented single-query range decoder's reduction: one graph query at
+`(v, 0)`, answer flipped. Keeps internality of the decoded range independent of the
+semantic path proof. -/
+theorem notMapsToZero_le_graph {Ω : OmegaPart} (p : InternalFunction Ω) :
+    {v | ¬ p.MapsTo v 0} ≤ᵀ p.graph.1 := by
+  classical
+  have hq : Nat.Partrec fun v : ℕ => Part.some (Nat.pair v 0) := by
+    apply Nat.Partrec.of_primrec
+    exact Nat.Primrec.pair Nat.Primrec.id Nat.Primrec.zero
+  have h1 := Nat.RecursiveIn.comp
+    (Nat.RecursiveIn.oracle (O := {charFn p.graph.1}) (charFn p.graph.1) rfl)
+    hq.recursiveIn
+  have hflip : Nat.RecursiveIn {charFn p.graph.1} fun w : ℕ =>
+      (Part.some (1 - w) : Part ℕ) :=
+    (Nat.Partrec.recursiveIn (Nat.Partrec.of_primrec
+      (Nat.Primrec.sub.comp (Nat.Primrec.pair (Nat.Primrec.const 1)
+        Nat.Primrec.id)))).of_eq fun w => by simp [Nat.unpaired]
+  refine (Nat.RecursiveIn.comp hflip h1).of_eq fun v => ?_
+  simp only [Part.bind_eq_bind, Part.bind_some, charFn, Set.mem_setOf_eq]
+  by_cases hm : p.MapsTo v 0
+  · rw [if_pos (show Nat.pair v 0 ∈ p.graph.1 from hm),
+      if_neg (fun hcon => hcon hm)]
+  · rw [if_neg (show Nat.pair v 0 ∉ p.graph.1 from hm), if_pos hm]
+
+/-- **Full finitely-branching Kőnig gives injection-range existence** over the
+Turing-ideal closure conditions — the intermediate reverse stage, owning the
+injection-tree construction and the path decoder. Proof architecture for the ninth
+fact's reversal; deliberately not a registered fact of its own. -/
+theorem injectionRangeExistenceAt_of_finitelyBranchingKonigAt {Ω : OmegaPart}
+    (hΩ : IsTuringIdeal Ω) (hK : FinitelyBranchingKonigAt Ω) :
+    InjectionRangeExistenceAt Ω := by
+  intro f hf
+  -- the injection tree is internal, one reduction below the injection's graph
+  have htree : injectionTreeSet f ∈ Ω :=
+    hΩ.mem_of_reducible f.graph.2 (injectionTree_le_graph f)
+  obtain ⟨p, hp⟩ := hK
+    { tree := ⟨injectionTreeSet f, htree⟩
+      prefix_closed := injectionTree_prefix_closed f
+      levelwise_bounded := injectionTree_levelwise_bounded f hf }
+    (injectionTree_hasNodeAtEveryLevel f)
+  -- the decoded range: one complemented query per position, internal by closure
+  refine ⟨⟨{v | ¬ p.MapsTo v 0},
+    hΩ.mem_of_reducible p.graph.2 (notMapsToZero_le_graph p)⟩, ?_⟩
+  intro v
+  exact path_determines_range f hp v
+
+/-- **Full finitely-branching Kőnig gives jump closure** — the reverse direction of the
+ninth fact: the intermediate stage above, then fact 7's checked direction
+`jumpClosedAt_of_injectionRangeExistenceAt`. -/
+theorem jumpClosedAt_of_finitelyBranchingKonigAt {Ω : OmegaPart}
+    (hΩ : IsTuringIdeal Ω) (hK : FinitelyBranchingKonigAt Ω) : JumpClosedAt Ω :=
+  jumpClosedAt_of_injectionRangeExistenceAt hΩ
+    (injectionRangeExistenceAt_of_finitelyBranchingKonigAt hΩ hK)
+
 end ReverseMathlib.Omega
