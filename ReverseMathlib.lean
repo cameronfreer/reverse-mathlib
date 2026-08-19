@@ -43,3 +43,6 @@ import ReverseMathlib.Omega.HallFromEfilc
 import ReverseMathlib.Omega.KleeneTree
 import ReverseMathlib.Omega.KonigLeftmostPath
 import ReverseMathlib.Omega.KonigFinitelyBranching
+import ReverseMathlib.Omega.MatchingLocallyFinite
+import ReverseMathlib.Omega.MatchingFromKonig
+import ReverseMathlib.Omega.MatchingGadget

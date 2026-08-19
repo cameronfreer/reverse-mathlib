@@ -8,6 +8,7 @@ import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.JumpClosureFact
 import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
+import ReverseMathlib.Ports.Omega.MatchingLocallyFiniteFact
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -64,31 +65,35 @@ rm_corpus_source hirst "1987 thesis; 1990 paper in Contemp. Math. 106"
 
 rm_namespace hirstThesisPdf "Jeffry Hirst — Combinatorics in Subsystems of Second \
   Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at \
-  hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 consulted directly (Theorems \
-  1.1-1.5 and §1.4 ω-models) — a verified source, distinct from the \
-  bibliographic-only hirst namespace"
+  hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 (Theorems 1.1-1.5 and §1.4 \
+  ω-models) and pages 12-19 (Theorems 2.2 and 3.1, condition H_sym, and the \
+  Chapter 2-3 proof passages) consulted directly — a verified source, distinct \
+  from the bibliographic-only hirst namespace"
 
 rm_corpus_source hirstThesisPdf
   "sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4"
-  "Verified download of the scanned thesis PDF; statement-level anchor only — the \
-   theorem statements of Chapter 1 were read verbatim from the scan, and their \
-   proofs are deferred there to Simpson [50], which stays literature-backed"
+  "Verified download of the scanned thesis PDF. Chapter 1 records are \
+   statement-level anchors (proofs deferred there to Simpson [50]); the \
+   Chapter 2-3 marriage records also read the proof passages (pp. 13, 18, 19)"
 
 rm_presentation_family oneSidedEnumeratedFamily "One-sided families: an ℕ-indexed family \
   of finite candidate sets, transversal injective into the candidates; presentation \
   supplies the candidate relation and/or an explicit enumerator (this catalog's exact \
   Hall variants live here)"
 
+rm_presentation_family oneSidedMarriageSystem "One-sided marriage systems: societies \
+  whose solution matches every boy; finiteness a property, never enumerated"
+
 rm_presentation_family twoSidedMarriageSystem "Two-sided marriage systems (societies): \
-  boys, girls, and a compatibility relation, with solution conditions on both sides and \
+  boys, girls, and a compatibility relation, with two-sided solution conditions and \
   presentation-dependent boundedness/enumeration data"
 
 rm_presentation_family perfectMatchingFormulation "Perfect-matching formulations: \
   matchings exhausting one or both sides of a bipartite system, Simpson X.3-style"
 
 rm_presentation_family injectionRangeFormulation "Injection-range formulations: an \
-  injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis \
-  Chapter 1 notation, functions in Simpson's set-of-pairs coding"
+  injection f : N → N with its range Ran(f) — Hirst thesis Chapter 1 notation, \
+  functions in Simpson's set-of-pairs coding"
 
 rm_presentation_family omegaModelSemantics "ω-model semantic characterizations: the \
   corpus describes classes of second-order set domains (Turing ideals, jump ideals) \
@@ -97,10 +102,9 @@ rm_presentation_family omegaModelSemantics "ω-model semantic characterizations:
 
 rm_presentation_family finitelyBranchingTreeFormulation "Finitely-branching tree \
   formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis \
-  Chapter 1. The supplied-bound form (Theorem 1.1: a function h dominating every \
-  entry) and the levelwise-bound form (Theorem 1.3: for every length a bound on the \
-  last entries exists) are distinct presentations calibrating to different \
-  subsystems"
+  Chapter 1. The supplied-bound form (Theorem 1.1) and the levelwise-bound form \
+  (Theorem 1.3: for every length a bound on the last entries exists) are distinct \
+  presentations calibrating to different subsystems"
 
 rm_presentation_family unrepresentedFormulation "No formulation present: the corpus \
   contains no principle for this concept at the pinned revision"
@@ -188,6 +192,59 @@ rm_corpus_claim hirstFinitelyBranchingKonigAca where
     to Simpson [50], literature-backed; the registered ω-fact calibrates against \
     the jump-closure property, and no ACA-labeled endpoint or fact is \
     registered."
+
+rm_corpus_claim hirstOneSidedMarriageAca where
+  source := hirstThesisPdf "p. 12, Theorem 2.2; reversal pp. 13, 19"
+  family := oneSidedMarriageSystem
+  concepts := [locallyFinitePerfectMatching]
+  wording := verbatim "Theorem 2.2 (RCA₀) The following are equivalent: i) ACA₀ \
+    ii) Any marriage problem in which each boy knows only finitely many girls, \
+    and in which condition H is satisfied, has a solution."
+  claim := "The one-sided infinite marriage calibration, read verbatim from the \
+    verified scan (source symbols preserved; only spacing normalized). Recorded \
+    as REVERSAL PROVENANCE ONLY: its reversal (p. 13) constructs the gadget the \
+    tenth fact's reverse route reuses symmetrically (p. 19: 'The proof of the \
+    reversal is immediate from the proof of Theorem 2.2. Since the relation R of \
+    the previous proof is symmetric, condition H_sym holds'). NON-TRANSFER \
+    CAVEAT: this society formulation carries finiteness as a property and no \
+    enumerator, so no classification here transfers to the catalog's one-sided \
+    countable-Hall variants (relation-plus-enumerator presentations) without a \
+    proved presentation bridge, and none is registered — the standing Hall \
+    honesty boundary is untouched."
+
+rm_corpus_claim hirstSymmetricConditionHsym where
+  source := hirstThesisPdf "p. 17, §3.1"
+  family := twoSidedMarriageSystem
+  concepts := [locallyFinitePerfectMatching]
+  wording := verbatim "We will say that a marriage problem satisfies condition \
+    H_sym if every subset of n boys knows at least n girls and every subset of n \
+    girls knows at least n boys."
+  claim := "The symmetric marriage condition, read verbatim from the verified \
+    scan (source symbols preserved; only spacing normalized; the same page fixes \
+    'symmetric solution' as a one-to-one matching of the set of boys onto the \
+    girls). The registered tenth fact's interface carries exactly this two-sided \
+    condition in cardinality form — every duplicate-free finite list of boys has \
+    at least as many distinct joint acquaintances, witnessed by a duplicate-free \
+    list, and conversely — as a separate hypothesis, never a structure field."
+
+rm_corpus_claim hirstSymmetricMarriageAca where
+  source := hirstThesisPdf "p. 18, Theorem 3.1"
+  family := perfectMatchingFormulation
+  concepts := [locallyFinitePerfectMatching, finitelyBranchingKonig]
+  wording := verbatim "Theorem 3.1 (RCA₀) The following are equivalent: i) ACA₀ \
+    ii) Any marriage problem in which each person knows only finitely many \
+    members of the opposite sex, and in which condition H_sym is satisfied, has \
+    a symmetric solution."
+  claim := "The classical ACA₀ calibration of the symmetric marriage theorem, \
+    read verbatim from the verified scan (source symbols preserved; only spacing \
+    normalized). Local finiteness is a PROPERTY of the society ('knows only \
+    finitely many'), never enumerated data — the registered tenth fact's \
+    interface keeps it an existential property on each side of one bare edge \
+    set. The thesis proves i) → ii) 'using König's lemma for arbitrary finitely \
+    branching trees' via the partial-solution tree (p. 18), which is exactly the \
+    registered forward route; the registered ω-fact calibrates against full \
+    finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled \
+    endpoint or fact is registered."
 
 rm_corpus_claim hirstLowWklOmegaModel where
   source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"
