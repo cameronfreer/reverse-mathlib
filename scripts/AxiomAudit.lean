@@ -108,7 +108,16 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.path_determines_range,
    ``ReverseMathlib.Omega.notMapsToZero_le_graph,
    ``ReverseMathlib.Omega.injectionRangeExistenceAt_of_finitelyBranchingKonigAt,
-   ``ReverseMathlib.Omega.jumpClosedAt_of_finitelyBranchingKonigAt]
+   ``ReverseMathlib.Omega.jumpClosedAt_of_finitelyBranchingKonigAt,
+   -- Locally finite matching (#51): the partial-solution tree's internality, the
+   -- gadget's internality, the two decoders' reductions, and the three named theorems
+   ``ReverseMathlib.Omega.solutionTree_le_graph,
+   ``ReverseMathlib.Omega.pathMatchGraph_le_graph,
+   ``ReverseMathlib.Omega.marriageGadgetEdgeSet_le_graph,
+   ``ReverseMathlib.Omega.marriageGadgetRangeSet_le_join,
+   ``ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt,
+   ``ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt,
+   ``ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do

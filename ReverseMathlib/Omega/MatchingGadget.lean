@@ -245,7 +245,7 @@ theorem marriageGadgetPick_injective (f : InternalFunction Ω) (hf : f.IsInjecti
 
 /-- **The gadget's edge set is one reduction below the injection's graph**: two
 unique-graph lookups (at each endpoint's half) and a pure parity decision. -/
-theorem gadgetEdgeSet_le_graph (f : InternalFunction Ω) :
+theorem marriageGadgetEdgeSet_le_graph (f : InternalFunction Ω) :
     marriageGadgetEdgeSet f ≤ᵀ f.graph.1 := by
   have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
   have hsnd : Primrec fun z : ℕ => z.unpair.2 := Primrec.snd.comp Primrec.unpair
@@ -325,14 +325,15 @@ reduction below the injection's graph, both local-finiteness properties, no supp
 neighbor data anywhere. -/
 def marriageGadgetBigraph (hΩ : IsTuringIdeal Ω) (f : InternalFunction Ω)
     (hf : f.IsInjective) : InternalLocallyFiniteBigraph Ω where
-  edges := ⟨marriageGadgetEdgeSet f, hΩ.mem_of_reducible f.graph.2 (gadgetEdgeSet_le_graph f)⟩
+  edges := ⟨marriageGadgetEdgeSet f,
+    hΩ.mem_of_reducible f.graph.2 (marriageGadgetEdgeSet_le_graph f)⟩
   left_locally_finite := marriageGadget_left_locally_finite f hf
   right_locally_finite := marriageGadget_right_locally_finite f hf
 
 /-- **The gadget satisfies the cardinality-form H_sym** on both sides: the injective
 canonical-neighbor choice maps any duplicate-free list to a duplicate-free witness
 list of the same length, and symmetry serves the girls' side. -/
-theorem gadgetBigraph_satisfiesSymmetricHall (hΩ : IsTuringIdeal Ω)
+theorem marriageGadgetBigraph_satisfiesSymmetricHall (hΩ : IsTuringIdeal Ω)
     (f : InternalFunction Ω) (hf : f.IsInjective) :
     (marriageGadgetBigraph hΩ f hf).SatisfiesSymmetricHall := by
   constructor
@@ -361,7 +362,7 @@ def marriageGadgetRangeSet (g f : InternalFunction Ω) : Set ℕ :=
 /-- **The decoder's reduction**: one complemented matching query plus one bounded
 transcript of injection bits — the decoded range is one reduction below the join of
 the matching's and the injection's graphs. -/
-theorem gadgetRangeSet_le_join (g f : InternalFunction Ω) :
+theorem marriageGadgetRangeSet_le_join (g f : InternalFunction Ω) :
     marriageGadgetRangeSet g f ≤ᵀ joinSet g.graph.1 f.graph.1 := by
   classical
   have hfst : Primrec fun z : ℕ => z.unpair.1 := Primrec.fst.comp Primrec.unpair
@@ -467,9 +468,9 @@ theorem injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt {Ω : OmegaP
     InjectionRangeExistenceAt Ω := by
   intro f hf
   obtain ⟨g, hgE, hgInj, hgSurj⟩ :=
-    hM (marriageGadgetBigraph hΩ f hf) (gadgetBigraph_satisfiesSymmetricHall hΩ f hf)
+    hM (marriageGadgetBigraph hΩ f hf) (marriageGadgetBigraph_satisfiesSymmetricHall hΩ f hf)
   refine ⟨⟨marriageGadgetRangeSet g f,
-    hΩ.mem_of_reducible (hΩ.join g.graph.2 f.graph.2) (gadgetRangeSet_le_join g f)⟩, ?_⟩
+    hΩ.mem_of_reducible (hΩ.join g.graph.2 f.graph.2) (marriageGadgetRangeSet_le_join g f)⟩, ?_⟩
   intro v
   constructor
   · rintro (hng | ⟨m, -, hmv⟩)

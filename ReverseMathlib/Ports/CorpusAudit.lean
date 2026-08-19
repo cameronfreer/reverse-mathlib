@@ -8,6 +8,7 @@ import ReverseMathlib.Ports.ComputableAnalysis
 import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.JumpClosureFact
 import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
+import ReverseMathlib.Ports.Omega.MatchingLocallyFiniteFact
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -188,6 +189,59 @@ rm_corpus_claim hirstFinitelyBranchingKonigAca where
     to Simpson [50], literature-backed; the registered ω-fact calibrates against \
     the jump-closure property, and no ACA-labeled endpoint or fact is \
     registered."
+
+rm_corpus_claim hirstOneSidedMarriageAca where
+  source := hirstThesisPdf "p. 12, Theorem 2.2"
+  family := twoSidedMarriageSystem
+  concepts := [locallyFinitePerfectMatching]
+  wording := verbatim "Theorem 2.2 (RCA₀) The following are equivalent: i) ACA₀ \
+    ii) Any marriage problem in which each boy knows only finitely many girls, \
+    and in which condition H is satisfied, has a solution."
+  claim := "The one-sided infinite marriage calibration, read verbatim from the \
+    verified scan (source symbols preserved; only spacing normalized). Recorded \
+    as REVERSAL PROVENANCE ONLY: its reversal (p. 13) constructs the gadget the \
+    tenth fact's reverse route reuses symmetrically (p. 19: 'The proof of the \
+    reversal is immediate from the proof of Theorem 2.2. Since the relation R of \
+    the previous proof is symmetric, condition H_sym holds'). NON-TRANSFER \
+    CAVEAT: this society formulation carries finiteness as a property and no \
+    enumerator, so no classification here transfers to the catalog's one-sided \
+    countable-Hall variants (relation-plus-enumerator presentations) without a \
+    proved presentation bridge, and none is registered — the standing Hall \
+    honesty boundary is untouched."
+
+rm_corpus_claim hirstSymmetricConditionHsym where
+  source := hirstThesisPdf "p. 17, §3.1"
+  family := twoSidedMarriageSystem
+  concepts := [locallyFinitePerfectMatching]
+  wording := verbatim "We will say that a marriage problem satisfies condition \
+    H_sym if every subset of n boys knows at least n girls and every subset of n \
+    girls knows at least n boys."
+  claim := "The symmetric marriage condition, read verbatim from the verified \
+    scan (source symbols preserved; only spacing normalized; the same page fixes \
+    'symmetric solution' as a one-to-one matching of the set of boys onto the \
+    girls). The registered tenth fact's interface carries exactly this two-sided \
+    condition in cardinality form — every duplicate-free finite list of boys has \
+    at least as many distinct joint acquaintances, witnessed by a duplicate-free \
+    list, and conversely — as a separate hypothesis, never a structure field."
+
+rm_corpus_claim hirstSymmetricMarriageAca where
+  source := hirstThesisPdf "p. 18, Theorem 3.1"
+  family := perfectMatchingFormulation
+  concepts := [locallyFinitePerfectMatching, finitelyBranchingKonig]
+  wording := verbatim "Theorem 3.1 (RCA₀) The following are equivalent: i) ACA₀ \
+    ii) Any marriage problem in which each person knows only finitely many \
+    members of the opposite sex, and in which condition H_sym is satisfied, has \
+    a symmetric solution."
+  claim := "The classical ACA₀ calibration of the symmetric marriage theorem, \
+    read verbatim from the verified scan (source symbols preserved; only spacing \
+    normalized). Local finiteness is a PROPERTY of the society ('knows only \
+    finitely many'), never enumerated data — the registered tenth fact's \
+    interface keeps it an existential property on each side of one bare edge \
+    set. The thesis proves i) → ii) 'using König's lemma for arbitrary finitely \
+    branching trees' via the partial-solution tree (p. 18), which is exactly the \
+    registered forward route; the registered ω-fact calibrates against full \
+    finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled \
+    endpoint or fact is registered."
 
 rm_corpus_claim hirstLowWklOmegaModel where
   source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"

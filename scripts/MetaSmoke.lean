@@ -278,7 +278,8 @@ silently acquire an explicit selection route. -/
       ``ReverseMathlib.Omega.DisjointRangeSeparationAt,
       ``ReverseMathlib.Omega.InjectionRangeExistenceAt,
       ``ReverseMathlib.Omega.JumpClosedAt,
-      ``ReverseMathlib.Omega.FinitelyBranchingKonigAt] do
+      ``ReverseMathlib.Omega.FinitelyBranchingKonigAt,
+      ``ReverseMathlib.Omega.LocallyFinitePerfectMatchingAt] do
     let .ok r := mineTarget env {} t | throwError "mine {t} failed"
     check (!r.truncated) s!"{t} capability-definition mining must be complete"
     check (!r.value.reached.contains ``ReverseMathlib.Omega.InternalFunction.eval)
@@ -875,7 +876,7 @@ renders its honest verdict. -/
 -- countermodel record) and the one backend-qualified syntactic scoped result (the bridge's standard-calculus nonderivability). The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 8; variants: 13; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 9; variants: 14; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -972,8 +973,8 @@ rejected; punctuated external keys survive. The cross-module collision tests (si
 that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
-info: concepts (8):
-  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; its perfect-matching form asserts that every countable bipartite graph that is 2-regular on both sides has a perfect matching
+info: concepts (9):
+  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal
     scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
@@ -998,6 +999,9 @@ info: concepts (8):
   reverse-mathlib:jumpClosure — Jump closure: the Turing jump of every set in the collection is again in the collection — a semantic closure property of second-order parts, distinguishing the jump ideals among the Turing ideals
     scoping: A semantic closure-property node, not a theorem-strength principle: it names the closure condition the equivalence calibrates against, so the fact has an honest typed endpoint. Hirst thesis §1.4 identifies the set domains of ACA₀'s ω-models as the jump ideals — that identification stays literature-backed; it carries no external crosswalk
     variant reverse-mathlib:jumpClosure.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.JumpClosedAt⟩
+  reverse-mathlib:locallyFinitePerfectMatching — Hirst's symmetric marriage theorem: every locally finite marriage problem satisfying the two-sided condition H_sym has a symmetric solution — a perfect matching saturating both sides
+    scoping: The ACA-level matching concept (Hirst thesis Theorem 3.1 shape), deliberately distinct from the countable-Hall family (one-sided, enumerator-bearing) and from the enumerated two-regular perfect-matching presentation class of the fifth fact: local finiteness is an existential property of a bare edge set. No ACA-labeled endpoint or fact
+    variant reverse-mathlib:locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.LocallyFinitePerfectMatchingAt⟩
   reverse-mathlib:rca0Core — RCA₀ core (Turing-ideal presentation): a second-order part is nonempty, downward closed under Turing reducibility, and closed under recursive join. The atlas uses this as its base-context condition at the ω layer
     scoping: A base-context node, not a theorem-strength principle; it gives ω-scope separations an explicit typed left endpoint. Its identification with conventional RCA₀ ω-models remains literature-backed, with converse context adequacy pending. It carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
@@ -1297,7 +1301,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 9; variants: 15; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 16; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1429,7 +1433,7 @@ rm_fact fixCons conservation where
 
 -- Fail-closed rendering, pinned: every fact is recorded, none is supported.
 /--
-info: facts (13):
+info: facts (14):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: Over every Turing ideal, the explicitly bounded (supplied internal bound function) and binary-tree WKL presentations are equivalent at the Turing-ideal ω layer — the presentation-relating fact that lets the bounded variant join the wkl conceptual family
   disjointRangeSeparationWklOmega [equivalence | theory rca0 omegaModels] disjointRangeSeparation.injectionGraphs.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
@@ -1447,6 +1451,8 @@ info: facts (13):
     note: Over every Turing ideal, injection-range existence in its exact injection-graph formulation is equivalent to closure under the Turing jump. The literature places this pair above weak Kőnig's lemma; the certified comparison edge to the WKL circle arrived with the eighth fact (jumpClosureBoundedKonigOmega). Provenance: Hirst thesis Theorem 1.4 (statement verified verbatim in the pinned primary source; proof deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved, and the jump-ideal identification stays a corpus-recorded reading, never a registered crosswalk
   jumpClosureBoundedKonigOmega [implication | theory rca0 omegaModels] jumpClosure.turingIdealClosure.turingIdealOmega => wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega — recorded, no evidence linked
     note: Over every Turing ideal, jump closure gives explicitly bounded Kőnig: the leftmost path of an internally presented explicitly bounded tree is computable from the jump of the tree joined with its bound graph. An upper implication only — the first certified comparison edge between the jump family and the WKL circle. The strictness of the comparison (an ω-model of WKL₀ that is not jump closed) stays a literature-backed reading of the corpus-recorded low-basis claim (Hirst thesis §1.4, Theorem 1.6) and is not certified here; no separation is claimed
+  locallyFinitePerfectMatchingKonigOmega [equivalence | theory rca0 omegaModels] locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega <=> finitelyBranchingKonig.levelwiseBounded.turingIdealOmega — recorded, no evidence linked
+    note: Over every Turing ideal, Hirst's symmetric marriage theorem in its property-shaped presentation — bare edge set, per-side local finiteness as an existential property, cardinality-form H_sym — is equivalent to full finitely-branching Kőnig. Provenance: Hirst thesis Theorem 3.1 (statement shape verified in the pinned primary source, which proves the forward direction by König's lemma for finitely branching trees, the ninth fact's concept). The reversal goes through injection-range existence and the seventh fact's checked direction, with the intermediate implication kept as proof architecture and never registered; jump closure stays one certified hop away, reached by computed closure only. No ACA-labeled endpoint or fact, and no bridge to the one-sided Hall variant, the enumerated two-regular matching, a represented problem, or a Weihrauch claim
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — recorded, no evidence linked
     note: The first certified separation leaf: over the Turing-ideal ω layer, the RCA₀ closure core does not force WKL — witnessed by the explicit countermodel REC through the bounded-computation Kleene tree (Kleene, Recursive functions and intuitionistic mathematics, Proc. ICM Cambridge 1950; cf. [Sim09] VIII.2 — citation claimed, unverified against a pinned snapshot). A model-class separation only: never a checked RCA₀ ⊬ WKL turnstile theorem
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — recorded, no evidence linked
@@ -1654,7 +1660,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 9; variants: 17; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 9 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 18; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1906,7 +1912,7 @@ revmath_port mismatchedLinkPort where
 -- The evidence-aware fact view: certified facts render certificates and the
 -- context-realization status; everything else stays recorded-but-unsupported.
 /--
-info: facts (18):
+info: facts (19):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1949,6 +1955,10 @@ info: facts (18):
     via ReverseMathlib.Ports.jumpClosure_boundedKonig_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem boundedKonigAt_of_jumpClosedAt, through the leftmost-path route spine: frontier_recursiveIn_join, extendibleSet_le_jump, le_jump, and leftmostExec_eq, then ideal closure. The route and this composition are pinned by dependency gates in scripts/MetaSmoke.lean, including the independence of le_jump from range_le_jump
       realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+  locallyFinitePerfectMatchingKonigOmega [equivalence | theory rca0 omegaModels] locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega <=> finitelyBranchingKonig.levelwiseBounded.turingIdealOmega — CERTIFIED
+    via ReverseMathlib.Ports.locallyFinitePerfectMatching_finitelyBranchingKonig_omega_equivalence [context rca0.turingIdealOmega]
+      note: Composed from the two named direction theorems: locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt (Hirst's partial-solution tree: internality one reduction below the bare edge set, finite branching from the local-finiteness properties, infinitude by the finite symmetric-Hall covering lemma, then the path decoder) and finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt (Hirst's gadget through injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt, then the seventh fact's checked direction and the ninth's forward direction). Dependency gates pin both route architectures, the reverse's intermediate stage, and the mutual exclusions
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
       note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
@@ -1969,7 +1979,7 @@ info: facts (18):
 -- production ω facts, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 9; variants: 18; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 12 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2072,7 +2082,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 9; variants: 18; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 12 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2141,7 +2151,7 @@ presentation families (8):
   sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
   twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
-corpus claims (9) — all reported; concept-level, never facts, never evidence:
+corpus claims (12) — all reported; concept-level, never facts, never evidence:
   hirstBoundedKonigWkl [hirstThesisPdf:"p. 6, Theorem 1.1" | finitelyBranchingTreeFormulation] concepts: wkl
     wording (verbatim): Theorem 1.1: (RCA₀) The following are equivalent: i) WKL₀. ii) If T is a tree and h : N → N is a function such that for every τ ∈ T ∀n < lh(τ)(τ(n) < h(n)), then there is an infinite path for T. (Here lh(τ) denotes the length of τ and τ(n) denotes the nᵗʰ element of τ.)
     normalized: The classical WKL₀ calibration of König's lemma with a SUPPLIED dominating function h, read verbatim from the verified scan (source symbols preserved; only spacing normalized). This is the supplied-data presentation the fourth fact's explicitly bounded variant internalizes (bound as a graph-coded internal function); it is a different presentation from the levelwise-bound form of Theorem 1.3, and the two calibrate to different subsystems. Proofs are deferred there to Simpson [50], literature-backed.
@@ -2160,6 +2170,15 @@ corpus claims (9) — all reported; concept-level, never facts, never evidence:
   hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
     wording: (not captured; locator only)
     normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
+  hirstOneSidedMarriageAca [hirstThesisPdf:"p. 12, Theorem 2.2" | twoSidedMarriageSystem] concepts: locallyFinitePerfectMatching
+    wording (verbatim): Theorem 2.2 (RCA₀) The following are equivalent: i) ACA₀ ii) Any marriage problem in which each boy knows only finitely many girls, and in which condition H is satisfied, has a solution.
+    normalized: The one-sided infinite marriage calibration, read verbatim from the verified scan (source symbols preserved; only spacing normalized). Recorded as REVERSAL PROVENANCE ONLY: its reversal (p. 13) constructs the gadget the tenth fact's reverse route reuses symmetrically (p. 19: 'The proof of the reversal is immediate from the proof of Theorem 2.2. Since the relation R of the previous proof is symmetric, condition H_sym holds'). NON-TRANSFER CAVEAT: this society formulation carries finiteness as a property and no enumerator, so no classification here transfers to the catalog's one-sided countable-Hall variants (relation-plus-enumerator presentations) without a proved presentation bridge, and none is registered — the standing Hall honesty boundary is untouched.
+  hirstSymmetricConditionHsym [hirstThesisPdf:"p. 17, §3.1" | twoSidedMarriageSystem] concepts: locallyFinitePerfectMatching
+    wording (verbatim): We will say that a marriage problem satisfies condition H_sym if every subset of n boys knows at least n girls and every subset of n girls knows at least n boys.
+    normalized: The symmetric marriage condition, read verbatim from the verified scan (source symbols preserved; only spacing normalized; the same page fixes 'symmetric solution' as a one-to-one matching of the set of boys onto the girls). The registered tenth fact's interface carries exactly this two-sided condition in cardinality form — every duplicate-free finite list of boys has at least as many distinct joint acquaintances, witnessed by a duplicate-free list, and conversely — as a separate hypothesis, never a structure field.
+  hirstSymmetricMarriageAca [hirstThesisPdf:"p. 18, Theorem 3.1" | perfectMatchingFormulation] concepts: locallyFinitePerfectMatching, finitelyBranchingKonig
+    wording (verbatim): Theorem 3.1 (RCA₀) The following are equivalent: i) ACA₀ ii) Any marriage problem in which each person knows only finitely many members of the opposite sex, and in which condition H_sym is satisfied, has a symmetric solution.
+    normalized: The classical ACA₀ calibration of the symmetric marriage theorem, read verbatim from the verified scan (source symbols preserved; only spacing normalized). Local finiteness is a PROPERTY of the society ('knows only finitely many'), never enumerated data — the registered tenth fact's interface keeps it an existential property on each side of one bare edge set. The thesis proves i) → ii) 'using König's lemma for arbitrary finitely branching trees' via the partial-solution tree (p. 18), which is exactly the registered forward route; the registered ω-fact calibrates against full finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled endpoint or fact is registered.
   rmzooHallAbsent [rmzoo:"results.txt (whole file, pinned revision)" | unrepresentedFormulation] concepts: countableHall, wkl
     wording (verbatim): #    WKL <-> COLORk "Hirst (1990) - Marriage theorems and reverse mathematics"
     normalized: The pinned RMZoo database contains no Hall, marriage, or transversal principle symbol. The quoted line — the only trace of the marriage literature — is commented out (never ingested) and attributes a graph-coloring equivalence, not a marriage theorem, to Hirst's paper. Outcome for this corpus: no match; nothing to transfer.
@@ -2188,7 +2207,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 9; variants: 18; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 12 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2440,7 +2459,7 @@ rm_ingest_bridge_evidence "fixtures/backend/syntactic_duplicate_payload.json" ar
 -- validated semantic-countermodel record contributes exactly the explicitly
 -- backend-qualified all-model scoped result, and nothing else.
 /--
-info: concepts: 9; variants: 18; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 12 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2635,5 +2654,79 @@ theorem, the level-bound reduction, and slice A's leftmost-path spine. -/
    ReverseMathlib.Omega.extendibleSet_le_jump,
    ReverseMathlib.Omega.frontier_recursiveIn_join,
    ReverseMathlib.Omega.le_jump]
+
+/-! ### The tenth fact's route gates (issue #51)
+
+The equivalence certificate reaches both named direction theorems and the reverse's
+intermediate stage. The forward theorem walks Hirst's partial-solution tree — its
+internality reduction and the finite symmetric-Hall covering lemma — and touches
+neither the gadget nor any jump machinery. The reverse's intermediate owns the
+gadget — reaching its internality reduction and the decoded range's join reduction,
+touching neither jump nor Kőnig machinery nor the forward construction — and the
+composition theorem goes through the seventh fact's checked direction and the
+ninth's forward direction, never the tenth's forward theorem. -/
+
+#rm_assert_proof_depends
+  ReverseMathlib.Ports.locallyFinitePerfectMatching_finitelyBranchingKonig_omega_equivalence
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+#rm_assert_proof_depends
+  ReverseMathlib.Ports.locallyFinitePerfectMatching_finitelyBranchingKonig_omega_equivalence
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt
+#rm_assert_proof_depends
+  ReverseMathlib.Ports.locallyFinitePerfectMatching_finitelyBranchingKonig_omega_equivalence
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  ReverseMathlib.Omega.solutionTree_le_graph
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  ReverseMathlib.Omega.exists_matching_covering
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  ReverseMathlib.Omega.pathMatchGraph_le_graph
+#rm_assert_not_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  [ReverseMathlib.Omega.marriageGadgetEdgeSet_le_graph,
+   ReverseMathlib.Omega.marriageGadgetRangeSet_le_join,
+   ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt,
+   ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt,
+   ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt,
+   ReverseMathlib.Omega.finitelyBranchingKonigAt_of_jumpClosedAt,
+   ReverseMathlib.Omega.levelBoundGraph_le_jump,
+   ReverseMathlib.Omega.jumpSet]
+
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.marriageGadgetEdgeSet_le_graph
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.marriageGadgetRangeSet_le_join
+#rm_assert_not_proof_depends
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+  [ReverseMathlib.Omega.jumpSet, ReverseMathlib.Omega.range_le_jump,
+   ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt,
+   ReverseMathlib.Omega.injectionRangeExistenceAt_of_jumpClosedAt,
+   ReverseMathlib.Omega.finitelyBranchingKonigAt_of_jumpClosedAt,
+   ReverseMathlib.Omega.injectionTree_le_graph,
+   ReverseMathlib.Omega.solutionTree_le_graph,
+   ReverseMathlib.Omega.exists_matching_covering,
+   ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt]
+
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.jumpClosedAt_of_injectionRangeExistenceAt
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_jumpClosedAt
+#rm_assert_not_proof_depends
+  ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt
+  [ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt,
+   ReverseMathlib.Omega.solutionTree_le_graph,
+   ReverseMathlib.Omega.exists_matching_covering,
+   ReverseMathlib.Omega.pathMatchGraph_le_graph]
 
 end RMSmoke
