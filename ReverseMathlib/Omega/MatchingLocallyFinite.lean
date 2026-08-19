@@ -52,10 +52,10 @@ structure InternalLocallyFiniteBigraph (Ω : OmegaPart) where
   /-- The edge set: an internal set of `Nat.pair a b` codes. -/
   edges : Ω.InternalSet
   /-- Local finiteness on the boys' side, as a property: every boy's acquaintances
-  admit some strict bound. -/
+  lie below some strict bound. -/
   left_locally_finite : ∀ a, ∃ k, ∀ b, Nat.pair a b ∈ edges.1 → b < k
   /-- Local finiteness on the girls' side, as a property: every girl's acquaintances
-  admit some strict bound. -/
+  lie below some strict bound. -/
   right_locally_finite : ∀ b, ∃ k, ∀ a, Nat.pair a b ∈ edges.1 → a < k
 
 /-- Hirst's symmetric marriage condition H_sym, in **cardinality form**: every
