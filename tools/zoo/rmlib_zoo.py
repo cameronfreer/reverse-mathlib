@@ -2250,6 +2250,40 @@ COMPUTED_DERIVATIONS = [
                 "Again a display derivation and nothing more: no specialization "
                 "fact enters the register.",
     },
+    {
+        "id": "computed.omega.locallyFiniteMatchingImpliesJumpClosure",
+        "term": ["transitivity",
+                 ["equivalenceElimForward",
+                  ["fact", "locallyFinitePerfectMatchingKonigOmega"]],
+                 ["equivalenceElimForward", ["fact", "finitelyBranchingKonigJumpOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega",
+            "rhs": "jumpClosure.turingIdealClosure.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "locally finite matchingω → jump closureω: the certified matching ⇔ "
+                "full-Kőnig equivalence used forward, then the full-Kőnig ⇔ "
+                "jump-closure equivalence used forward. The jump-closure "
+                "consequence stays derived-only — the tenth fact registers the "
+                "Kőnig endpoint, and no direct matching/jump fact exists.",
+    },
+    {
+        "id": "computed.omega.jumpClosureImpliesLocallyFiniteMatching",
+        "term": ["transitivity",
+                 ["equivalenceElimReverse",
+                  ["fact", "finitelyBranchingKonigJumpOmega"]],
+                 ["equivalenceElimReverse",
+                  ["fact", "locallyFinitePerfectMatchingKonigOmega"]]],
+        "expect": {
+            "family": "certifiedOmegaFact", "relation": "implication",
+            "lhs": "jumpClosure.turingIdealClosure.turingIdealOmega",
+            "rhs": "locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega",
+            "contexts": ["rca0.turingIdealOmega"]},
+        "note": "jump closureω → locally finite matchingω: the reverse "
+                "eliminations of the same two certified equivalences, composed. "
+                "Together with its companion this displays the derived "
+                "matching/jump-closure equivalence without registering it.",
+    },
 ]
 
 

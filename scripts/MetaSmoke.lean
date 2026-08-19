@@ -974,7 +974,7 @@ that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
 info: concepts (9):
-  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal
+  reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; in perfect-matching form, every countable bipartite graph 2-regular on both sides has a perfect matching
     scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
     variant reverse-mathlib:countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.CountableHallAt⟩
@@ -999,7 +999,7 @@ info: concepts (9):
   reverse-mathlib:jumpClosure — Jump closure: the Turing jump of every set in the collection is again in the collection — a semantic closure property of second-order parts, distinguishing the jump ideals among the Turing ideals
     scoping: A semantic closure-property node, not a theorem-strength principle: it names the closure condition the equivalence calibrates against, so the fact has an honest typed endpoint. Hirst thesis §1.4 identifies the set domains of ACA₀'s ω-models as the jump ideals — that identification stays literature-backed; it carries no external crosswalk
     variant reverse-mathlib:jumpClosure.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.JumpClosedAt⟩
-  reverse-mathlib:locallyFinitePerfectMatching — Hirst's symmetric marriage theorem: every locally finite marriage problem satisfying the two-sided condition H_sym has a symmetric solution — a perfect matching saturating both sides
+  reverse-mathlib:locallyFinitePerfectMatching — Hirst's symmetric marriage theorem: every locally finite marriage problem satisfying condition H_sym has a symmetric solution saturating both sides
     scoping: The ACA-level matching concept (Hirst thesis Theorem 3.1 shape), deliberately distinct from the countable-Hall family (one-sided, enumerator-bearing) and from the enumerated two-regular perfect-matching presentation class of the fifth fact: local finiteness is an existential property of a bare edge set. No ACA-labeled endpoint or fact
     variant reverse-mathlib:locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.LocallyFinitePerfectMatchingAt⟩
   reverse-mathlib:rca0Core — RCA₀ core (Turing-ideal presentation): a second-order part is nonempty, downward closed under Turing reducibility, and closed under recursive join. The atlas uses this as its base-context condition at the ω layer
@@ -1018,7 +1018,7 @@ namespaces (8):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
-  hirstThesisPdf — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 consulted directly (Theorems 1.1-1.5 and §1.4 ω-models) — a verified source, distinct from the bibliographic-only hirst namespace
+  hirstThesisPdf — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 (Theorems 1.1-1.5 and §1.4 ω-models) and pages 12-19 (Theorems 2.2 and 3.1, condition H_sym, and the Chapter 2-3 proof passages) consulted directly — a verified source, distinct from the bibliographic-only hirst namespace
   rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
@@ -2139,17 +2139,18 @@ rm_presentation_bridge badBridge where
 /--
 info: corpus sources (4):
   hirst @ 1987 thesis; 1990 paper in Contemp. Math. 106 — Marriage-theorem calibrations; bibliographic citations only — the texts were not re-consulted verbatim for this audit
-  hirstThesisPdf @ sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4 — Verified download of the scanned thesis PDF; statement-level anchor only — the theorem statements of Chapter 1 were read verbatim from the scan, and their proofs are deferred there to Simpson [50], which stays literature-backed
+  hirstThesisPdf @ sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4 — Verified download of the scanned thesis PDF. Chapter 1 records are statement-level anchors (proofs deferred there to Simpson [50]); the Chapter 2-3 marriage records also read the proof passages (pp. 13, 18, 19)
   rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
   simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
-presentation families (8):
-  finitelyBranchingTreeFormulation — Finitely-branching tree formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis Chapter 1. The supplied-bound form (Theorem 1.1: a function h dominating every entry) and the levelwise-bound form (Theorem 1.3: for every length a bound on the last entries exists) are distinct presentations calibrating to different subsystems
-  injectionRangeFormulation — Injection-range formulations: an injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis Chapter 1 notation, functions in Simpson's set-of-pairs coding
+presentation families (9):
+  finitelyBranchingTreeFormulation — Finitely-branching tree formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis Chapter 1. The supplied-bound form (Theorem 1.1) and the levelwise-bound form (Theorem 1.3: for every length a bound on the last entries exists) are distinct presentations calibrating to different subsystems
+  injectionRangeFormulation — Injection-range formulations: an injection f : N → N with its range Ran(f) — Hirst thesis Chapter 1 notation, functions in Simpson's set-of-pairs coding
   omegaModelSemantics — ω-model semantic characterizations: the corpus describes classes of second-order set domains (Turing ideals, jump ideals) rather than a problem formulation; only closure-property-level claims can be transcribed
   oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
+  oneSidedMarriageSystem — One-sided marriage systems: societies whose solution matches every boy; finiteness a property, never enumerated
   perfectMatchingFormulation — Perfect-matching formulations: matchings exhausting one or both sides of a bipartite system, Simpson X.3-style
   sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
-  twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with solution conditions on both sides and presentation-dependent boundedness/enumeration data
+  twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with two-sided solution conditions and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
 corpus claims (12) — all reported; concept-level, never facts, never evidence:
   hirstBoundedKonigWkl [hirstThesisPdf:"p. 6, Theorem 1.1" | finitelyBranchingTreeFormulation] concepts: wkl
@@ -2170,7 +2171,7 @@ corpus claims (12) — all reported; concept-level, never facts, never evidence:
   hirstMarriageCalibrations [hirst:"1987 thesis; 1990 paper" | twoSidedMarriageSystem] concepts: countableHall, wkl
     wording: (not captured; locator only)
     normalized: Reported calibrations of marriage theorems for countable societies, with the subsystem depending on the presentation's boundedness/enumeration data — reportedly WKL₀-level for bounded presentations. Society presentations differ from the one-sided relation-plus-enumerator problem; nothing verified verbatim in this audit; no classification is transcribed, and none transfers without the recorded bridge.
-  hirstOneSidedMarriageAca [hirstThesisPdf:"p. 12, Theorem 2.2" | twoSidedMarriageSystem] concepts: locallyFinitePerfectMatching
+  hirstOneSidedMarriageAca [hirstThesisPdf:"p. 12, Theorem 2.2; reversal pp. 13, 19" | oneSidedMarriageSystem] concepts: locallyFinitePerfectMatching
     wording (verbatim): Theorem 2.2 (RCA₀) The following are equivalent: i) ACA₀ ii) Any marriage problem in which each boy knows only finitely many girls, and in which condition H is satisfied, has a solution.
     normalized: The one-sided infinite marriage calibration, read verbatim from the verified scan (source symbols preserved; only spacing normalized). Recorded as REVERSAL PROVENANCE ONLY: its reversal (p. 13) constructs the gadget the tenth fact's reverse route reuses symmetrically (p. 19: 'The proof of the reversal is immediate from the proof of Theorem 2.2. Since the relation R of the previous proof is symmetric, condition H_sym holds'). NON-TRANSFER CAVEAT: this society formulation carries finiteness as a property and no enumerator, so no classification here transfers to the catalog's one-sided countable-Hall variants (relation-plus-enumerator presentations) without a proved presentation bridge, and none is registered — the standing Hall honesty boundary is untouched.
   hirstSymmetricConditionHsym [hirstThesisPdf:"p. 17, §3.1" | twoSidedMarriageSystem] concepts: locallyFinitePerfectMatching
@@ -2685,6 +2686,12 @@ ninth's forward direction, never the tenth's forward theorem. -/
 #rm_assert_proof_depends
   ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
   ReverseMathlib.Omega.pathMatchGraph_le_graph
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  ReverseMathlib.Omega.solutionTree_levelwise_bounded
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
+  ReverseMathlib.Omega.solutionTree_hasNodeAtEveryLevel
 #rm_assert_not_proof_depends
   ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt
   [ReverseMathlib.Omega.marriageGadgetEdgeSet_le_graph,
@@ -2702,6 +2709,12 @@ ninth's forward direction, never the tenth's forward theorem. -/
 #rm_assert_proof_depends
   ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
   ReverseMathlib.Omega.marriageGadgetRangeSet_le_join
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.marriageGadgetBigraph
+#rm_assert_proof_depends
+  ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
+  ReverseMathlib.Omega.marriageGadgetBigraph_satisfiesSymmetricHall
 #rm_assert_not_proof_depends
   ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt
   [ReverseMathlib.Omega.jumpSet, ReverseMathlib.Omega.range_le_jump,

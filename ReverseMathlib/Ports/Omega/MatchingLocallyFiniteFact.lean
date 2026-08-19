@@ -57,8 +57,8 @@ open ReverseMathlib.Omega
 
 rm_concept locallyFinitePerfectMatching where
   statement := "Hirst's symmetric marriage theorem: every locally finite marriage \
-    problem satisfying the two-sided condition H_sym has a symmetric solution — a \
-    perfect matching saturating both sides"
+    problem satisfying condition H_sym has a symmetric solution saturating both \
+    sides"
   description := "The ACA-level matching concept (Hirst thesis Theorem 3.1 shape), \
     deliberately distinct from the countable-Hall family (one-sided, \
     enumerator-bearing) and from the enumerated two-regular perfect-matching \

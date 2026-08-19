@@ -65,31 +65,35 @@ rm_corpus_source hirst "1987 thesis; 1990 paper in Contemp. Math. 106"
 
 rm_namespace hirstThesisPdf "Jeffry Hirst — Combinatorics in Subsystems of Second \
   Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at \
-  hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 consulted directly (Theorems \
-  1.1-1.5 and §1.4 ω-models) — a verified source, distinct from the \
-  bibliographic-only hirst namespace"
+  hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 (Theorems 1.1-1.5 and §1.4 \
+  ω-models) and pages 12-19 (Theorems 2.2 and 3.1, condition H_sym, and the \
+  Chapter 2-3 proof passages) consulted directly — a verified source, distinct \
+  from the bibliographic-only hirst namespace"
 
 rm_corpus_source hirstThesisPdf
   "sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4"
-  "Verified download of the scanned thesis PDF; statement-level anchor only — the \
-   theorem statements of Chapter 1 were read verbatim from the scan, and their \
-   proofs are deferred there to Simpson [50], which stays literature-backed"
+  "Verified download of the scanned thesis PDF. Chapter 1 records are \
+   statement-level anchors (proofs deferred there to Simpson [50]); the \
+   Chapter 2-3 marriage records also read the proof passages (pp. 13, 18, 19)"
 
 rm_presentation_family oneSidedEnumeratedFamily "One-sided families: an ℕ-indexed family \
   of finite candidate sets, transversal injective into the candidates; presentation \
   supplies the candidate relation and/or an explicit enumerator (this catalog's exact \
   Hall variants live here)"
 
+rm_presentation_family oneSidedMarriageSystem "One-sided marriage systems: societies \
+  whose solution matches every boy; finiteness a property, never enumerated"
+
 rm_presentation_family twoSidedMarriageSystem "Two-sided marriage systems (societies): \
-  boys, girls, and a compatibility relation, with solution conditions on both sides and \
+  boys, girls, and a compatibility relation, with two-sided solution conditions and \
   presentation-dependent boundedness/enumeration data"
 
 rm_presentation_family perfectMatchingFormulation "Perfect-matching formulations: \
   matchings exhausting one or both sides of a bipartite system, Simpson X.3-style"
 
 rm_presentation_family injectionRangeFormulation "Injection-range formulations: an \
-  injection f : N → N with its range Ran(f) = {y ∈ N : ∃x f(x) = y} — Hirst thesis \
-  Chapter 1 notation, functions in Simpson's set-of-pairs coding"
+  injection f : N → N with its range Ran(f) — Hirst thesis Chapter 1 notation, \
+  functions in Simpson's set-of-pairs coding"
 
 rm_presentation_family omegaModelSemantics "ω-model semantic characterizations: the \
   corpus describes classes of second-order set domains (Turing ideals, jump ideals) \
@@ -98,10 +102,9 @@ rm_presentation_family omegaModelSemantics "ω-model semantic characterizations:
 
 rm_presentation_family finitelyBranchingTreeFormulation "Finitely-branching tree \
   formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis \
-  Chapter 1. The supplied-bound form (Theorem 1.1: a function h dominating every \
-  entry) and the levelwise-bound form (Theorem 1.3: for every length a bound on the \
-  last entries exists) are distinct presentations calibrating to different \
-  subsystems"
+  Chapter 1. The supplied-bound form (Theorem 1.1) and the levelwise-bound form \
+  (Theorem 1.3: for every length a bound on the last entries exists) are distinct \
+  presentations calibrating to different subsystems"
 
 rm_presentation_family unrepresentedFormulation "No formulation present: the corpus \
   contains no principle for this concept at the pinned revision"
@@ -191,8 +194,8 @@ rm_corpus_claim hirstFinitelyBranchingKonigAca where
     registered."
 
 rm_corpus_claim hirstOneSidedMarriageAca where
-  source := hirstThesisPdf "p. 12, Theorem 2.2"
-  family := twoSidedMarriageSystem
+  source := hirstThesisPdf "p. 12, Theorem 2.2; reversal pp. 13, 19"
+  family := oneSidedMarriageSystem
   concepts := [locallyFinitePerfectMatching]
   wording := verbatim "Theorem 2.2 (RCA₀) The following are equivalent: i) ACA₀ \
     ii) Any marriage problem in which each boy knows only finitely many girls, \
