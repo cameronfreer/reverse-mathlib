@@ -9,6 +9,7 @@ import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.JumpClosureFact
 import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
 import ReverseMathlib.Ports.Omega.MatchingLocallyFiniteFact
+import ReverseMathlib.Ports.Mathlib.HeineCantor
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -80,6 +81,21 @@ rm_presentation_family oneSidedEnumeratedFamily "One-sided families: an ℕ-inde
   of finite candidate sets, transversal injective into the candidates; presentation \
   supplies the candidate relation and/or an explicit enumerator (this catalog's exact \
   Hall variants live here)"
+
+rm_namespace normannSanders "Dag Normann and Sam Sanders — Pincherle's theorem in \
+  reverse mathematics and computability theory, arXiv:1808.09783 v6 (31 Jan 2020); \
+  §1 and Appendix A consulted directly — a verified source"
+
+rm_corpus_source normannSanders
+  "sha256:01874ca1032eb3ac71f4f364c139e724b39056e51a2f477be73291704de46717"
+  "Verified download of arXiv:1808.09783 v6. HBU and Corollary A.2 read verbatim; \
+   the historical attributions (Dini, Pincherle, Bolzano, Young, Hardy, Riesz, \
+   Lebesgue) carry the paper's own caveat and stay attributed interpretations"
+
+rm_presentation_family gaugeCoverFormulation "Gauge (canonical-cover) formulations: \
+  a point-indexed family of positive radii generating the covering by intervals \
+  (x − Ψ(x), x + Ψ(x)), finite subcovers as finite center sequences — [NS18]'s HBU \
+  shape, distinct from countable-cover, sequential, and attainment compactness"
 
 rm_presentation_family oneSidedMarriageSystem "One-sided marriage systems: societies \
   whose solution matches every boy; finiteness a property, never enumerated"
@@ -245,6 +261,45 @@ rm_corpus_claim hirstSymmetricMarriageAca where
     registered forward route; the registered ω-fact calibrates against full \
     finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled \
     endpoint or fact is registered."
+
+rm_corpus_claim nsHeineBorelUncountable where
+  source := normannSanders "p. 11 (HBU)"
+  family := gaugeCoverFormulation
+  concepts := [gaugeHeineBorel]
+  wording := verbatim "a functional Ψ : ℝ → ℝ⁺ gives rise to the canonical \
+    covering ⋃_{x∈I} I_x^Ψ for I ≡ [0, 1], where I_x^Ψ is the open interval \
+    (x − Ψ(x), x + Ψ(x)). Hence, the uncountable covering ⋃_{x∈I} I_x^Ψ has a \
+    finite sub-covering by the Heine-Borel theorem; in symbols: \
+    (∀Ψ : ℝ → ℝ⁺)(∃⟨y₁, . . . , y_k⟩)(∀x ∈ I)(∃i ≤ k)(x ∈ I^Ψ_{y_i})."
+  claim := "The uncountable/gauge Heine–Borel principle HBU, read from the \
+    verified download with the source typography (blackboard ℝ, superscript-plus \
+    ℝ⁺) preserved; sub- and superscripts are transcribed with _/^ markers and \
+    spacing normalized — the only normalizations. The registered ambient \
+    capability keeps exactly this shape — point-indexed positive radii in, a \
+    finite sequence of centers out — with centers in the interval by type, the \
+    faithful reading of a finite subcover of the canonical covering. [NS18]'s \
+    placement of HBU above the countable-cover form in higher-order RM is \
+    reported as literature context only — neither certified nor transferred to \
+    the registered ambient interfaces, which carry no degree or subsystem claim."
+
+rm_corpus_claim nsUniformHeine where
+  source := normannSanders "Appendix A, Corollary A.2, p. 38"
+  family := gaugeCoverFormulation
+  concepts := [uniformHeine, gaugeHeineBorel]
+  wording := verbatim "Corollary A.2. For any ε >_ℝ 0 and g : (I × ℝ) → ℝ⁺, \
+    there is δ >_ℝ 0 such that for any f : I → ℝ with modulus of continuity g, \
+    we have (∀x, y ∈ I)(|x − y| <_ℝ δ) → |f(x) − f(y)| <_ℝ ε),"
+  claim := "The hidden-uniformity Heine conclusion, read from the verified \
+    download with the source typography (blackboard ℝ, superscript-plus ℝ⁺) \
+    preserved; the subscript-ℝ comparisons are transcribed as >_ℝ and <_ℝ, \
+    spacing is normalized, and the source's trailing punctuation is retained — \
+    the only normalizations. The quantifier order ∀g,ε ∃δ ∀f is the content: δ \
+    depends only on the local-control data, never on the controlled function. \
+    The registered ambient principle totalizes g over ℝ → ℝ → ℝ (values outside \
+    [0,1] × (0,∞) ignored) — a totalized presentation of the source's \
+    subtype-domained modulus, not a literal identity. Appendix A's historical \
+    proof attributions stay attributed interpretations under the paper's own \
+    caveat; nothing historical is claimed."
 
 rm_corpus_claim hirstLowWklOmegaModel where
   source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"

@@ -7,9 +7,12 @@ import ReverseMathlib.Basic
 import ReverseMathlib.Standard.InverseLimit
 import ReverseMathlib.Standard.Hall
 import ReverseMathlib.Standard.Trees
+import ReverseMathlib.Standard.GaugeCompactness
 import ReverseMathlib.Slice.HallFromCompactness
 import ReverseMathlib.Slice.WeakKonigEfilc
+import ReverseMathlib.Slice.HeineFromGaugeCompactness
 import ReverseMathlib.Classical.KonigHall
+import ReverseMathlib.Classical.GaugeHeineBorel
 import ReverseMathlib.Quantitative.Metastability
 import ReverseMathlib.Quantitative.MonotoneSequence
 import ReverseMathlib.Quantitative.FiniteConvergence

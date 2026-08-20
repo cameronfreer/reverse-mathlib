@@ -80,10 +80,10 @@ READABILITY_BUDGETS: dict = {
         "maxSections": 8,
     },
     "reference": {
-        "maxIdentifierLeaks": 70,
+        "maxIdentifierLeaks": 64,
         "maxEnumTokensInProse": 8,
         "maxDuplicateSentences": 4,
-        "maxDefaultOpenWords": 2200,
+        "maxDefaultOpenWords": 2001,
     },
 }
 
@@ -1423,7 +1423,7 @@ filled end is strong, the open end ordinary</span>
             f'<li><code>{e(ed["source"])}</code> ambient → '
             f'<code>{e(ed["target"])}</code>'
             f'<br/><small>kernel-checked relative certificate: '
-            f'{e(ed["certificate"])}</small></li>'
+            f'<code>{e(ed["certificate"])}</code></small></li>'
             for ed in ag.get("edges", []))
         panels = [graph_panel(
             "Ambient factorizations", "solid edges; kernel-checked relative "
@@ -1755,17 +1755,22 @@ filled end is strong, the open end ordinary</span>
                 parts.append(f'<div class="refitem"><code>{e(n_["id"])}</code><br/>'
                              f'{prose(n_["description"])}</div>')
         corpus = catalog.get("corpus", {})
+        # Lookup dictionaries default collapsed: pins and family definitions are
+        # cited by the records above, so their descriptions are second-read
+        # material — only the headings count against the default-open budget.
         if corpus.get("sources"):
-            parts.append("<h3>Pinned corpus sources</h3><ul>")
+            parts.append(f"<details><summary><strong>Pinned corpus sources</strong> "
+                         f"({len(corpus['sources'])})</summary><ul>")
             for src in corpus["sources"]:
                 parts.append(f"<li><code>{e(src['namespace'])}</code> @ "
                              f"<code>{e(src['pin'])}</code> — {prose(src['description'])}</li>")
-            parts.append("</ul>")
+            parts.append("</ul></details>")
         if corpus.get("presentationFamilies"):
-            parts.append("<h3>Presentation families</h3><ul>")
+            parts.append(f"<details><summary><strong>Presentation families</strong> "
+                         f"({len(corpus['presentationFamilies'])})</summary><ul>")
             for f_ in corpus["presentationFamilies"]:
                 parts.append(f"<li><code>{e(f_['id'])}</code> — {prose(f_['description'])}</li>")
-            parts.append("</ul>")
+            parts.append("</ul></details>")
         return "\n".join(parts)
 
     def fact_summary(f_: dict) -> str:

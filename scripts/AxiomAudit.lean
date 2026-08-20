@@ -117,7 +117,11 @@ def headlineDecls : List Name :=
    ``ReverseMathlib.Omega.marriageGadgetRangeSet_le_join,
    ``ReverseMathlib.Omega.locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt,
    ``ReverseMathlib.Omega.injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt,
-   ``ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt]
+   ``ReverseMathlib.Omega.finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt,
+   -- Gauge hidden-uniformity Heine (#70 tranche 1): the ambient factorization and
+   -- the classical capability disclosure
+   ``ReverseMathlib.Slice.uniformHeine_of_gaugeHeineBorel,
+   ``ReverseMathlib.Classical.gaugeHeineBorelOnUnitInterval]
 
 #eval show CoreM Unit from do
   for t in headlineDecls do
