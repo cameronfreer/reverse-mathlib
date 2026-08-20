@@ -9,6 +9,7 @@ import ReverseMathlib.Ports.Omega.HallEfilc
 import ReverseMathlib.Ports.Omega.JumpClosureFact
 import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
 import ReverseMathlib.Ports.Omega.MatchingLocallyFiniteFact
+import ReverseMathlib.Ports.Mathlib.HeineCantor
 
 /-!
 # The Hall variant audit (issue #7, first corpus-backed fixture)
@@ -80,6 +81,21 @@ rm_presentation_family oneSidedEnumeratedFamily "One-sided families: an ℕ-inde
   of finite candidate sets, transversal injective into the candidates; presentation \
   supplies the candidate relation and/or an explicit enumerator (this catalog's exact \
   Hall variants live here)"
+
+rm_namespace normannSanders "Dag Normann and Sam Sanders — Pincherle's theorem in \
+  reverse mathematics and computability theory, arXiv:1808.09783 v6 (31 Jan 2020); \
+  §1 and Appendix A consulted directly — a verified source"
+
+rm_corpus_source normannSanders
+  "sha256:01874ca1032eb3ac71f4f364c139e724b39056e51a2f477be73291704de46717"
+  "Verified download of arXiv:1808.09783 v6. HBU and Corollary A.2 read verbatim; \
+   the historical attributions (Dini, Pincherle, Bolzano, Young, Hardy, Riesz, \
+   Lebesgue) carry the paper's own caveat and stay attributed interpretations"
+
+rm_presentation_family gaugeCoverFormulation "Gauge (canonical-cover) formulations: \
+  a point-indexed family of positive radii generating the covering by intervals \
+  (x − Ψ(x), x + Ψ(x)), finite subcovers as finite center sequences — [NS18]'s HBU \
+  shape, distinct from countable-cover, sequential, and attainment compactness"
 
 rm_presentation_family oneSidedMarriageSystem "One-sided marriage systems: societies \
   whose solution matches every boy; finiteness a property, never enumerated"
@@ -245,6 +261,41 @@ rm_corpus_claim hirstSymmetricMarriageAca where
     registered forward route; the registered ω-fact calibrates against full \
     finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled \
     endpoint or fact is registered."
+
+rm_corpus_claim nsHeineBorelUncountable where
+  source := normannSanders "§1 (HBU), p. 11–12"
+  family := gaugeCoverFormulation
+  concepts := [gaugeHeineBorel]
+  wording := verbatim "a functional Ψ : R → R+ gives rise to the canonical covering \
+    ∪x∈I IxΨ for I ≡ [0, 1], where IxΨ is the open interval (x−Ψ(x), x+Ψ(x)). \
+    Hence, the uncountable covering ∪x∈I IxΨ has a finite sub-covering by the \
+    Heine-Borel theorem; in symbols: (∀Ψ : R → R+)(∃⟨y1, . . . , yk⟩)(∀x ∈ I)\
+    (∃i ≤ k)(x ∈ IyΨi )."
+  claim := "The uncountable/gauge Heine–Borel principle HBU, read verbatim from the \
+    verified download (source symbols preserved; only spacing normalized). The \
+    registered ambient capability keeps exactly this shape — point-indexed positive \
+    radii in, a finite sequence of centers out — with centers in the interval by \
+    type, the faithful reading of a finite subcover of the canonical covering. \
+    [NS18] places HBU strictly above the countable-cover form in higher-order RM; \
+    no degree or subsystem claim is transcribed, and the ambient capability \
+    carries none."
+
+rm_corpus_claim nsUniformHeine where
+  source := normannSanders "Appendix A, Corollary A.2"
+  family := gaugeCoverFormulation
+  concepts := [uniformHeine, gaugeHeineBorel]
+  wording := verbatim "Corollary A.2. For any ε >R 0 and g : (I × R) → R+ , there \
+    is δ >R 0 such that for any f : I → R with modulus of continuity g, we have \
+    (∀x, y ∈ I)(|x − y| <R δ) → |f (x) − f (y)| <R ε),"
+  claim := "The hidden-uniformity Heine conclusion, read verbatim from the verified \
+    download (source symbols preserved; only spacing normalized; the source's \
+    trailing punctuation retained). The quantifier order ∀g,ε ∃δ ∀f is the content: \
+    δ depends only on the local-control data, never on the controlled function. \
+    The registered ambient principle totalizes g over ℝ → ℝ → ℝ (values outside \
+    [0,1] × (0,∞) ignored) — a totalized presentation of the source's \
+    subtype-domained modulus, not a literal identity. Appendix A's historical \
+    proof attributions stay attributed interpretations under the paper's own \
+    caveat; nothing historical is claimed."
 
 rm_corpus_claim hirstLowWklOmegaModel where
   source := hirstThesisPdf "p. 8, §1.4, Theorem 1.6"

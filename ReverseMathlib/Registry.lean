@@ -29,6 +29,7 @@ import ReverseMathlib.Ports.Omega.FinitelyBranchingKonigFact
 import ReverseMathlib.Ports.Omega.MatchingLocallyFiniteFact
 import ReverseMathlib.Ports.Mathlib.Hall
 import ReverseMathlib.Ports.Mathlib.Konig
+import ReverseMathlib.Ports.Mathlib.HeineCantor
 
 /-!
 # Tooling and registry aggregate root

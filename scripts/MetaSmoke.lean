@@ -876,7 +876,7 @@ renders its honest verdict. -/
 -- countermodel record) and the one backend-qualified syntactic scoped result (the bridge's standard-calculus nonderivability). The Hall claim is an upper implication
 -- only: no Hall lower bound or equivalence exists at any certified scope.
 /--
-info: concepts: 9; variants: 14; ports: 4; evidence: 5 (5 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 11; variants: 16; ports: 5; evidence: 6 (6 kernel checked, 0 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -903,13 +903,13 @@ info: weakKonigEfilcOmega
 #guard_msgs in
 #revmath_port? weakKonigEfilcOmega
 
--- Catalog export: the production ambient-factorization graph has exactly the three
+-- Catalog export: the production ambient-factorization graph has exactly the four
 -- direction-aware edges. The easy endpoint bug — treating `assumes` as the source
 -- unconditionally — would flip the lower edge; both orientations are pinned here.
 #eval show CoreM Unit from do
   let env ← getEnv
   let snap := CatalogSnapshot.ofEnv env
-  check (snap.ambientEdges.size == 3) "production ambient graph must have exactly 3 edges"
+  check (snap.ambientEdges.size == 4) "production ambient graph must have exactly 4 edges"
   let has (s t : Name) : Bool := snap.ambientEdges.any fun e => e.source == s && e.target == t
   check (has `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness
       `ReverseMathlib.Standard.CountableHall) "upper: EFILC -> CountableHall"
@@ -918,9 +918,15 @@ info: weakKonigEfilcOmega
   check (has `ReverseMathlib.Standard.WeakKonig
       `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
     "lower: WeakKonig -> EFILC (port statement is the source)"
+  check (has `ReverseMathlib.Standard.GaugeHeineBorelOnUnitInterval
+      `ReverseMathlib.Standard.UniformHeineOnUnitInterval)
+    "upper: gauge compactness -> hidden-uniformity Heine"
   check (!has `ReverseMathlib.Standard.CountableHall
       `ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness)
     "no spurious reversed Hall edge"
+  check (!has `ReverseMathlib.Standard.UniformHeineOnUnitInterval
+      `ReverseMathlib.Standard.GaugeHeineBorelOnUnitInterval)
+    "no spurious reversed Heine edge"
   -- Migration golden: variants own the interfaces, edges keep Lean-declaration endpoints,
   -- and the exporter cross-links nodes to variants without changing graph identity.
   let cat := ConceptCatalog.ofEnv env
@@ -973,7 +979,7 @@ rejected; punctuated external keys survive. The cross-module collision tests (si
 that only conflict when merged) live in the `ReverseMathlibFixtures` library. -/
 
 /--
-info: concepts (9):
+info: concepts (11):
   reverse-mathlib:countableHall — Countable Hall / marriage: a countable family of finite sets satisfying the marriage condition (every finite subfamily has at least as many candidates as members) admits an injective transversal; in perfect-matching form, every countable bipartite graph 2-regular on both sides has a perfect matching
     scoping: Countable Hall / marriage as a conceptual family: the one-sided injective-choice and perfect-matching (Simpson X.3.15/X.3.16) variants are related but not identical, and no RMZoo symbol exists for this family
     variant reverse-mathlib:countableHall.oneSidedInjective.ambient [ambient] ⟨ReverseMathlib.Standard.CountableHall⟩
@@ -993,6 +999,9 @@ info: concepts (9):
   reverse-mathlib:finitelyBranchingKonig — Full finitely-branching Kőnig's lemma: every infinite finitely branching tree has an infinite path — the branching bound is a property of the tree (for every length, some bound exists on the last entries of the nodes of that length), never supplied data
     scoping: The ACA-level Kőnig concept (Hirst thesis Theorem 1.3 shape: a levelwise bound exists), deliberately distinct from the explicitly bounded concept whose bound is supplied as data (the wkl-equivalent presentation registered with the fourth fact). No ACA-labeled endpoint or fact: the jump-ideal identification stays literature-backed
     variant reverse-mathlib:finitelyBranchingKonig.levelwiseBounded.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.FinitelyBranchingKonigAt⟩
+  reverse-mathlib:gaugeHeineBorel — Gauge (canonical-cover) compactness of the unit interval: every gauge positive on [0,1] admits finitely many centers whose gauge-radius intervals cover it
+    scoping: The HBU-shaped compactness capability ([NS18]): input is a point-indexed family of positive radii, output finitely many centers — deliberately distinct from countable rational-cover, sequential, and maximum-attainment compactness, which are separate formulations with their own presentations. Ambient interface only: unrestricted Lean proves it outright, and no second-order, HBU-degree, or represented claim is attached
+    variant reverse-mathlib:gaugeHeineBorel.canonicalCover.ambient [ambient] ⟨ReverseMathlib.Standard.GaugeHeineBorelOnUnitInterval⟩
   reverse-mathlib:injectionRangeExistence — Injection-range existence: every injective function has a range — for every injection f there is a set containing exactly the values of f
     scoping: Injection-range existence as a conceptual family (Hirst thesis Theorem 1.4, statement verified verbatim in the primary source; its proof is deferred there to Simpson, cf. [Sim09] III.1.3, literature-backed). The registered presentation is the exact injection-graph form; formula-coded, arbitrary-function, and enumeration presentations join only once their adapters are proved. No ACA-labeled endpoint or fact: no arithmetical-comprehension adapter is proved
     variant reverse-mathlib:injectionRangeExistence.injectionGraphs.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.InjectionRangeExistenceAt⟩
@@ -1005,6 +1014,9 @@ info: concepts (9):
   reverse-mathlib:rca0Core — RCA₀ core (Turing-ideal presentation): a second-order part is nonempty, downward closed under Turing reducibility, and closed under recursive join. The atlas uses this as its base-context condition at the ω layer
     scoping: A base-context node, not a theorem-strength principle; it gives ω-scope separations an explicit typed left endpoint. Its identification with conventional RCA₀ ω-models remains literature-backed, with converse context adequacy pending. It carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
+  reverse-mathlib:uniformHeine — The hidden-uniformity Heine principle: for every positive pointwise modulus g and tolerance there is one delta uniform over every function admitting g as a modulus
+    scoping: [NS18] Corollary A.2's quantifier shape ∀g ∃δ ∀f — the modulus depends only on the local-control data, never on the controlled function. Deliberately distinct from ordinary Heine–Cantor, whose statement conceals this dependency; establishing the stronger dependency form is the checked content, and no algorithm or computational calibration is claimed
+    variant reverse-mathlib:uniformHeine.pointwiseModulus.ambient [ambient] ⟨ReverseMathlib.Standard.UniformHeineOnUnitInterval⟩
   reverse-mathlib:wkl — Weak Kőnig's lemma: every infinite binary tree — a prefix-closed set of finite bit sequences with a node at every level — has an infinite path
     scoping: Weak Kőnig's lemma as a conceptual family: binary-tree formulations across semantic layers (ambient / ω-model / second-order syntax), plus the explicitly bounded ω-model formulation, joined through the kernel-checked presentation equivalence boundedKonigWklOmega. Merely finitely branching (full Kőnig) is the ACA-level principle and belongs to a separate concept, not under the rmzoo:WKL alias
     variant reverse-mathlib:wkl.binaryTree.ambient [ambient] ⟨ReverseMathlib.Standard.WeakKonig⟩
@@ -1014,11 +1026,12 @@ info: concepts (9):
     concordance:"C085" [importedCorrespondence]
     rmzoo:"WKL" [exactAlias]
     simpson:"I.10" [sourceLocation]
-namespaces (8):
+namespaces (9):
   computableAnalysis — cameronfreer/computable-analysis catalog identifiers (issue #28): reducibility notions and problem/presentation composite keys, exchanged through versioned canonical JSON (rmlib-ca-interchange/1) and ingested as external evidence only — no Lean dependency in either direction
   concordance — reverse_mathematics_concordance.xlsx row identifiers — external provenance, never canonical identity
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
   hirstThesisPdf — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 (Theorems 1.1-1.5 and §1.4 ω-models) and pages 12-19 (Theorems 2.2 and 3.1, condition H_sym, and the Chapter 2-3 proof passages) consulted directly — a verified source, distinct from the bibliographic-only hirst namespace
+  normannSanders — Dag Normann and Sam Sanders — Pincherle's theorem in reverse mathematics and computability theory, arXiv:1808.09783 v6 (31 Jan 2020); §1 and Appendix A consulted directly — a verified source
   rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
@@ -1301,7 +1314,7 @@ info: countableHall
 #revmath_port? countableHall
 
 /--
-info: concepts: 10; variants: 16; ports: 5; evidence: 7 (6 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 18; ports: 6; evidence: 8 (7 kernel checked, 1 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1660,7 +1673,7 @@ revmath_port routedPort where
 
 -- The per-scope scoreboard: exactly one certified ω-model implication, nothing escalated.
 /--
-info: concepts: 10; variants: 18; ports: 7; evidence: 9 (7 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 20; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 10 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -1979,7 +1992,7 @@ info: facts (19):
 -- production ω facts, despite multiple ports carrying semantic evidence for the same
 -- content — linked ports never inflate the count.
 /--
-info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 21; ports: 9; evidence: 11 (9 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2082,7 +2095,7 @@ rm_import_reductions "fixtures/interchange/malformed.json"
 
 -- Imports enter no certified count and no fact family: the scoreboard is unchanged.
 /--
-info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 21; ports: 9; evidence: 11 (9 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2137,13 +2150,15 @@ rm_presentation_bridge badBridge where
   requires := "nothing"
 
 /--
-info: corpus sources (4):
+info: corpus sources (5):
   hirst @ 1987 thesis; 1990 paper in Contemp. Math. 106 — Marriage-theorem calibrations; bibliographic citations only — the texts were not re-consulted verbatim for this audit
   hirstThesisPdf @ sha256:64070db6f0f81d9066f723f911debadaa9d4594ecf6c131a4026d3cd5fa288f4 — Verified download of the scanned thesis PDF. Chapter 1 records are statement-level anchors (proofs deferred there to Simpson [50]); the Chapter 2-3 marriage records also read the proof passages (pp. 13, 18, 19)
+  normannSanders @ sha256:01874ca1032eb3ac71f4f364c139e724b39056e51a2f477be73291704de46717 — Verified download of arXiv:1808.09783 v6. HBU and Corollary A.2 read verbatim; the historical attributions (Dini, Pincherle, Bolzano, Young, Hardy, Riesz, Lebesgue) carry the paper's own caveat and stay attributed interpretations
   rmzoo @ e92f57acf072115744e818cabd0ac13f2e724754 — github.com/ericastor/rmzoo at the pinned commit (2024-03-27); database file results.txt consulted in full
   simpson @ 2nd edition, Perspectives in Logic, ASL/Cambridge, 2009 — Subsystems of Second Order Arithmetic; section citations only — the text was not re-consulted verbatim for this audit
-presentation families (9):
+presentation families (10):
   finitelyBranchingTreeFormulation — Finitely-branching tree formulations: trees of finite sequences in lh(σ)/σ(n) notation — Hirst thesis Chapter 1. The supplied-bound form (Theorem 1.1) and the levelwise-bound form (Theorem 1.3: for every length a bound on the last entries exists) are distinct presentations calibrating to different subsystems
+  gaugeCoverFormulation — Gauge (canonical-cover) formulations: a point-indexed family of positive radii generating the covering by intervals (x − Ψ(x), x + Ψ(x)), finite subcovers as finite center sequences — [NS18]'s HBU shape, distinct from countable-cover, sequential, and attainment compactness
   injectionRangeFormulation — Injection-range formulations: an injection f : N → N with its range Ran(f) — Hirst thesis Chapter 1 notation, functions in Simpson's set-of-pairs coding
   omegaModelSemantics — ω-model semantic characterizations: the corpus describes classes of second-order set domains (Turing ideals, jump ideals) rather than a problem formulation; only closure-property-level claims can be transcribed
   oneSidedEnumeratedFamily — One-sided families: an ℕ-indexed family of finite candidate sets, transversal injective into the candidates; presentation supplies the candidate relation and/or an explicit enumerator (this catalog's exact Hall variants live here)
@@ -2152,7 +2167,7 @@ presentation families (9):
   sourceUnspecifiedFormulation — The corpus names the principle by symbol without fixing an exact formulation in the database itself; only concept-level claims can be transcribed
   twoSidedMarriageSystem — Two-sided marriage systems (societies): boys, girls, and a compatibility relation, with two-sided solution conditions and presentation-dependent boundedness/enumeration data
   unrepresentedFormulation — No formulation present: the corpus contains no principle for this concept at the pinned revision
-corpus claims (12) — all reported; concept-level, never facts, never evidence:
+corpus claims (14) — all reported; concept-level, never facts, never evidence:
   hirstBoundedKonigWkl [hirstThesisPdf:"p. 6, Theorem 1.1" | finitelyBranchingTreeFormulation] concepts: wkl
     wording (verbatim): Theorem 1.1: (RCA₀) The following are equivalent: i) WKL₀. ii) If T is a tree and h : N → N is a function such that for every τ ∈ T ∀n < lh(τ)(τ(n) < h(n)), then there is an infinite path for T. (Here lh(τ) denotes the length of τ and τ(n) denotes the nᵗʰ element of τ.)
     normalized: The classical WKL₀ calibration of König's lemma with a SUPPLIED dominating function h, read verbatim from the verified scan (source symbols preserved; only spacing normalized). This is the supplied-data presentation the fourth fact's explicitly bounded variant internalizes (bound as a graph-coded internal function); it is a different presentation from the levelwise-bound form of Theorem 1.3, and the two calibrate to different subsystems. Proofs are deferred there to Simpson [50], literature-backed.
@@ -2180,6 +2195,12 @@ corpus claims (12) — all reported; concept-level, never facts, never evidence:
   hirstSymmetricMarriageAca [hirstThesisPdf:"p. 18, Theorem 3.1" | perfectMatchingFormulation] concepts: locallyFinitePerfectMatching, finitelyBranchingKonig
     wording (verbatim): Theorem 3.1 (RCA₀) The following are equivalent: i) ACA₀ ii) Any marriage problem in which each person knows only finitely many members of the opposite sex, and in which condition H_sym is satisfied, has a symmetric solution.
     normalized: The classical ACA₀ calibration of the symmetric marriage theorem, read verbatim from the verified scan (source symbols preserved; only spacing normalized). Local finiteness is a PROPERTY of the society ('knows only finitely many'), never enumerated data — the registered tenth fact's interface keeps it an existential property on each side of one bare edge set. The thesis proves i) → ii) 'using König's lemma for arbitrary finitely branching trees' via the partial-solution tree (p. 18), which is exactly the registered forward route; the registered ω-fact calibrates against full finitely-branching Kőnig (the ninth fact's concept), and no ACA-labeled endpoint or fact is registered.
+  nsHeineBorelUncountable [normannSanders:"§1 (HBU), p. 11–12" | gaugeCoverFormulation] concepts: gaugeHeineBorel
+    wording (verbatim): a functional Ψ : R → R+ gives rise to the canonical covering ∪x∈I IxΨ for I ≡ [0, 1], where IxΨ is the open interval (x−Ψ(x), x+Ψ(x)). Hence, the uncountable covering ∪x∈I IxΨ has a finite sub-covering by the Heine-Borel theorem; in symbols: (∀Ψ : R → R+)(∃⟨y1, . . . , yk⟩)(∀x ∈ I)(∃i ≤ k)(x ∈ IyΨi ).
+    normalized: The uncountable/gauge Heine–Borel principle HBU, read verbatim from the verified download (source symbols preserved; only spacing normalized). The registered ambient capability keeps exactly this shape — point-indexed positive radii in, a finite sequence of centers out — with centers in the interval by type, the faithful reading of a finite subcover of the canonical covering. [NS18] places HBU strictly above the countable-cover form in higher-order RM; no degree or subsystem claim is transcribed, and the ambient capability carries none.
+  nsUniformHeine [normannSanders:"Appendix A, Corollary A.2" | gaugeCoverFormulation] concepts: uniformHeine, gaugeHeineBorel
+    wording (verbatim): Corollary A.2. For any ε >R 0 and g : (I × R) → R+ , there is δ >R 0 such that for any f : I → R with modulus of continuity g, we have (∀x, y ∈ I)(|x − y| <R δ) → |f (x) − f (y)| <R ε),
+    normalized: The hidden-uniformity Heine conclusion, read verbatim from the verified download (source symbols preserved; only spacing normalized; the source's trailing punctuation retained). The quantifier order ∀g,ε ∃δ ∀f is the content: δ depends only on the local-control data, never on the controlled function. The registered ambient principle totalizes g over ℝ → ℝ → ℝ (values outside [0,1] × (0,∞) ignored) — a totalized presentation of the source's subtype-domained modulus, not a literal identity. Appendix A's historical proof attributions stay attributed interpretations under the paper's own caveat; nothing historical is claimed.
   rmzooHallAbsent [rmzoo:"results.txt (whole file, pinned revision)" | unrepresentedFormulation] concepts: countableHall, wkl
     wording (verbatim): #    WKL <-> COLORk "Hirst (1990) - Marriage theorems and reverse mathematics"
     normalized: The pinned RMZoo database contains no Hall, marriage, or transversal principle symbol. The quoted line — the only trace of the marriage literature — is commented out (never ingested) and attributes a graph-coloring equivalence, not a marriage theorem, to Hirst's paper. Outcome for this corpus: no match; nothing to transfer.
@@ -2208,7 +2229,7 @@ rm_corpus_audit hallVariantAudit "dup" "dup"
 
 -- The audit adds no certified fact: the scoreboard is unchanged.
 /--
-info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 21; ports: 9; evidence: 11 (9 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2460,7 +2481,7 @@ rm_ingest_bridge_evidence "fixtures/backend/syntactic_duplicate_payload.json" ar
 -- validated semantic-countermodel record contributes exactly the explicitly
 -- backend-qualified all-model scoped result, and nothing else.
 /--
-info: concepts: 10; variants: 19; ports: 8; evidence: 10 (8 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
+info: concepts: 12; variants: 21; ports: 9; evidence: 11 (9 kernel checked, 2 claimed, 0 backend checked); checked scoped results — ω-model: 13 (kernelChecked); all-model: 1 (backendChecked); syntactic: 1 (backendChecked)
 -/
 #guard_msgs in
 #revmath_stats
@@ -2741,5 +2762,46 @@ ninth's forward direction, never the tenth's forward theorem. -/
    ReverseMathlib.Omega.solutionTree_le_graph,
    ReverseMathlib.Omega.exists_matching_covering,
    ReverseMathlib.Omega.pathMatchGraph_le_graph]
+
+/-! ### The gauge hidden-uniformity route gates (issue #70, tranche 1)
+
+The relative theorem reaches the named delta construction and none of mathlib's
+packaged compactness — the capability hypothesis replaces it entirely. The classical
+instantiation is the mirror image: it positively reaches interval compactness and
+the finite-subcover API, and reaches neither the hidden-uniformity theorem nor
+mathlib's Heine–Cantor theorem, so it is visibly a direct capability instantiation.
+The new ambient interfaces join the statement-burden audit: their definition
+closures must not reach packaged compactness or mathlib's Heine–Cantor theorem —
+the statements carry raw quantifiers over reals, never a compactness API. -/
+
+#rm_assert_proof_depends ReverseMathlib.Slice.uniformHeine_of_gaugeHeineBorel
+  ReverseMathlib.Slice.gaugeUniformDelta
+#rm_assert_not_proof_depends ReverseMathlib.Slice.uniformHeine_of_gaugeHeineBorel
+  [IsCompact, isCompact_Icc, IsCompact.elim_finite_subcover,
+   CompactSpace.uniformContinuous_of_continuous,
+   ReverseMathlib.Classical.gaugeHeineBorelOnUnitInterval]
+
+#rm_assert_proof_depends ReverseMathlib.Classical.gaugeHeineBorelOnUnitInterval
+  isCompact_Icc
+#rm_assert_proof_depends ReverseMathlib.Classical.gaugeHeineBorelOnUnitInterval
+  IsCompact.elim_finite_subcover
+#rm_assert_not_proof_depends ReverseMathlib.Classical.gaugeHeineBorelOnUnitInterval
+  [ReverseMathlib.Slice.uniformHeine_of_gaugeHeineBorel,
+   CompactSpace.uniformContinuous_of_continuous]
+
+#eval show CoreM Unit from do
+  let env ← getEnv
+  for t in [``ReverseMathlib.Standard.GaugeHeineBorelOnUnitInterval,
+      ``ReverseMathlib.Standard.UniformHeineOnUnitInterval,
+      ``ReverseMathlib.Standard.IsPositiveGaugeOn,
+      ``ReverseMathlib.Standard.IsPointwiseModulusOn,
+      ``ReverseMathlib.Standard.IsUniformModulusAt,
+      ``ReverseMathlib.Standard.GaugeSubcover] do
+    let .ok r := mineTarget env {} t | throwError "mine {t} failed"
+    check (!r.truncated) s!"{t} interface-definition mining must be complete"
+    for bad in [``IsCompact, ``isCompact_Icc, ``CompactSpace,
+        ``CompactSpace.uniformContinuous_of_continuous] do
+      check (!r.value.reached.contains bad)
+        s!"{t} interface-definition closure must not reach {bad}"
 
 end RMSmoke
