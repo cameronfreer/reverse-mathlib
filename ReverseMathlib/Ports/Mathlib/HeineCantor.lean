@@ -19,10 +19,12 @@ the certified ω scoreboard — the checked content is the quantifier order
 `∀ g, ∃ δ, ∀ f`: the modulus depends only on the local-control data.
 
 The mathlib counterpart recorded is `CompactSpace.uniformContinuous_of_continuous` —
-a **conceptual analogue by a third route**: it proves ordinary (non-uniform)
-Heine–Cantor by the generic uniform-space entourage argument, not by a gauge
-subcover and not sequentially. That relationship is machine-checked in the port
-note below and gated in `scripts/MetaSmoke.lean`; no claim that mathlib's proof
+a **conceptual analogue by a third route**: it proves ordinary function-by-function
+Heine–Cantor (uniform continuity of each continuous function, without uniform
+dependence on a shared modulus) by the generic uniform-space entourage argument,
+not by a gauge subcover and not sequentially. Both halves of that finding — the
+positive reach of the entourage characterization and the exclusion of interval
+compactness — are gated in `scripts/MetaSmoke.lean`; no claim that mathlib's proof
 instantiates the gauge route is made anywhere.
 -/
 
@@ -52,8 +54,8 @@ rm_statement_variant gaugeHeineBorel.canonicalCover.ambient where
 
 rm_concept uniformHeine where
   statement := "The hidden-uniformity Heine principle: for every positive pointwise \
-    modulus g and tolerance there is one delta uniform over every function \
-    admitting g as a modulus"
+    modulus and tolerance there is one delta uniform over every function \
+    admitting that modulus"
   description := "[NS18] Corollary A.2's quantifier shape ∀g ∃δ ∀f — the modulus \
     depends only on the local-control data, never on the controlled function. \
     Deliberately distinct from ordinary Heine–Cantor, whose statement conceals \
@@ -83,17 +85,18 @@ revmath_port uniformHeine where
   relation := conceptualAnalogue
   claimedClassical := "uniform Heine-type theorems reported for several historical \
     proof routes ([NS18] §A, the attributions carrying the paper's own caveat); \
-    countable-cover Heine–Borel reportedly WKL₀-level and the gauge form \
-    HBU-level in higher-order RM — no classification is transcribed and none \
-    transfers without exact presentation bridges"
-  note := "Mathlib's theorem is a THIRD route, machine-checked at this pin: its \
-    proof-only closure (4023 constants, standard axioms, no unknowns) reaches \
+    the countable-cover Heine–Borel's reported WKL₀ level and the gauge form's \
+    reported HBU level in higher-order RM are literature context only — neither \
+    certified nor transferred to the registered ambient interfaces"
+  note := "Ambient factorization, not an RM calibration. Mathlib's theorem is a \
+    THIRD route, gated at this pin (scripts/MetaSmoke.lean): its proof reaches \
     nhdsSet_diagonal_eq_uniformity — the neighborhoods-of-the-diagonal entourage \
     characterization — and excludes isCompact_Icc: generic uniform-space \
-    compactness, no gauge subcover, no sequence, and only the ordinary non-uniform \
-    conclusion. The registered principle is the [NS18]-shaped hidden-uniformity \
-    statement instead, and the factorization proof reaches no packaged mathlib \
-    compactness at all (constant-level gates in scripts/MetaSmoke.lean)."
+    compactness, no gauge subcover, no sequence, and only the function-by-function \
+    conclusion, without uniform dependence on a shared modulus. The registered \
+    principle is the [NS18]-shaped hidden-uniformity statement instead, and the \
+    factorization proof reaches no packaged mathlib compactness at all \
+    (constant-level gates in scripts/MetaSmoke.lean)."
   evidence relativeProof upper kernelChecked lean
     via ReverseMathlib.Ports.uniformHeineRelativeCertificate
     assumes gaugeHeineBorel.canonicalCover.ambient

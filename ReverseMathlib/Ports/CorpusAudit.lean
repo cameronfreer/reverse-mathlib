@@ -263,34 +263,38 @@ rm_corpus_claim hirstSymmetricMarriageAca where
     endpoint or fact is registered."
 
 rm_corpus_claim nsHeineBorelUncountable where
-  source := normannSanders "§1 (HBU), p. 11–12"
+  source := normannSanders "p. 11 (HBU)"
   family := gaugeCoverFormulation
   concepts := [gaugeHeineBorel]
-  wording := verbatim "a functional Ψ : R → R+ gives rise to the canonical covering \
-    ∪x∈I IxΨ for I ≡ [0, 1], where IxΨ is the open interval (x−Ψ(x), x+Ψ(x)). \
-    Hence, the uncountable covering ∪x∈I IxΨ has a finite sub-covering by the \
-    Heine-Borel theorem; in symbols: (∀Ψ : R → R+)(∃⟨y1, . . . , yk⟩)(∀x ∈ I)\
-    (∃i ≤ k)(x ∈ IyΨi )."
-  claim := "The uncountable/gauge Heine–Borel principle HBU, read verbatim from the \
-    verified download (source symbols preserved; only spacing normalized). The \
-    registered ambient capability keeps exactly this shape — point-indexed positive \
-    radii in, a finite sequence of centers out — with centers in the interval by \
-    type, the faithful reading of a finite subcover of the canonical covering. \
-    [NS18] places HBU strictly above the countable-cover form in higher-order RM; \
-    no degree or subsystem claim is transcribed, and the ambient capability \
-    carries none."
+  wording := verbatim "a functional Ψ : ℝ → ℝ⁺ gives rise to the canonical \
+    covering ⋃_{x∈I} I_x^Ψ for I ≡ [0, 1], where I_x^Ψ is the open interval \
+    (x − Ψ(x), x + Ψ(x)). Hence, the uncountable covering ⋃_{x∈I} I_x^Ψ has a \
+    finite sub-covering by the Heine-Borel theorem; in symbols: \
+    (∀Ψ : ℝ → ℝ⁺)(∃⟨y₁, . . . , y_k⟩)(∀x ∈ I)(∃i ≤ k)(x ∈ I^Ψ_{y_i})."
+  claim := "The uncountable/gauge Heine–Borel principle HBU, read from the \
+    verified download with the source typography (blackboard ℝ, superscript-plus \
+    ℝ⁺) preserved; sub- and superscripts are transcribed with _/^ markers and \
+    spacing normalized — the only normalizations. The registered ambient \
+    capability keeps exactly this shape — point-indexed positive radii in, a \
+    finite sequence of centers out — with centers in the interval by type, the \
+    faithful reading of a finite subcover of the canonical covering. [NS18]'s \
+    placement of HBU above the countable-cover form in higher-order RM is \
+    reported as literature context only — neither certified nor transferred to \
+    the registered ambient interfaces, which carry no degree or subsystem claim."
 
 rm_corpus_claim nsUniformHeine where
-  source := normannSanders "Appendix A, Corollary A.2"
+  source := normannSanders "Appendix A, Corollary A.2, p. 38"
   family := gaugeCoverFormulation
   concepts := [uniformHeine, gaugeHeineBorel]
-  wording := verbatim "Corollary A.2. For any ε >R 0 and g : (I × R) → R+ , there \
-    is δ >R 0 such that for any f : I → R with modulus of continuity g, we have \
-    (∀x, y ∈ I)(|x − y| <R δ) → |f (x) − f (y)| <R ε),"
-  claim := "The hidden-uniformity Heine conclusion, read verbatim from the verified \
-    download (source symbols preserved; only spacing normalized; the source's \
-    trailing punctuation retained). The quantifier order ∀g,ε ∃δ ∀f is the content: \
-    δ depends only on the local-control data, never on the controlled function. \
+  wording := verbatim "Corollary A.2. For any ε >_ℝ 0 and g : (I × ℝ) → ℝ⁺, \
+    there is δ >_ℝ 0 such that for any f : I → ℝ with modulus of continuity g, \
+    we have (∀x, y ∈ I)(|x − y| <_ℝ δ) → |f(x) − f(y)| <_ℝ ε),"
+  claim := "The hidden-uniformity Heine conclusion, read from the verified \
+    download with the source typography (blackboard ℝ, superscript-plus ℝ⁺) \
+    preserved; the subscript-ℝ comparisons are transcribed as >_ℝ and <_ℝ, \
+    spacing is normalized, and the source's trailing punctuation is retained — \
+    the only normalizations. The quantifier order ∀g,ε ∃δ ∀f is the content: δ \
+    depends only on the local-control data, never on the controlled function. \
     The registered ambient principle totalizes g over ℝ → ℝ → ℝ (values outside \
     [0,1] × (0,∞) ignored) — a totalized presentation of the source's \
     subtype-domained modulus, not a literal identity. Appendix A's historical \
