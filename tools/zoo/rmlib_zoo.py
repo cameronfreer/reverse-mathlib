@@ -83,7 +83,7 @@ READABILITY_BUDGETS: dict = {
         "maxIdentifierLeaks": 64,
         "maxEnumTokensInProse": 8,
         "maxDuplicateSentences": 4,
-        "maxDefaultOpenWords": 2001,
+        "maxDefaultOpenWords": 1719,
     },
 }
 
@@ -513,6 +513,10 @@ def cmd_check(args: argparse.Namespace) -> None:
     # tree that typechecks; the evaluator's fail-closed fixtures run here too
     for name in selftest_derivations():
         problems.append(f"computed-closure evaluator fixture did not fail closed: {name}")
+    for name in selftest_route_profiles():
+        problems.append(f"route-profile checker did not fail closed: {name}")
+    for name in check_route_profiles(catalog):
+        problems.append(f"route profile: {name}")
     cv = fam_views["computed-closure"]
     derived = [e for e in cv["edges"] if e.get("family") == "computedClosure"]
     premises = [e for e in cv["edges"] if e.get("family") != "computedClosure"]
@@ -1014,6 +1018,10 @@ table.results th, table.results td { border-bottom: 1px solid #e2e2e2;
 table.results th { font-size: 0.78rem; text-transform: uppercase;
       letter-spacing: 0.04em; color: #555; }
 table.results td.how { white-space: nowrap; color: #444; font-size: 0.86rem; }
+/* a route's name is a name, not a column label: the small-caps treatment that
+   suits a header row makes a four-word name hard to read down the side */
+table.routes th[scope="row"] { font-size: 0.9rem; text-transform: none;
+      letter-spacing: 0; color: #222; width: 11rem; }
 .wrapscroll { overflow-x: auto; }
 #proved { background: #f7f5ef; border: 1px solid #e0d9c8; border-radius: 6px;
       padding: 0.9rem 1.1rem; margin: 1.2rem 0; }
@@ -1133,11 +1141,18 @@ def mark_identifiers(text: str, pattern: "re.Pattern") -> str:
     return "".join(out)
 
 
-def principles_section(catalog: dict) -> str:
+def principles_section(catalog: dict, collapsed: bool = False) -> str:
     """What each principle asserts, in the words registered with it. Statements are
     typed registry data (the required `statement` field of a principle), never prose
     invented at render time. The mathematical name is the clause the statement opens
-    with; the identifier travels beside it as a lookup chip."""
+    with; the identifier travels beside it as a lookup chip.
+
+    On the atlas this is what a reader meets first, so it is open. On the reference
+    surface the same glosses sit a few screens above the dictionary that carries each
+    statement in full with its presentation caveats, so there they are lookup material
+    and open behind a summary — the same rule that keeps the pinned sources and the
+    presentation families collapsed on that surface.
+    """
     rows = []
     for c in catalog.get("concepts", []):
         st = c.get("statement") or ""
@@ -1149,6 +1164,13 @@ def principles_section(catalog: dict) -> str:
             f'<a class="chip" href="reference.html#concept-{ref}"><code>{ref}</code></a>'
             f"</dt><dd>{html.escape(body)}</dd>")
     items = "\n".join(rows)
+    if collapsed:
+        return f"""<section id="principles"><h2>The principles</h2>
+<details class="fineprint"><summary>What each principle asserts (the dictionary below
+carries every statement in full)</summary>
+<dl class="principles">
+{items}
+</dl></details></section>"""
     return f"""<section id="principles"><h2>The principles</h2>
 <p>What each principle asserts. Their exact formulations, Lean statements and
 presentation caveats are on the <a href="reference.html#concepts-sec">reference
@@ -1415,7 +1437,7 @@ filled end is strong, the open end ordinary</span>
                 f'granularity for orientation only; the per-family graphs below are '
                 f'canonical.</em></p>\n{fine_print}\n'
                 f'{legend_html() if view_svgs else ""}\n{panel}\n'
-                f'{principles_section(catalog)}')
+                f'{principles_section(catalog, collapsed=True)}')
 
     def canonical_graphs_section() -> str:
         ag = catalog.get("ambientGraph", {})
@@ -1560,6 +1582,52 @@ filled end is strong, the open end ordinary</span>
             "ports-sec", "Ports (proof routes)", len(cards), "\n".join(cards),
             "<p><em>Mined proof architecture: how a mathlib proof factors, with "
             "input-access records — routes, not classifications.</em></p>\n")
+
+    def routes_section() -> str:
+        """What each compactness route consumes and produces.
+
+        Editorial prose about routes the atlas checks, kept apart from the
+        certificates so that a comparison can never read as a comparison of
+        strength: this section states no relation between routes, and the graphs
+        gain no edge from anything written here.
+        """
+        cards = []
+        for prof in ROUTE_PROFILES:
+            anchor = (f'<dt>assumed by</dt><dd><code>{e(prof["hypothesis"])}</code></dd>'
+                      if prof.get("hypothesis") else
+                      f'<dt>mined from</dt><dd><code>{e(prof["mathlibDecl"])}</code>'
+                      f'</dd>')
+            ports_html = "".join(f'<li><code>{e(pid)}</code></li>'
+                                 for pid in prof["ports"])
+            cards.append(f"""<details class="card" data-family="ambient"
+ id="route-{e(prof['id'])}">
+<summary><strong>{e(prof['name'])}</strong> <code>{e(prof['id'])}</code></summary>
+<dl>
+{anchor}
+<dt>operation</dt><dd>{prose(prof['operation'])}</dd>
+<dt>inputs</dt><dd>{prose(prof['inputs'])}</dd>
+<dt>outputs</dt><dd>{prose(prof['outputs'])}</dd>
+<dt>parameter dependence</dt><dd>{prose(prof['dependence'])}</dd>
+<dt>conversion burden</dt><dd>{prose(prof['burden'])}</dd>
+<dt>records</dt><dd><ul>{ports_html}</ul></dd>
+</dl></details>""")
+        head = "".join(f"<th>{e(d)}</th>" for d in ROUTE_DIMENSIONS)
+        rows = "".join(
+            f'<tr><th scope="row">{e(prof["name"])}</th>'
+            + "".join(f"<td>{e(c)}</td>" for c in prof["cells"]) + "</tr>"
+            for prof in ROUTE_PROFILES)
+        matrix = f"""<details class="card"><summary><strong>Side-by-side comparison
+</strong> — the same five questions asked of every route</summary>
+<p><em>A comparison of what each route needs and yields. No cell asserts a relation
+between two routes: nothing here is an implication, a reduction, or a strength
+claim, and no arrow anywhere on this site comes from this table.</em></p>
+<div class="wrapscroll"><table class="results routes"><thead><tr><th>route</th>{head}</tr>
+</thead><tbody>{rows}</tbody></table></div></details>"""
+        return section(
+            "routes-sec", "Route profiles", len(cards),
+            "\n".join(cards) + "\n" + matrix,
+            "<p><em>Hand-written descriptions of the compactness routes above, "
+            "certified by nothing; each names the records it describes.</em></p>\n")
 
     def imports_section() -> str:
         imps = catalog.get("importedReductions", [])
@@ -1839,6 +1907,16 @@ using the theorem it is supposed to be independent of.</p>
 <p>Some results are proved in ordinary Lean over the standard natural numbers rather
 than at a second-order part. They show how one proof factors through another and carry
 no model-theoretic scope, so they never contribute to the counts on the atlas.</p>
+<p>Where such a proof assumes a principle rather than proving it, the principle is a
+hypothesis of the theorem, and the dependency conditions above are what keep it one — a
+proof that claims to go through a covering argument cannot quietly use compactness of
+the interval instead, and where the assumed principle is also provable outright in
+ordinary Lean, that proof is kept in a separate file the factorization is checked not to
+reach. The compactness principles assumed this way take different data and return
+different things, and no factorization here makes two of them interchangeable. Each is
+profiled on the <a href="reference.html#routes-sec">reference page</a>: what it is
+handed, what it hands back, what its output depends on, and what would have to be proved
+before one could stand in for another.</p>
 <h2 id="imported">Reductions from a separate development</h2>
 <p>Weihrauch reductions are proved in a separate Lean development for computable
 analysis and recorded here with the revision they were checked at and the name of the
@@ -1985,6 +2063,30 @@ implies, whose own strength may remain unresolved.</p>
 <p class="meta">Exact endpoints, certificates and downloads for every arrow are on the
 <a href="reference.html#graphs">reference page</a>.</p>"""
 
+    def programs_box() -> str:
+        """The reader-facing contrast between the two proof plans, in ordinary words.
+
+        Nothing here is a count or a comparison of strength: the section exists
+        because the picture carries arrows the results table does not, and a reader
+        is owed an account of what those arrows are.
+        """
+        return """<h2 id="programs">Proof programs</h2>
+<p>Several proofs here follow one plan: assume a compactness principle, then build what
+you want out of it. Which principle is assumed fixes what the proof is handed and hands
+back.</p>
+<p>One plan works level by level, assuming a coherent choice runs through a sequence of
+explicitly listed finite possibilities, each linked to the one below; out of that it
+builds a transversal for a countable marriage problem, or a branch through an infinite
+binary tree.</p>
+<p>The other covers an interval, assuming a radius attached to every point of [0,1]
+leaves finitely many of those points whose intervals cover it; out of that it builds one
+tolerance serving every function obeying a given pointwise bound, not one tolerance per
+function.</p>
+<p>Neither plan says how strong anything is: each is an ordinary Lean proof whose
+compactness assumption is a hypothesis, never something proved along the way, and none
+is counted above. What each consumes and produces is compared on the
+<a href="reference.html#routes-sec">reference page</a>.</p>"""
+
     def proved_box() -> str:
         # the scoreboard's typed filter: certified facts at ω-model scope
         # (kernelChecked by construction) — a future fact at another scope
@@ -2027,6 +2129,7 @@ syntax and semantics of second-order arithmetic. They are stated about a theory 
 sentence defined in that development, under a named class of structures or a named
 calculus, and they are not statements about RCA₀ or about weak Kőnig's lemma as such.</p>
 {public_bridge_results()}
+{programs_box()}
 {proved_box()}"""
 
     methods_body = f"""<p class="lede">How each kind of result on this atlas is
@@ -2050,6 +2153,7 @@ it)</noscript></p>
 <a href="#concepts-sec">Concepts</a> ·
 <a href="#variants-sec">Variants</a> ·
 <a href="#ports-sec">Proof analyses</a> ·
+<a href="#routes-sec">Route profiles</a> ·
 <a href="#imports-sec">Imported reductions</a> ·
 <a href="#backend-sec">Bridge records</a> ·
 <a href="#computed-sec">Computed closure</a> ·
@@ -2061,6 +2165,7 @@ it)</noscript></p>
 {concept_index()}
 {variant_index()}
 {ports_section()}
+{routes_section()}
 {imports_section()}
 {backend_section()}
 {computed_section()}
@@ -2290,6 +2395,278 @@ COMPUTED_DERIVATIONS = [
                 "matching/jump-closure equivalence without registering it.",
     },
 ]
+
+
+# Profiles of the compactness routes this atlas checks: what each one is handed,
+# what it hands back, what its output depends on, and what would have to be proved
+# before one route could stand in for another.
+#
+# These are editorial descriptions, hand-written like the derivations above and
+# certified by nothing, so each profile names the records it describes and the
+# build fails when a named record is absent or when an ambient hypothesis has no
+# profile at all. A profile that has gone stale must not render, and a route that
+# arrives later must not stay undescribed.
+#
+# `hypothesis` is the Lean interface a factorization assumes, matched against the
+# sources of the ambient graph. `mathlibDecl` marks a route that no factorization
+# here assumes: it is described because a mined proof takes it, and it is anchored
+# to the port record that mines it.
+ROUTE_PROFILES = [
+    {
+        "id": "finiteLevelSection",
+        "name": "Level-by-level finite approximation",
+        "hypothesis": "ReverseMathlib.Standard.ExplicitFiniteInverseLimitCompactness",
+        "ports": ["countableHall", "weakKonigEfilc"],
+        "operation": "Choose one possibility at every level of a sequence of finite, "
+                     "explicitly listed sets, so that each choice restricts to the one "
+                     "below it.",
+        "inputs": "A nonempty finite list of possibilities at each level, together "
+                  "with a map from the possibilities at each level to those at the "
+                  "level below. Both are supplied as data; neither is recovered from "
+                  "an existence statement.",
+        "outputs": "One coherent sequence of choices, one per level.",
+        "dependence": "The sequence depends on the whole system. No numerical bound, "
+                      "rate or modulus is produced, and the statement exposes none.",
+        "burden": "Using this on a marriage problem or on a tree means first "
+                  "presenting that object as levels of explicitly listed finite "
+                  "possibilities. Each such presentation is proved separately here; "
+                  "there is no general translation, and none is claimed.",
+        "cells": ["a choice through finite levels",
+                  "listed finite levels, links downward",
+                  "one coherent choice per level",
+                  "on the whole system; no bound or rate",
+                  "present the object as finite levels"],
+    },
+    {
+        "id": "binaryTreePath",
+        "name": "Path through an infinite binary tree",
+        "hypothesis": "ReverseMathlib.Standard.WeakKonig",
+        "ports": ["weakKonigEfilc"],
+        "operation": "Extract an infinite branch from an infinite tree of finite bit "
+                     "sequences.",
+        "inputs": "A prefix-closed set of finite bit sequences with a node at every "
+                  "length.",
+        "outputs": "One infinite bit sequence, every prefix of which lies in the tree.",
+        "dependence": "The branch depends on the tree. Nothing about how far one must "
+                      "search is asked for, and nothing of the kind comes back.",
+        "burden": "Exchanging this route with the finite-level one is itself proved "
+                  "here, in both directions, and those two theorems are the whole "
+                  "licence for the exchange. No other pair of routes profiled here "
+                  "has one.",
+        "cells": ["a branch through a tree",
+                  "prefix-closed tree, node at every length",
+                  "one infinite branch",
+                  "on the tree; no search bound",
+                  "exchange with finite levels, proved both ways"],
+    },
+    {
+        "id": "gaugeCanonicalCover",
+        "name": "Canonical cover of the unit interval",
+        "hypothesis": "ReverseMathlib.Standard.GaugeHeineBorelOnUnitInterval",
+        "ports": ["uniformHeine"],
+        "operation": "From a radius attached to every point of the unit interval, "
+                     "return finitely many of those points whose own intervals already "
+                     "cover it.",
+        "inputs": "A total function assigning a radius to every real, together with a "
+                  "separate hypothesis that this radius is strictly positive at each "
+                  "point of the interval. A radius that fails to be positive there is "
+                  "ruled out by that hypothesis, not ignored; only values away from the "
+                  "interval go unconstrained, and those are never consulted.",
+        "outputs": "A finite family of centres indexed by a finite type, with covering "
+                   "stated by strict inequality — never a finite set of reals, so no "
+                   "equality test on reals enters any statement.",
+        "dependence": "The tolerance built from such a family is the least half-radius "
+                      "over its centres, so it depends on the radius data alone and on "
+                      "no function later controlled by it. That dependence is the "
+                      "content of the theorem it supports.",
+        "burden": "A cover by countably many rational intervals is a different "
+                  "presentation, and nothing here turns one into the other. This "
+                  "hypothesis is also provable outright in ordinary Lean; that proof is "
+                  "kept in a file of its own, which the factorization assuming the "
+                  "hypothesis is checked never to reach.",
+        "cells": ["finitely many centres from pointwise radii",
+                  "one positive radius per point",
+                  "indexed finite family of centres",
+                  "subcover on the gauge Ψ; the tolerance it yields on g and ε, "
+                  "never on f",
+                  "rational-interval cover, not proved"],
+    },
+    {
+        "id": "genericEntourage",
+        "name": "Generic uniform-space compactness",
+        "mathlibDecl": "CompactSpace.uniformContinuous_of_continuous",
+        "ports": ["uniformHeine"],
+        "operation": "Prove that one continuous function on a compact uniform space is "
+                     "uniformly continuous, by an argument about neighbourhoods of the "
+                     "diagonal.",
+        "inputs": "A compact uniform space and a single continuous function on it.",
+        "outputs": "Uniform continuity of that one function.",
+        "dependence": "On the function supplied, and on nothing shared: the "
+                      "conclusion is reached one function at a time, and no tolerance "
+                      "is produced from data common to a family of them.",
+        "burden": "Reaching the uniform statement recorded here would need a "
+                  "construction ranging over a whole family of functions. The mined "
+                  "record of this proof shows the diagonal characterisation it reaches "
+                  "and the absence of interval compactness, so it is a third way of "
+                  "arguing, neither the cover route above nor a sequential one.",
+        "cells": ["uniform continuity, one function at a time",
+                  "compact uniform space, one continuous map",
+                  "that function is uniformly continuous",
+                  "on the function supplied",
+                  "uniformity over a family, absent here"],
+    },
+]
+
+ROUTE_DIMENSIONS = ["operation", "inputs", "outputs",
+                    "parameter dependence", "conversion burden"]
+
+
+def check_route_profiles(catalog: dict, profiles: list | None = None) -> list[str]:
+    """Fail closed on stale or missing profiles.
+
+    Names alone are not enough: a profile can keep naming a hypothesis and ports
+    that all still exist while the edges that once joined them have moved. So the
+    relationships are checked, not the vocabulary. A hypothesis profile must name
+    exactly the ports that carry the ambient edges leaving that hypothesis —
+    matched through the certificate each edge and each piece of port evidence
+    names — and a profile anchored to a mathlib declaration must name only ports
+    that actually mine it.
+    """
+    profiles = ROUTE_PROFILES if profiles is None else profiles
+    bad: list[str] = []
+    edges = catalog.get("ambientGraph", {}).get("edges", [])
+    ports = catalog.get("ports", [])
+    port_ids = {p["id"] for p in ports}
+    # which port carries which certificate, and so which port carries which edge
+    port_of_cert: dict[str, set] = {}
+    for p in ports:
+        for ev in p.get("evidence", []) or []:
+            if ev.get("certificate"):
+                port_of_cert.setdefault(ev["certificate"], set()).add(p["id"])
+    ports_from: dict[str, set] = {}
+    for ed in edges:
+        carriers = port_of_cert.get(ed.get("certificate"), set())
+        ports_from.setdefault(ed["source"], set()).update(carriers)
+    sources = set(ports_from)
+
+    ids = [prof["id"] for prof in profiles]
+    for name in sorted({i for i in ids if ids.count(i) > 1}):
+        bad.append(f"route profile id {name} is used more than once, which would "
+                   f"render two elements with one anchor")
+    profiled = [prof["hypothesis"] for prof in profiles if prof.get("hypothesis")]
+    for name in sorted(sources - set(profiled)):
+        bad.append(f"ambient hypothesis {name} has no route profile")
+    for name in sorted(set(profiled) - sources):
+        bad.append(f"route profile describes {name}, which no ambient edge assumes")
+    for name in sorted({n for n in profiled if profiled.count(n) > 1}):
+        bad.append(f"ambient hypothesis {name} is profiled more than once")
+
+    for prof in profiles:
+        named = set(prof["ports"])
+        for pid in sorted(named - port_ids):
+            bad.append(f"route profile {prof['id']} cites port {pid}, "
+                       f"which is not in the catalog")
+        hyp = prof.get("hypothesis")
+        if hyp and hyp in sources:
+            expected = ports_from[hyp]
+            for pid in sorted(expected - named):
+                bad.append(f"route profile {prof['id']} omits port {pid}, which "
+                           f"carries an ambient edge from {hyp}")
+            for pid in sorted(named & port_ids - expected):
+                bad.append(f"route profile {prof['id']} cites port {pid}, which "
+                           f"carries no ambient edge from {hyp}")
+        decl = prof.get("mathlibDecl")
+        if decl:
+            miners = {p["id"] for p in ports if p.get("mathlibDecl") == decl}
+            if not miners:
+                bad.append(f"route profile {prof['id']} cites {decl}, "
+                           f"which no port mines")
+            for pid in sorted(named & port_ids - miners):
+                bad.append(f"route profile {prof['id']} cites port {pid}, which "
+                           f"does not mine {decl}")
+        if len(prof["cells"]) != len(ROUTE_DIMENSIONS):
+            bad.append(f"route profile {prof['id']} has {len(prof['cells'])} "
+                       f"comparison cells, expected {len(ROUTE_DIMENSIONS)}")
+    return bad
+
+
+def selftest_route_profiles() -> list[str]:
+    """Fixtures the profile checker must reject. Returns the ones it let through.
+
+    Prose that describes checked routes goes stale silently, and the dangerous
+    staleness is the kind that leaves every name in place: a port swapped for
+    another that also exists, a declaration that moved to a different port. The
+    fixtures are that shape on purpose, and they run against a small synthetic
+    world rather than the live catalog, so the checker is exercised even when the
+    real profiles happen to be clean.
+    """
+    def world():
+        return {"ambientGraph": {"edges": [
+                    {"source": "H1", "target": "T1", "certificate": "c1"},
+                    {"source": "H1", "target": "T2", "certificate": "c2"},
+                    {"source": "H2", "target": "T3", "certificate": "c3"}]},
+                "ports": [
+                    {"id": "pA", "mathlibDecl": "M.a",
+                     "evidence": [{"certificate": "c1"}]},
+                    {"id": "pB", "mathlibDecl": "M.b",
+                     "evidence": [{"certificate": "c2"}, {"certificate": "c3"}]},
+                    {"id": "pC", "mathlibDecl": "M.c", "evidence": []}]}
+
+    def profs():
+        cells = ["x"] * len(ROUTE_DIMENSIONS)
+        return [{"id": "r1", "hypothesis": "H1", "ports": ["pA", "pB"],
+                 "cells": list(cells)},
+                {"id": "r2", "hypothesis": "H2", "ports": ["pB"],
+                 "cells": list(cells)},
+                {"id": "r3", "mathlibDecl": "M.c", "ports": ["pC"],
+                 "cells": list(cells)}]
+
+    missed: list[str] = []
+    if check_route_profiles(world(), profs()):
+        missed.append("the checker rejects a consistent world")
+
+    def reject(label, mutate):
+        cat, ps = world(), profs()
+        mutate(cat, ps)
+        if not check_route_profiles(cat, ps):
+            missed.append(label)
+
+    def add_source(cat, ps):
+        cat["ambientGraph"]["edges"].append(
+            {"source": "H3", "target": "T4", "certificate": "c1"})
+    reject("a new ambient hypothesis with no profile", add_source)
+    reject("a profile of a hypothesis no ambient edge assumes",
+           lambda cat, ps: ps[1].__setitem__("hypothesis", "H9"))
+    reject("one hypothesis profiled twice",
+           lambda cat, ps: ps[1].update({"hypothesis": "H1", "ports": ["pA", "pB"]}))
+    reject("two profiles sharing one id and so one anchor",
+           lambda cat, ps: ps[1].__setitem__("id", "r1"))
+    reject("a comparison row with the wrong number of cells",
+           lambda cat, ps: ps[0].__setitem__("cells", ["x"] * (len(ROUTE_DIMENSIONS) - 1)))
+    reject("a profile citing a port the catalog does not have",
+           lambda cat, ps: ps[0].__setitem__("ports", ["pZ"]))
+
+    def swap(cat, ps):                       # both ports exist; neither belongs
+        ps[0]["ports"], ps[1]["ports"] = ["pB"], ["pA"]
+    reject("ports swapped between two profiles, both still existing", swap)
+
+    def drop_edge(cat, ps):                  # the edge left; the port stayed
+        cat["ambientGraph"]["edges"] = [ed for ed in cat["ambientGraph"]["edges"]
+                                        if ed["certificate"] != "c1"]
+    reject("a port named by a profile whose edge from that hypothesis is gone",
+           drop_edge)
+
+    def move_decl(cat, ps):                  # M.c moved from pC to pB
+        for p in cat["ports"]:
+            if p["id"] == "pC":
+                p["mathlibDecl"] = "M.other"
+            if p["id"] == "pB":
+                p["mathlibDecl"] = "M.c"
+    reject("a mined declaration moved to another port that also exists", move_decl)
+    reject("a mined declaration no port carries at all",
+           lambda cat, ps: [p.__setitem__("mathlibDecl", "M.gone")
+                            for p in cat["ports"] if p["id"] == "pC"])
+    return missed
 
 
 # Canonical direct-edge constructors. One definition per family, shared by the
@@ -4236,6 +4613,8 @@ def cmd_build(args: argparse.Namespace) -> None:
     if not args.skip_lean:
         run_exporter(root)
     catalog = load_catalog(root)
+    for problem in check_route_profiles(catalog):
+        sys.exit(f"rmlib-zoo build: route profile: {problem}")
     out = zoo_dir(root)
     view_dir = out / "views" / "ambient-standard"
     view_dir.mkdir(parents=True, exist_ok=True)
