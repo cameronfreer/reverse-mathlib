@@ -2624,88 +2624,114 @@ def check_route_profiles(catalog: dict, profiles: list | None = None) -> list[st
 
 def adequacy_status(catalog: dict) -> dict:
     """What the ingested evidence actually licenses about the ω-context, read from the
-    records rather than assumed: ``checked`` only when a context-adequacy record is
-    backendChecked AND its forward-realization reference is a backendChecked
-    contextRealization; ``reported`` when such a record exists but either side is
-    not checked (the reason is carried); ``absent`` when no adequacy record exists."""
+    records rather than assumed, with the two directions kept separate:
+
+    * ``forward``: ``checked`` when some contextRealization record is backendChecked,
+      ``reported`` when one exists but none is checked, ``absent`` when none exists;
+    * ``adequacy``: ``checked`` only when a backendChecked contextAdequacy record
+      references a backendChecked contextRealization record; ``reported`` when an
+      adequacy record exists but either side is not checked (reason carried);
+      ``absent`` when no adequacy record exists."""
     bes = catalog.get("backendEvidence", [])
     by_id = {x["id"]: x for x in bes}
+    fwds = [x for x in bes if x.get("kind") == "contextRealization"]
+    if any(x.get("status") == "backendChecked" for x in fwds):
+        forward = "checked"
+    elif fwds:
+        forward = "reported"
+    else:
+        forward = "absent"
+    adequacy, reason, record = "absent", "", ""
     for r in bes:
         if r.get("kind") != "contextAdequacy":
             continue
+        record = r["id"]
         fwd = by_id.get(r.get("data", {}).get("contextRealization"))
         fwd_ok = bool(fwd) and fwd.get("kind") == "contextRealization" \
             and fwd.get("status") == "backendChecked"
         if r.get("status") == "backendChecked" and fwd_ok:
-            return {"state": "checked", "record": r["id"], "reason": ""}
-        reason = r.get("downgraded") or (
-            "" if fwd_ok else "its forward realization record is not checked")
-        return {"state": "reported", "record": r["id"], "reason": reason or "reported"}
-    return {"state": "absent", "record": "", "reason": ""}
+            adequacy = "checked"
+        else:
+            adequacy = "reported"
+            reason = r.get("downgraded") or (
+                "" if fwd_ok else "its forward realization record is not checked")
+        break
+    return {"forward": forward, "adequacy": adequacy, "record": record,
+            "reason": reason}
 
 
 def adequacy_prose(catalog: dict, surface: str) -> str:
     """The one sentence each reading surface may say about the ω-context, generated
-    from the evidence status so a reported or absent record can never read as a
-    checked equivalence. ``surface`` is ``reference`` or ``public``."""
+    from the evidence status so that neither direction is ever described as checked
+    unless its record is. ``surface`` is ``reference`` or ``public``."""
     st = adequacy_status(catalog)
+    both = st["forward"] == "checked" and st["adequacy"] == "checked"
+    fwd_only = st["forward"] == "checked" and not both
     if surface == "reference":
-        if st["state"] == "checked":
+        if both:
             return ("Its theory has exactly the Turing ideals as models on the standard "
                     "numbers, both directions checked; whether that theory is RCA₀ as "
                     "usually axiomatized is not part of any record, so nothing here is "
                     "an unqualified statement about RCA₀. ")
-        if st["state"] == "reported":
+        if fwd_only:
             return ("Every Turing ideal realizes its theory, one direction checked; the "
-                    "converse is recorded but not checked here, so the models on the "
-                    "standard numbers are not asserted to be exactly the Turing ideals; "
-                    "whether that theory is RCA₀ as usually axiomatized is not part of "
-                    "any record, so nothing here is an unqualified statement about "
-                    "RCA₀. ")
-        return ("Every Turing ideal realizes its theory, one direction only, and no "
-                "converse is recorded; nothing here is an unqualified statement about "
-                "RCA₀. ")
-    if st["state"] == "checked":
+                    "converse is not checked here, so the models on the standard "
+                    "numbers are not asserted to be exactly the Turing ideals; whether "
+                    "that theory is RCA₀ as usually axiomatized is not part of any "
+                    "record, so nothing here is an unqualified statement about RCA₀. ")
+        return ("Neither direction of the relation between its theory and the Turing "
+                "ideals is checked here, so nothing about the ω-context is asserted, "
+                "and nothing here is an unqualified statement about RCA₀. ")
+    if both:
         return ("what the bridge\nproves is that its own explicit theory has exactly the "
                 "Turing ideals as models on the\nstandard numbers.")
-    if st["state"] == "reported":
+    if fwd_only:
         return ("the bridge checks\nthat every Turing ideal satisfies its own explicit "
-                "theory, and the converse is recorded\nthere but not checked here.")
-    return ("the bridge checks\nthat every Turing ideal satisfies its own explicit "
-            "theory, one direction only.")
+                "theory, one direction only.")
+    return ("the bridge checks\nneither direction of the relation between its own "
+            "explicit theory and the Turing ideals.")
 
 
 def selftest_adequacy_prose() -> list[str]:
     """Render fixtures: the generated ω-context sentences must follow the evidence
-    status — checked, reported at source, inherited downgrade, absent. Returns the
-    fixtures whose sentence said too much or too little."""
+    status, direction by direction — a sentence may describe the forward direction
+    as checked only when a checked realization record exists, and the equivalence
+    only when the adequacy record and its forward reference are both checked.
+    Returns the fixtures whose sentence said too much or too little."""
     def cat(records):
         return {"backendEvidence": records}
     fwd = {"id": "r.fwd", "kind": "contextRealization", "status": "backendChecked",
            "data": {"theory": "T"}}
-    fwd_rep = dict(fwd, status="reported")
+    fwd_rep = dict(fwd, status="reported", downgraded="reported at source")
     adq = {"id": "r.adq", "kind": "contextAdequacy", "status": "backendChecked",
            "data": {"theory": "T", "contextRealization": "r.fwd"}}
     adq_rep = dict(adq, status="reported", downgraded="reported at source")
     adq_inh = dict(adq, status="reported",
                    downgraded="referenced forward realization 'r.fwd' is not backendChecked")
+    adq_missing = dict(adq, data={"theory": "T", "contextRealization": "r.gone"})
+    # (catalog, equivalence asserted?, forward direction described as checked?)
     cases = {
-        "checked": (cat([fwd, adq]), True),
-        "reported": (cat([fwd, adq_rep]), False),
-        "inherited": (cat([fwd_rep, adq_inh]), False),
-        # a record claiming backendChecked while its forward record is not: the zoo
-        # must not trust it even if the consumer had let it through
-        "unchecked-forward": (cat([fwd_rep, adq]), False),
-        "absent": (cat([fwd]), False),
+        "checked": (cat([fwd, adq]), True, True),
+        "adequacy-reported": (cat([fwd, adq_rep]), False, True),
+        "adequacy-absent": (cat([fwd]), False, True),
+        "inherited-downgrade": (cat([fwd_rep, adq_inh]), False, False),
+        "unchecked-forward-claim": (cat([fwd_rep, adq]), False, False),
+        "forward-reported-only": (cat([fwd_rep]), False, False),
+        "missing-forward": (cat([adq_missing]), False, False),
+        "empty-evidence": (cat([]), False, False),
     }
     bad = []
-    for name, (c, checked) in cases.items():
+    for name, (c, equiv, fwd_checked) in cases.items():
         for surface in ("reference", "public"):
             text = adequacy_prose(c, surface)
             says_equiv = "exactly the Turing ideals" in text and "not asserted" not in text
-            if says_equiv != checked:
+            says_forward = ("one direction checked" in text or "both directions" in text
+                            or "what the bridge\nproves" in text
+                            or "checks\nthat every Turing ideal" in text)
+            if says_equiv != equiv or says_forward != fwd_checked:
                 bad.append(f"{name}/{surface}")
     return bad
+
 
 def selftest_route_profiles() -> list[str]:
     """Fixtures the profile checker must reject. Returns the ones it let through.
