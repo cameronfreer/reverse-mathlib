@@ -4,7 +4,7 @@
  "source": {
   "repository": "example/fixture-backend",
   "revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-  "toolchain": "leanprover/lean4:v4.31.0",
+  "toolchain": "leanprover/lean4:v4.32.2",
   "dependencies": {
    "reverse-mathlib": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
    "Foundation": "cccccccccccccccccccccccccccccccccccccccc",
@@ -54,8 +54,8 @@
  "records": [
   {
    "kind": "contextRealization",
-   "id": "fix.downgrade",
-   "status": "backendChecked",
+   "id": "fix.fwd",
+   "status": "reported",
    "export": "Fix.export",
    "theorem": "Fix.thm",
    "theory": "Fix.Theory",
@@ -63,6 +63,20 @@
    "context": "ReverseMathlib.Omega.IsTuringIdeal",
    "direction": "forward",
    "realizationStatus": "realizationOnly"
+  },
+  {
+   "kind": "contextAdequacy",
+   "id": "fix.adequacy",
+   "status": "backendChecked",
+   "export": "Fix.adequacyExport",
+   "theorem": "Fix.iff",
+   "converseTheorem": "Fix.converse",
+   "contextRealization": "fix.fwd",
+   "theory": "Fix.Theory",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "presentation": "canonicalOmegaStructure",
+   "adequacyStatus": "equivalence"
   }
  ]
 }

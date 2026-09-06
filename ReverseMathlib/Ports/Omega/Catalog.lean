@@ -53,7 +53,9 @@ rm_semantic_context rca0.turingIdealOmega where
     unconditional statement adapters, with nonderivability recorded in the Henkin-safe \
     calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently \
     sound; the typed comparison record carries no embedding and licenses no \
-    derivability transfer); converse context adequacy remains pending."
+    derivability transfer), and checked context adequacy — that theory's canonical \
+    ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized \
+    in the literature is not part of any record."
 
 rm_statement_variant wkl.binaryTree.turingIdealOmega where
   concept := wkl

@@ -1,5 +1,5 @@
 {
- "schema": "rmlib-bridge-evidence/4",
+ "schema": "rmlib-bridge-evidence/5",
  "fingerprintSchema": "lean-interface-expr/1",
  "source": {
   "repository": "example/fixture-backend",
@@ -22,5 +22,20 @@
   "audit": "fixture"
  },
  "fingerprints": [],
- "records": []
+ "records": [
+  {
+   "kind": "contextAdequacy",
+   "id": "fix.adequacy",
+   "status": "backendChecked",
+   "export": "Fix.adequacyExport",
+   "theorem": "Fix.iff",
+   "converseTheorem": "Fix.converse",
+   "contextRealization": "fix.nonexistent",
+   "theory": "Fix.Theory",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "presentation": "canonicalOmegaStructure",
+   "adequacyStatus": "equivalence"
+  }
+ ]
 }

@@ -518,6 +518,18 @@ def CatalogSnapshot.toJson (snapshot : CatalogSnapshot) (env : Environment)
                 ("modelClass", Json.str modelClass),
                 ("witnessProvenance", Json.str witnessProvenance),
                 ("witnessBase", Json.str witnessBase)]
+           | .contextAdequacy contextRealization converseTheorem theory contextKey
+               context contextPred presentation adequacyStatus =>
+             Json.mkObj
+               [("contextRealization", Json.str contextRealization),
+                ("converseTheorem", Json.str converseTheorem),
+                ("theory", Json.str theory),
+                ("external", Json.mkObj [("contextKey", Json.str contextKey)]),
+                ("local", Json.mkObj
+                  [("context", Json.str (toString context.name)),
+                   ("contextDecl", nameJson contextPred)]),
+                ("presentation", Json.str presentation),
+                ("adequacyStatus", Json.str adequacyStatus)]
            | .standardCalculusIdentity calculusId derivability soundness
                sortAssumption equalityRules source =>
              Json.mkObj

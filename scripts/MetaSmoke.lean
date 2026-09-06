@@ -883,8 +883,10 @@ info: concepts: 11; variants: 16; ports: 5; evidence: 6 (6 kernel checked, 0 cla
 
 -- The ω milestone's verdict, pinned: an exact-direction certified ω-model equivalence over
 -- every Turing ideal, the input-access records in the note, and no unqualified RM bound —
--- the context identification with RCA₀'s ω-models stays literature-backed with backend
--- adequacy pending (rendered through the fact view below and the context description).
+-- the identification of Turing ideals with the ω-models of the bridge's explicit theory is
+-- backend-checked both ways (context adequacy); whether that theory is RCA₀ as axiomatized
+-- in the literature stays literature-backed (rendered through the fact view below and the
+-- context description).
 /--
 info: weakKonigEfilcOmega
   mathlib: exists_seq_forall_proj_of_forall_finite
@@ -1012,7 +1014,7 @@ info: concepts (11):
     scoping: The ACA-level matching concept (Hirst thesis Theorem 3.1 shape), deliberately distinct from the countable-Hall family (one-sided, enumerator-bearing) and from the enumerated two-regular perfect-matching presentation class of the fifth fact: local finiteness is an existential property of a bare edge set. No ACA-labeled endpoint or fact
     variant reverse-mathlib:locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.LocallyFinitePerfectMatchingAt⟩
   reverse-mathlib:rca0Core — RCA₀ core (Turing-ideal presentation): a second-order part is nonempty, downward closed under Turing reducibility, and closed under recursive join. The atlas uses this as its base-context condition at the ω layer
-    scoping: A base-context node, not a theorem-strength principle; it gives ω-scope separations an explicit typed left endpoint. Its identification with conventional RCA₀ ω-models remains literature-backed, with converse context adequacy pending. It carries no external crosswalk
+    scoping: A base-context node, not a theorem-strength principle; it gives ω-scope separations an explicit typed left endpoint. Its identification with conventional RCA₀ ω-models remains literature-backed; the bridge's explicit theory has exactly the Turing ideals as canonical ω-models (checked context adequacy). It carries no external crosswalk
     variant reverse-mathlib:rca0Core.turingIdealClosure.turingIdealOmega [turingIdealOmega] ⟨ReverseMathlib.Omega.IsTuringIdeal⟩
   reverse-mathlib:uniformHeine — The hidden-uniformity Heine principle: for every positive pointwise modulus and tolerance there is one delta uniform over every function admitting that modulus
     scoping: [NS18] Corollary A.2's quantifier shape ∀g ∃δ ∀f — the modulus depends only on the local-control data, never on the controlled function. Deliberately distinct from ordinary Heine–Cantor, whose statement conceals this dependency; establishing the stronger dependency form is the checked content, and no algorithm or computational calibration is claimed
@@ -1032,7 +1034,7 @@ namespaces (9):
   hirst — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic (PhD thesis, Pennsylvania State University, 1987) and 'Marriage theorems and reverse mathematics' (Logic and Computation, Contemp. Math. 106, AMS, 1990) — references
   hirstThesisPdf — Jeffry Hirst — Combinatorics in Subsystems of Second Order Arithmetic, 1987 PhD thesis, the scanned PDF as served at hirstjl.github.io/bib/pdf/jhthesis.pdf; pages 6-8 (Theorems 1.1-1.5 and §1.4 ω-models) and pages 12-19 (Theorems 2.2 and 3.1, condition H_sym, and the Chapter 2-3 proof passages) consulted directly — a verified source, distinct from the bibliographic-only hirst namespace
   normannSanders — Dag Normann and Sam Sanders — Pincherle's theorem in reverse mathematics and computability theory, arXiv:1808.09783 v6 (31 Jan 2020); §1 and Appendix A consulted directly — a verified source
-  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
+  rmFoundationBridge — cameronfreer/reverse-mathlib-foundation backend evidence (rmlib-bridge-evidence/5): the external checked ω-semantics bridge to FormalizedFormalLogic/Foundation — context-realization, context-adequacy, statement-adapter, calculus, calculus-comparison, and semantic-countermodel records ingested as backend evidence, with interface fingerprints recomputed locally
   rmzoo — Reverse Mathematics Zoo symbols (github.com/ericastor/rmzoo, pinned import arrives with issue #7)
   sanders — [San] Sam Sanders, Reverse Mathematics: there and back again, monograph under review with Springer, pp 450, 2026 — references
   simpson — [Sim09] Simpson, Subsystems of Second Order Arithmetic, 2nd ed. — section and theorem references
@@ -1929,19 +1931,19 @@ info: facts (19):
   boundedKonigWklOmega [equivalence | theory rca0 omegaModels] wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.boundedKonig_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems weakKonigAt_of_boundedKonigAt and boundedKonigAt_of_weakKonigAt (the latter through efilcAt_of_weakKonigAt); all three routes and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   disjointRangeSeparationWklOmega [equivalence | theory rca0 omegaModels] disjointRangeSeparation.injectionGraphs.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.disjointRangeSeparation_wkl_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from four named theorems: weakKonigAt_of_disjointRangeSeparationAt (separation → WKL, the independent tree-to-injections calibration) and matching_separates ∘ twoRegularPerfectMatchingAt_of_efilcAt ∘ efilcAt_of_weakKonigAt (WKL → separation); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   efilcHallOmega [implication | theory rca0 omegaModels] efilc.explicitSequential.enumeratedFibers.turingIdealOmega => countableHall.oneSidedInjective.enumeratedCandidates.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.efilc_hall_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem countableHallAt_of_efilcAt; its route architecture and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   finitelyBranchingKonigJumpOmega [equivalence | theory rca0 omegaModels] finitelyBranchingKonig.levelwiseBounded.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.finitelyBranchingKonig_jumpClosure_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the two named direction theorems: finitelyBranchingKonigAt_of_jumpClosedAt (the least level bound from the jump through levelBoundGraph_le_jump, then the eighth fact's direction theorem on the now explicitly bounded tree) and jumpClosedAt_of_finitelyBranchingKonigAt (the injection tree through injectionRangeExistenceAt_of_finitelyBranchingKonigAt — internality by injectionTree_le_graph, correctness by path_determines_range — then the seventh fact's jumpClosedAt_of_injectionRangeExistenceAt). Both routes, the two reverse stages, and the forward/reverse exclusions are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   fixAmbientOmega [implication | theory fixRca0 omegaModels] smokeVariant => smokePropVariant — recorded, no evidence linked
   fixCons [conservation | theory fixRca0 provability] smokeVariant conservative[fixPi11] over smokePropVariant — recorded, no evidence linked
   fixEqFact [equivalence | theory fixRca0 omegaModels] smokeModelVarP <=> smokeModelVarPAlt — CERTIFIED
@@ -1963,27 +1965,27 @@ info: facts (19):
   injectionRangeExistenceJumpOmega [equivalence | theory rca0 omegaModels] injectionRangeExistence.injectionGraphs.turingIdealOmega <=> jumpClosure.turingIdealClosure.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.injectionRange_jumpClosure_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the two named direction theorems: injectionRangeExistenceAt_of_jumpClosedAt (jump closure → range existence, through range_le_jump and ideal downward closure) and jumpClosedAt_of_injectionRangeExistenceAt (range existence → jump closure, through jumpEnumGraph_le, the total injective packaging, and range_jumpEnum); both route spines and their mutual exclusion are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   jumpClosureBoundedKonigOmega [implication | theory rca0 omegaModels] jumpClosure.turingIdealClosure.turingIdealOmega => wkl.explicitlyBoundedTree.internalBoundFunction.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.jumpClosure_boundedKonig_omega_implication [context rca0.turingIdealOmega]
       note: The named direction theorem boundedKonigAt_of_jumpClosedAt, through the leftmost-path route spine: frontier_recursiveIn_join, extendibleSet_le_jump, le_jump, and leftmostExec_eq, then ideal closure. The route and this composition are pinned by dependency gates in scripts/MetaSmoke.lean, including the independence of le_jump from range_le_jump
-      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: implication kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   locallyFinitePerfectMatchingKonigOmega [equivalence | theory rca0 omegaModels] locallyFinitePerfectMatching.bareEdgeSet.turingIdealOmega <=> finitelyBranchingKonig.levelwiseBounded.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.locallyFinitePerfectMatching_finitelyBranchingKonig_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the two named direction theorems: locallyFinitePerfectMatchingAt_of_finitelyBranchingKonigAt (Hirst's partial-solution tree: internality one reduction below the bare edge set, finite branching from the local-finiteness properties, infinitude by the finite symmetric-Hall covering lemma, then the path decoder) and finitelyBranchingKonigAt_of_locallyFinitePerfectMatchingAt (Hirst's gadget through injectionRangeExistenceAt_of_locallyFinitePerfectMatchingAt, then the seventh fact's checked direction and the ninth's forward direction). Dependency gates pin both route architectures, the reverse's intermediate stage, and the mutual exclusions
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   rca0CoreWklOmega [nonImplication | theory rca0 omegaModels] rca0Core.turingIdealClosure.turingIdealOmega =/=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.rec_countermodel_weakKonig [context rca0.turingIdealOmega]
       note: The named countermodel REC with the named separation theorem not_weakKonigAt_recursivePart; the Kleene-tree route and this certificate's composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: nonimplication (countermodel) kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: nonimplication (countermodel) kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   wklEfilcOmega [equivalence | theory rca0 omegaModels] wkl.binaryTree.turingIdealOmega <=> efilc.explicitSequential.enumeratedFibers.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.weakKonig_efilc_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the named direction theorems efilcAt_of_weakKonigAt and weakKonigAt_of_efilcAt; both route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
   wklTwoRegularMatchingOmega [equivalence | theory rca0 omegaModels] countableHall.twoRegularPerfectMatching.enumeratedNeighborhoods.turingIdealOmega <=> wkl.binaryTree.turingIdealOmega — CERTIFIED
     via ReverseMathlib.Ports.wkl_twoRegularMatching_omega_equivalence [context rca0.turingIdealOmega]
       note: Composed from the four named route theorems: matching_separates then weakKonigAt_of_disjointRangeSeparationAt (the reversal, through the bridge-local unregistered disjoint-range separation interface), and efilcAt_of_weakKonigAt then twoRegularPerfectMatchingAt_of_efilcAt (the forward, through the EFILC equivalence); all route architectures and this composition are pinned by dependency gates in scripts/MetaSmoke.lean
-      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer); converse context adequacy remains pending.
+      realization: equivalence kernel-checked over 'ReverseMathlib.Omega.IsTuringIdeal'; context status: The computability-theoretic Turing-ideal presentation of RCA₀'s ω-models. Distinct claims, never conflated: an implication certified against this context is kernel-checked over every Turing ideal; the identification of Turing ideals with the ω-models of RCA₀ is literature-backed ([Sim09] VIII.1). Backend evidence (rmFoundationBridge) adds: checked forward context realization (every Turing ideal satisfies an explicit semantic RCA₀ theory on ω-structures — one-way) and checked unconditional statement adapters, with nonderivability recorded in the Henkin-safe calculus and in the pinned standard calculus l2VarWitnessLK.v1 (independently sound; the typed comparison record carries no embedding and licenses no derivability transfer), and checked context adequacy — that theory's canonical ω-models are exactly the Turing ideals, while whether it is RCA₀ as axiomatized in the literature is not part of any record.
 -/
 #guard_msgs in
 #revmath_facts
@@ -2255,20 +2257,22 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
     pinned verbatim"
 
 -- The production artifact is the main cross-implementation conformance fixture: all
--- ten records ingested (by `Ports.FoundationBridge`) as `backendChecked` — matching
+-- eleven records ingested (by `Ports.FoundationBridge`) as `backendChecked` — matching
 -- toolchain, matching mathlib, complete checking coordinates, and an exactly-matching
 -- locally recomputed interface manifest.
 #eval show CoreM Unit from do
   let env ← getEnv
   let entries := backendEvidenceExt.getState env
   let prod := entries.filter (·.repository == "cameronfreer/reverse-mathlib-foundation")
-  check (prod.size == 10) "production artifact: exactly ten records"
+  check (prod.size == 11) "production artifact: exactly eleven records"
   for e in prod do
     let why := e.downgraded?.getD "none"
     check (e.status == .backendChecked)
       s!"production record {e.id} is backendChecked (got {e.status.tag}, reason {why})"
   check ((prod.filter (·.data.kindTag == "contextRealization")).size == 1)
     "one context realization"
+  check ((prod.filter (·.data.kindTag == "contextAdequacy")).size == 1)
+    "one context adequacy (additive; the realization record is unchanged)"
   check ((prod.filter (·.data.kindTag == "statementAdapter")).size == 3)
     "three statement adapters"
   check ((prod.filter (·.data.kindTag == "calculusIdentity")).size == 1)
@@ -2295,19 +2299,50 @@ theorem _root_.ReverseMathlib.SmokeFixtures.encVecThm : True := trivial
       check ((e.render.splitOn
           "carries no embedding and licenses no derivability transfer").length > 1)
         "comparison rendering states exactly the approved embedding-free relation"
+    if let .contextAdequacy fwdRef _ _ _ _ _ presentation adequacyStatus := e.data then
+      check (fwdRef == "realization.rca0.turingIdeal")
+        "adequacy record references the forward realization record"
+      check (presentation == "canonicalOmegaStructure" && adequacyStatus == "equivalence")
+        "adequacy record carries the closed presentation and status tags"
+      check ((e.render.splitOn "not an identification of that theory with").length > 1
+          && (e.render.splitOn "exactly the").length > 1)
+        "adequacy rendering states the equivalence and refuses the RCA₀ identification"
     if let .standardCalculusIdentity _ _ _ _ equalityRules _ := e.data then
       check ((e.render.splitOn equalityRules).length > 1 &&
           (e.render.splitOn "equality-correct").length > 1)
         "standard-calculus rendering carries the equality rules and the \
           equality-correct qualification"
 
-/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/5' (this reader accepts 'rmlib-bridge-evidence/4'); schema changes are versioned, never silently reinterpreted -/
+/-- error: backend evidence: unknown schema version 'rmlib-bridge-evidence/4' (this reader accepts 'rmlib-bridge-evidence/5'); schema changes are versioned, never silently reinterpreted -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/unknown_schema.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: record 'fix.wrongkind': alias rmFoundationBridge:"rca0/turingIdealOmega" resolves to semanticContext 'rca0.turingIdealOmega' — statement adapters target registered statement variants only, never objects of another kind -/
 #guard_msgs in
 rm_ingest_bridge_evidence "fixtures/backend/wrong_kind_alias.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+-- Context adequacy is additive and fail-closed: a missing, mismatched, or wrong-kind
+-- forward reference and unknown closed tags are hard errors; a `reported` forward
+-- record downgrades the adequacy record (below).
+/-- error: backend evidence: record 'fix.adequacy': contextRealization 'fix.nonexistent' does not name a record in this file -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_missing_forward.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.adequacy': theory 'Fix.Other' disagrees with referenced realization's theory 'Fix.Theory' — an adequacy record cannot be manufactured from a mismatched forward record -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_mismatched_forward.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.adequacy': contextRealization 'fix.calc' has kind 'calculusIdentity', not contextRealization -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_wrong_kind_forward.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.adequacy': unknown presentation 'henkinGeneral' (only 'canonicalOmegaStructure' exists — the equivalence is about the canonical ω-structures of the bridge and no other model class) -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_unknown_presentation.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+
+/-- error: backend evidence: record 'fix.adequacy': unknown adequacyStatus 'forwardOnly' (only 'equivalence' exists) -/
+#guard_msgs in
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_unknown_status.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 /-- error: backend evidence: record 'fix.anchor': semantic anchor mismatch — resolved context 'rca0.turingIdealOmega' has contextDecl 'ReverseMathlib.Omega.IsTuringIdeal', but the record declares 'ReverseMathlib.Omega.WeakKonigAt' -/
 #guard_msgs in
@@ -2364,6 +2399,7 @@ rm_ingest_bridge_evidence "fixtures/backend/empty_coordinates.json" artifactRevi
 -- The downgrade path: a toolchain gap ingests as `reported` with a visible reason —
 -- never a hard failure of the repository, never `backendChecked`.
 rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_reported_forward.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 #eval show CoreM Unit from do
   let env ← getEnv
@@ -2378,6 +2414,12 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
   check (m.status == .reported) "mathlib gap downgrades to reported"
   check (((m.downgraded?.getD "").splitOn "mathlib revision mismatch").length > 1)
     "downgrade reason names the mathlib gap"
+  let some a := entries.find? (·.id == "fix.adequacy")
+    | throwError "reported-forward adequacy fixture record not ingested"
+  check (a.status == .reported)
+    "an adequacy record referencing a reported forward record is downgraded"
+  check (((a.downgraded?.getD "").splitOn "is not backendChecked").length > 1)
+    "the adequacy downgrade reason names the forward record's status"
   let some c := entries.find? (·.id == "fix.emptycoord")
     | throwError "empty-coordinates fixture record not ingested"
   check (c.status == .reported) "empty coordinates downgrade to reported"
@@ -2390,9 +2432,9 @@ rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRe
   let prodEntries := entries.filter
     (·.repository == "cameronfreer/reverse-mathlib-foundation")
   for e in prodEntries do
-    check (e.revision == "ffcebe521227125582ea93768cecfa5de0d8beab")
+    check (e.revision == "9b8c902c35b496837b5e1ee5abbb86ba9fe44822")
       "production export/check revision is the artifact's embedded revision"
-    check (e.artifactRevision == "13b9b6b379712a63ba8c8bb9f6bcf9775adadf3b")
+    check (e.artifactRevision == "938c404bd04172a91a26f863eb7dad902841a48c")
       "production artifact-publishing revision is stored distinctly"
     check (e.foundationRevision == "9800e78127294798496adc6e37c8b9ded637d93a")
       "Foundation pin preserved through ingestion"
