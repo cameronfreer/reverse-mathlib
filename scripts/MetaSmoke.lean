@@ -2400,6 +2400,7 @@ rm_ingest_bridge_evidence "fixtures/backend/empty_coordinates.json" artifactRevi
 -- never a hard failure of the repository, never `backendChecked`.
 rm_ingest_bridge_evidence "fixtures/backend/toolchain_downgrade.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 rm_ingest_bridge_evidence "fixtures/backend/adequacy_reported_forward.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
+rm_ingest_bridge_evidence "fixtures/backend/adequacy_empty_converse.json" artifactRevision := "dddddddddddddddddddddddddddddddddddddddd"
 
 #eval show CoreM Unit from do
   let env ← getEnv
@@ -2420,6 +2421,12 @@ rm_ingest_bridge_evidence "fixtures/backend/adequacy_reported_forward.json" arti
     "an adequacy record referencing a reported forward record is downgraded"
   check (((a.downgraded?.getD "").splitOn "is not backendChecked").length > 1)
     "the adequacy downgrade reason names the forward record's status"
+  let some ec := entries.find? (·.id == "fix.adequacy.noconverse")
+    | throwError "empty-converse adequacy fixture record not ingested"
+  check (ec.status == .reported)
+    "an adequacy record with an empty converseTheorem is downgraded"
+  check (((ec.downgraded?.getD "").splitOn "empty converseTheorem name").length > 1)
+    "the empty-converse downgrade reason is visible"
   let some c := entries.find? (·.id == "fix.emptycoord")
     | throwError "empty-coordinates fixture record not ingested"
   check (c.status == .reported) "empty coordinates downgrade to reported"

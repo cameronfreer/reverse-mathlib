@@ -539,6 +539,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"computed-closure evaluator fixture did not fail closed: {name}")
     for name in selftest_route_profiles():
         problems.append(f"route-profile checker did not fail closed: {name}")
+    for name in selftest_adequacy_prose():
+        problems.append(f"ω-context prose did not follow the evidence status: {name}")
     for name in check_route_profiles(catalog):
         problems.append(f"route profile: {name}")
     cv = fam_views["computed-closure"]
@@ -1784,10 +1786,8 @@ claim, and no arrow anywhere on this site comes from this table.</em></p>
             shared + "\n" + "\n".join(cards),
             "<p><em>Results checked in the external Lean development that formalizes "
             "the syntax and semantics of second-order arithmetic, ingested with the "
-            "statement fingerprint recomputed here. Its theory has exactly the Turing "
-            "ideals as models on the standard numbers, both directions checked; whether "
-            "that theory is RCA₀ as usually axiomatized is not part of any record, so "
-            "nothing here is an unqualified statement about RCA₀. "
+            "statement fingerprint recomputed here. "
+            + adequacy_prose(catalog, "reference") +
             "These records contribute the two results shown on the "
             "<a href=\"index.html#bridge\">atlas</a> and nothing else.</em></p>\n")
 
@@ -2134,9 +2134,7 @@ Lean theorems: each says that over every Turing ideal, one principle implies ano
 is equivalent to it, or fails to imply it. A failure is always witnessed by an explicit
 countermodel, never asserted as underivability.</p>
 <p>Turing ideals are the second-order parts of ω-models of RCA₀. That identification is
-standard in the literature ([Sim09] VIII.1) and is quoted here, not proved; what the bridge
-proves is that its own explicit theory has exactly the Turing ideals as models on the
-standard numbers. No result on these pages is a claim about derivability in RCA₀. The
+standard in the literature ([Sim09] VIII.1) and is quoted here, not proved; {adequacy_prose(catalog, "public")} No result on these pages is a claim about derivability in RCA₀. The
 nonderivability result is about a named theory and a named sentence inside the bridge, in
 one named calculus, and may not be read as being about RCA₀ itself.</p>
 <p>Results reached by composing others are shown as derivations on the reference page
@@ -2622,6 +2620,92 @@ def check_route_profiles(catalog: dict, profiles: list | None = None) -> list[st
                        f"comparison cells, expected {len(ROUTE_DIMENSIONS)}")
     return bad
 
+
+
+def adequacy_status(catalog: dict) -> dict:
+    """What the ingested evidence actually licenses about the ω-context, read from the
+    records rather than assumed: ``checked`` only when a context-adequacy record is
+    backendChecked AND its forward-realization reference is a backendChecked
+    contextRealization; ``reported`` when such a record exists but either side is
+    not checked (the reason is carried); ``absent`` when no adequacy record exists."""
+    bes = catalog.get("backendEvidence", [])
+    by_id = {x["id"]: x for x in bes}
+    for r in bes:
+        if r.get("kind") != "contextAdequacy":
+            continue
+        fwd = by_id.get(r.get("data", {}).get("contextRealization"))
+        fwd_ok = bool(fwd) and fwd.get("kind") == "contextRealization" \
+            and fwd.get("status") == "backendChecked"
+        if r.get("status") == "backendChecked" and fwd_ok:
+            return {"state": "checked", "record": r["id"], "reason": ""}
+        reason = r.get("downgraded") or (
+            "" if fwd_ok else "its forward realization record is not checked")
+        return {"state": "reported", "record": r["id"], "reason": reason or "reported"}
+    return {"state": "absent", "record": "", "reason": ""}
+
+
+def adequacy_prose(catalog: dict, surface: str) -> str:
+    """The one sentence each reading surface may say about the ω-context, generated
+    from the evidence status so a reported or absent record can never read as a
+    checked equivalence. ``surface`` is ``reference`` or ``public``."""
+    st = adequacy_status(catalog)
+    if surface == "reference":
+        if st["state"] == "checked":
+            return ("Its theory has exactly the Turing ideals as models on the standard "
+                    "numbers, both directions checked; whether that theory is RCA₀ as "
+                    "usually axiomatized is not part of any record, so nothing here is "
+                    "an unqualified statement about RCA₀. ")
+        if st["state"] == "reported":
+            return ("Every Turing ideal realizes its theory, one direction checked; the "
+                    "converse is recorded but not checked here, so the models on the "
+                    "standard numbers are not asserted to be exactly the Turing ideals; "
+                    "whether that theory is RCA₀ as usually axiomatized is not part of "
+                    "any record, so nothing here is an unqualified statement about "
+                    "RCA₀. ")
+        return ("Every Turing ideal realizes its theory, one direction only, and no "
+                "converse is recorded; nothing here is an unqualified statement about "
+                "RCA₀. ")
+    if st["state"] == "checked":
+        return ("what the bridge\nproves is that its own explicit theory has exactly the "
+                "Turing ideals as models on the\nstandard numbers.")
+    if st["state"] == "reported":
+        return ("the bridge checks\nthat every Turing ideal satisfies its own explicit "
+                "theory, and the converse is recorded\nthere but not checked here.")
+    return ("the bridge checks\nthat every Turing ideal satisfies its own explicit "
+            "theory, one direction only.")
+
+
+def selftest_adequacy_prose() -> list[str]:
+    """Render fixtures: the generated ω-context sentences must follow the evidence
+    status — checked, reported at source, inherited downgrade, absent. Returns the
+    fixtures whose sentence said too much or too little."""
+    def cat(records):
+        return {"backendEvidence": records}
+    fwd = {"id": "r.fwd", "kind": "contextRealization", "status": "backendChecked",
+           "data": {"theory": "T"}}
+    fwd_rep = dict(fwd, status="reported")
+    adq = {"id": "r.adq", "kind": "contextAdequacy", "status": "backendChecked",
+           "data": {"theory": "T", "contextRealization": "r.fwd"}}
+    adq_rep = dict(adq, status="reported", downgraded="reported at source")
+    adq_inh = dict(adq, status="reported",
+                   downgraded="referenced forward realization 'r.fwd' is not backendChecked")
+    cases = {
+        "checked": (cat([fwd, adq]), True),
+        "reported": (cat([fwd, adq_rep]), False),
+        "inherited": (cat([fwd_rep, adq_inh]), False),
+        # a record claiming backendChecked while its forward record is not: the zoo
+        # must not trust it even if the consumer had let it through
+        "unchecked-forward": (cat([fwd_rep, adq]), False),
+        "absent": (cat([fwd]), False),
+    }
+    bad = []
+    for name, (c, checked) in cases.items():
+        for surface in ("reference", "public"):
+            text = adequacy_prose(c, surface)
+            says_equiv = "exactly the Turing ideals" in text and "not asserted" not in text
+            if says_equiv != checked:
+                bad.append(f"{name}/{surface}")
+    return bad
 
 def selftest_route_profiles() -> list[str]:
     """Fixtures the profile checker must reject. Returns the ones it let through.

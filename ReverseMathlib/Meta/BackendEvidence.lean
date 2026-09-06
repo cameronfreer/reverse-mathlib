@@ -781,6 +781,11 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
           recordReasons := recordReasons.push "empty soundness name"
         if derivability.isEmpty then
           recordReasons := recordReasons.push "empty derivability name"
+      -- the converse's provenance is checking metadata too: an adequacy record whose
+      -- converse theorem is unnamed is incomplete, never backendChecked
+      if let .contextAdequacy _ converseTheorem _ _ _ _ _ _ := r.data then
+        if converseTheorem.isEmpty then
+          recordReasons := recordReasons.push "empty converseTheorem name"
       return recordReasons
     if r.shell.claimedStatus == "reported" then
       (BackendStatus.reported, some "reported at source")
