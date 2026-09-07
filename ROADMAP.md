@@ -1000,6 +1000,36 @@ possible.
   across the five treatment axes with per-row confidence, source keys, and URLs; the primary
   catalog seed (see "Treatment axes and the concordance workbook" above).
 
+## Established boundaries (durable checkpoints)
+
+Where a milestone fixes a mathematical boundary, the boundary is recorded here with the
+revisions that carry it, so the repository — not only working memory — says exactly what
+was proved.
+
+### ω-context adequacy for the bridge theory (2026-09-07)
+
+- **Theorem** (bridge, `RMFoundationBridge/ConverseAdequacy.lean`):
+  `models_rca0_iff_isTuringIdeal : Ω.toFoundation ⊧* Rca0Theory ↔ IsTuringIdeal Ω` — the
+  canonical ω-structures (`OmegaPart.toFoundation`: number sort standard ℕ under the
+  explicit interpretation, set sort exactly `Ω.sets`) satisfying the bridge's explicit
+  theory `Rca0Theory` are exactly the Turing ideals. The converse
+  (`isTuringIdeal_of_models_rca0`) recovers nonemptiness, join, and downward closure from
+  Δ⁰₁ comprehension alone, downward closure through a Σ⁰₁ transcript predicate for
+  oracle computation with the oracle set as the only set parameter.
+- **Revisions**: reverse-mathlib-foundation `17c39f9` (merge of PR #6; export revision
+  `9b8c902`, artifact commit `938c404`, schema `rmlib-bridge-evidence/5`, record
+  `adequacy.rca0.turingIdeal.canonicalOmega`); reverse-mathlib `0426f42` (merge of PR #74:
+  ingestion of `/5`, rejection of `/4`, fixtures, evidence-driven prose).
+- **What it licenses**: every registered theorem over all Turing ideals holds over every
+  canonical ω-model of *that exact theory*.
+- **What it does not**: identifying `Rca0Theory` with conventional RCA₀ (axiomatization
+  faithfulness remains a separate, documented-as-unverified obligation); transport to
+  arbitrary Henkin or nonstandard models; any object-calculus derivability;
+  reinterpreting the calculus-relative nonderivability records as conventional-RCA₀
+  nonderivability; turning a typed ω-capability into an L₂ theorem without its own
+  statement adapter. The scoreboard is unchanged at 10/1/1: this upgrades the formal
+  status of the ω-context and is not a calibration fact.
+
 ## Near-term sequence
 
 Hall walking slice (done) → #5 layer-indexed typed facts and contexts → #6 typed semantic
@@ -1007,3 +1037,11 @@ certificates and the reporting split → Foundation feasibility spike → `SOAri
 surface and ω realization (WKLω ↔ EFILCω → CountableHallω) → backend v0 and the completeness
 bridge (the turnstile track) → tree and matching representation matrix → Simpson's WKL/ACA
 matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice → coded analysis ladder.
+
+After the ω-context adequacy checkpoint (2026-09-07): the diagonalization umbrella #75,
+starting with the Kleene-tree path characterization #76 (existing tree and coding
+unchanged; no registration) → restricted replay #20 (audit its nonstandard-model
+obligations before promising a small construction; the positive all-model or syntactic
+WKL → EFILC theorem stays the foundational flagship) → relative diagonalization and the
+separation adapter under #75. No general resource/effect machinery ahead of a concrete
+replay or cross-scope theorem.
