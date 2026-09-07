@@ -24,26 +24,28 @@
  "fingerprints": [],
  "records": [
   {
-   "kind": "statementAdapter",
-   "id": "fix.adapterA",
+   "kind": "calculusIdentity",
+   "id": "fix.calc",
    "status": "backendChecked",
-   "export": "Fix.export",
-   "theorem": "Fix.thm",
-   "sentence": "Fix.wklSentence",
-   "capability": "ReverseMathlib.Omega.WeakKonigAt",
-   "variantKey": "wkl/binaryTree.turingIdealOmega",
-   "adapterStatus": "unconditional"
+   "export": "Fix.e",
+   "calculusId": "fix",
+   "derivability": "Fix.d",
+   "soundness": "Fix.s",
+   "standardComparison": "recorded"
   },
   {
-   "kind": "calculusNonderivability",
-   "id": "fix.refkind",
+   "kind": "contextAdequacy",
+   "id": "fix.adequacy",
    "status": "backendChecked",
-   "export": "Fix.export",
-   "theorem": "Fix.thm",
-   "calculusRecord": "fix.adapterA",
-   "sentenceAdapter": "fix.adapterA",
+   "export": "Fix.adequacyExport",
+   "theorem": "Fix.iff",
+   "converseTheorem": "Fix.converse",
+   "contextRealization": "fix.calc",
    "theory": "Fix.Theory",
-   "sentence": "Fix.wklSentence"
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "presentation": "canonicalOmegaStructure",
+   "adequacyStatus": "equivalence"
   }
  ]
 }

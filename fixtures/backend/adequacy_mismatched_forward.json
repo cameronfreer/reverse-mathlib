@@ -24,26 +24,30 @@
  "fingerprints": [],
  "records": [
   {
-   "kind": "statementAdapter",
-   "id": "fix.adapterA",
+   "kind": "contextRealization",
+   "id": "fix.fwd",
    "status": "backendChecked",
    "export": "Fix.export",
    "theorem": "Fix.thm",
-   "sentence": "Fix.wklSentence",
-   "capability": "ReverseMathlib.Omega.WeakKonigAt",
-   "variantKey": "wkl/binaryTree.turingIdealOmega",
-   "adapterStatus": "unconditional"
+   "theory": "Fix.Theory",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "direction": "forward",
+   "realizationStatus": "realizationOnly"
   },
   {
-   "kind": "calculusNonderivability",
-   "id": "fix.refkind",
+   "kind": "contextAdequacy",
+   "id": "fix.adequacy",
    "status": "backendChecked",
-   "export": "Fix.export",
-   "theorem": "Fix.thm",
-   "calculusRecord": "fix.adapterA",
-   "sentenceAdapter": "fix.adapterA",
-   "theory": "Fix.Theory",
-   "sentence": "Fix.wklSentence"
+   "export": "Fix.adequacyExport",
+   "theorem": "Fix.iff",
+   "converseTheorem": "Fix.converse",
+   "contextRealization": "fix.fwd",
+   "theory": "Fix.Other",
+   "contextKey": "rca0/turingIdealOmega",
+   "context": "ReverseMathlib.Omega.IsTuringIdeal",
+   "presentation": "canonicalOmegaStructure",
+   "adequacyStatus": "equivalence"
   }
  ]
 }

@@ -8,7 +8,7 @@ import ReverseMathlib.Meta.InterfaceEncoder
 import ReverseMathlib.Meta.Registry
 
 /-!
-# Backend-evidence ingestion: `rmlib-bridge-evidence/2`
+# Backend-evidence ingestion: `rmlib-bridge-evidence/5`
 
 The contract-first channel by which an external checked backend (the
 reverse-mathlib-foundation ω-semantics bridge) is ingested as **backend evidence** —
@@ -69,7 +69,7 @@ namespace ReverseMathlib.Meta
 open Lean Elab Command
 
 /-- The accepted backend-evidence schema version. -/
-def backendEvidenceSchemaV4 : String := "rmlib-bridge-evidence/4"
+def backendEvidenceSchemaV5 : String := "rmlib-bridge-evidence/5"
 
 /-- The accepted fingerprint-schema version. -/
 def fingerprintSchemaV1 : String := "lean-interface-expr/1"
@@ -116,6 +116,15 @@ inductive BackendRecordData where
   | semanticCountermodel (contextRealization : String) (sentenceAdapter : String)
       (theory : String) (sentence : String) (scope : String) (modelClass : String)
       (witnessProvenance : String) (witnessBase : String)
+  /-- Context adequacy: the canonical ω-structures satisfying the backend theory are
+  exactly the resolved semantic context. Additive: it references the (unchanged,
+  one-way) realization record by id and adds the converse theorem. Licenses per-model
+  transfer over canonical ω-models of that exact theory only — never an identification
+  of the theory with conventional RCA₀, never Henkin/nonstandard transport, never a
+  derivability claim. -/
+  | contextAdequacy (contextRealization : String) (converseTheorem : String)
+      (theory : String) (contextKey : String) (context : SemanticContextId)
+      (contextPred : Name) (presentation : String) (adequacyStatus : String)
   /-- Pinned standard-calculus identity: the backend's fully specified presentation of
   the conventional two-sorted logic, with its direct soundness, its sort assumption as
   a closed tag, and its documentary source pin. -/
@@ -137,6 +146,7 @@ def BackendRecordData.kindTag : BackendRecordData → String
   | .calculusIdentity .. => "calculusIdentity"
   | .calculusNonderivability .. => "calculusNonderivability"
   | .semanticCountermodel .. => "semanticCountermodel"
+  | .contextAdequacy .. => "contextAdequacy"
   | .standardCalculusIdentity .. => "standardCalculusIdentity"
   | .calculusComparison .. => "calculusComparison"
 
@@ -350,7 +360,7 @@ private def parseRecordShell (j : Json) : CommandElabM ParsedRecord := do
   let kind ← getStr j "kind" ctx
   unless ["contextRealization", "statementAdapter", "calculusIdentity",
       "calculusNonderivability", "semanticCountermodel", "standardCalculusIdentity",
-      "calculusComparison"].contains kind do
+      "calculusComparison", "contextAdequacy"].contains kind do
     throwError "backend evidence: {ctx}: unknown kind '{kind}'"
   let claimedStatus ← getStr j "status" ctx
   unless ["backendChecked", "reported"].contains claimedStatus do
@@ -394,6 +404,32 @@ private def resolveRecord (cat : ConceptCatalog) (nsName : Name) (p : ParsedReco
     pure { shell := p,
            data := .contextRealization theory contextKey entry.id entry.contextDecl
              direction realizationStatus,
+           roots := [entry.contextDecl] }
+  | "contextAdequacy" => do
+    let realizationRef ← getStr j "contextRealization" ctx
+    let converseTheorem ← getStr j "converseTheorem" ctx
+    let theory ← getStr j "theory" ctx
+    let contextKey ← getStr j "contextKey" ctx
+    let contextPredStr ← getStr j "context" ctx
+    let presentation ← getStr j "presentation" ctx
+    unless presentation == "canonicalOmegaStructure" do
+      throwError "backend evidence: {ctx}: unknown presentation '{presentation}' (only \
+        'canonicalOmegaStructure' exists — the equivalence is about the canonical \
+        ω-structures of the bridge and no other model class)"
+    let adequacyStatus ← getStr j "adequacyStatus" ctx
+    unless adequacyStatus == "equivalence" do
+      throwError "backend evidence: {ctx}: unknown adequacyStatus '{adequacyStatus}' \
+        (only 'equivalence' exists)"
+    let entry ← resolveContext cat nsName contextKey ctx
+    let declared := contextPredStr.toName
+    unless entry.contextDecl == declared do
+      throwError "backend evidence: {ctx}: semantic anchor mismatch — resolved context \
+        '{entry.id.name}' has contextDecl '{entry.contextDecl}', but the record \
+        declares '{declared}'"
+    -- the realization reference is linked and identity-checked in phase 3
+    pure { shell := p,
+           data := .contextAdequacy realizationRef converseTheorem theory contextKey
+             entry.id entry.contextDecl presentation adequacyStatus,
            roots := [entry.contextDecl] }
   | "statementAdapter" => do
     let sentence ← getStr j "sentence" ctx
@@ -520,9 +556,9 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
     | .ok j => pure j
   -- envelope
   let schema ← getStr json "schema" "evidence file"
-  unless schema == backendEvidenceSchemaV4 do
+  unless schema == backendEvidenceSchemaV5 do
     throwErrorAt path "backend evidence: unknown schema version '{schema}' (this \
-      reader accepts '{backendEvidenceSchemaV4}'); schema changes are versioned, never \
+      reader accepts '{backendEvidenceSchemaV5}'); schema changes are versioned, never \
       silently reinterpreted"
   let fpSchema ← getStr json "fingerprintSchema" "evidence file"
   unless fpSchema == fingerprintSchemaV1 do
@@ -614,6 +650,28 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
       linked := linked.push { r with
         data := .calculusNonderivability calcRef adapterRef calculusId theory sentence,
         roots := adapter.roots }
+    | .contextAdequacy realizationRef converseTheorem theory contextKey context
+        contextPred presentation adequacyStatus => do
+      let ctx := s!"record '{r.shell.id}'"
+      let some realization := resolved.find? (·.shell.id == realizationRef)
+        | throwErrorAt path "backend evidence: {ctx}: contextRealization \
+            '{realizationRef}' does not name a record in this file"
+      match realization.data with
+        | .contextRealization t k c _ _ _ =>
+          unless t == theory do
+            throwErrorAt path "backend evidence: {ctx}: theory '{theory}' disagrees \
+              with referenced realization's theory '{t}' — an adequacy record cannot \
+              be manufactured from a mismatched forward record"
+          unless k == contextKey && c == context do
+            throwErrorAt path "backend evidence: {ctx}: context '{contextKey}' \
+              disagrees with referenced realization's context '{k}' — an adequacy \
+              record cannot be manufactured from a mismatched forward record"
+        | d => throwErrorAt path "backend evidence: {ctx}: contextRealization \
+            '{realizationRef}' has kind '{d.kindTag}', not contextRealization"
+      linked := linked.push { r with
+        data := .contextAdequacy realizationRef converseTheorem theory contextKey
+          context contextPred presentation adequacyStatus,
+        roots := r.roots }
     | .semanticCountermodel realizationRef adapterRef theory sentence scope
         modelClass wp wb => do
       let ctx := s!"record '{r.shell.id}'"
@@ -708,7 +766,8 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
       let mut recordReasons := downgradeReasons
       if theoremName?.isNone &&
           ["contextRealization", "statementAdapter",
-            "calculusNonderivability", "semanticCountermodel"].contains r.shell.kind then
+            "calculusNonderivability", "semanticCountermodel",
+            "contextAdequacy"].contains r.shell.kind then
         recordReasons := recordReasons.push "missing theorem"
       if r.shell.exportName.isEmpty then
         recordReasons := recordReasons.push "empty export name"
@@ -722,6 +781,11 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
           recordReasons := recordReasons.push "empty soundness name"
         if derivability.isEmpty then
           recordReasons := recordReasons.push "empty derivability name"
+      -- the converse's provenance is checking metadata too: an adequacy record whose
+      -- converse theorem is unnamed is incomplete, never backendChecked
+      if let .contextAdequacy _ converseTheorem _ _ _ _ _ _ := r.data then
+        if converseTheorem.isEmpty then
+          recordReasons := recordReasons.push "empty converseTheorem name"
       return recordReasons
     if r.shell.claimedStatus == "reported" then
       (BackendStatus.reported, some "reported at source")
@@ -732,7 +796,19 @@ elab "rm_ingest_bridge_evidence " path:str " artifactRevision" " := " artRev:str
         some (String.intercalate "; " recordReasons.toList))
   for r in linked do
     let theoremName? := nonempty? r.shell.theoremName?
-    let (status, reason?) := statusOf r
+    -- an adequacy record inherits any downgrade of the forward record it references:
+    -- it can never be manufactured from a reported or downgraded realization
+    let (status, reason?) := Id.run do
+      let (st, why?) := statusOf r
+      if let .contextAdequacy fwdRef _ _ _ _ _ _ _ := r.data then
+        if let some fwd := linked.find? (·.shell.id == fwdRef) then
+          let (fst, fwhy?) := statusOf fwd
+          if fst != .backendChecked then
+            let extra := s!"referenced forward realization '{fwdRef}' is not \
+              backendChecked ({fwhy?.getD "reported"})"
+            return (BackendStatus.reported,
+              some (match why? with | some w => s!"{w}; {extra}" | none => extra))
+      return (st, why?)
     modifyEnv fun env => backendEvidenceExt.addEntry env
       { id := r.shell.id, ns := ⟨nsName⟩, repository, revision, artifactRevision,
         artifactPath := path.getString, rmRevision, foundationRevision,
@@ -788,6 +864,13 @@ def BackendEvidenceEntry.render (e : BackendEvidenceEntry) : String :=
     s!"context realization [forward, realizationOnly]: every '{context.name}' context \
       realizes backend theory {theory} — one-way evidence, never an unrestricted \
       semantic claim"
+  | .contextAdequacy _ _ theory _ context _ presentation adequacyStatus =>
+    s!"context adequacy [{adequacyStatus}, {presentation}]: the canonical \
+      ω-structures satisfying backend theory {theory} are exactly the \
+      '{context.name}' contexts — every all-context theorem holds over every canonical \
+      ω-model of this exact theory; not an identification of that theory with \
+      conventional RCA₀ (axiomatization faithfulness is a separate obligation), no \
+      Henkin or nonstandard transport, no derivability claim"
   | .statementAdapter sentence capability _ variant _ =>
     s!"statement adapter [unconditional]: backend sentence {sentence} ↔ \
       '{variant.name}' (interface {capability}) at every second-order part"

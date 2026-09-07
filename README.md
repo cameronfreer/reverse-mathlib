@@ -75,7 +75,10 @@ Kept permanently distinct from the certified scoreboard:
   plus calculus-relative nonderivability in the Henkin-safe calculus AND in the
   bridge's pinned standard calculus `l2VarWitnessLK.v1` (with logical equality; a
   typed comparison record states both calculi are independently sound and carries no
-  embedding); **converse context adequacy** remains pending. Backend evidence never
+  embedding), and **checked context adequacy**: the canonical ω-structures satisfying the
+  bridge's explicit theory are exactly the Turing ideals (both directions; whether that
+  theory is RCA₀ as axiomatized in the literature is not part of any record). Backend
+  evidence never
   adds a local certified fact, graph edge, port, or closure edge — but the validated
   all-model countermodel record (`Rca0Theory ⊭ wklSentence`, witnessed by the
   ω-structure over REC) and the validated standard-calculus nonderivability record

@@ -19,8 +19,9 @@ linked port carrying the input-access records.
 
 The verdict stays precisely scoped: a kernel-checked **upper** implication over every
 Turing ideal — no lower bound, no equivalence, no all-model or syntactic claim, and the
-context identification with RCA₀'s ω-models remains literature-backed with backend
-adequacy pending.
+context identification with RCA₀'s ω-models remains literature-backed (the bridge's
+explicit theory has exactly the Turing ideals as canonical ω-models — checked context
+adequacy; whether that theory is RCA₀ as axiomatized is the literature-backed step).
 
 **Input-access records** (data *consumed by the transformation*, not correctness
 hypotheses), independently witnessed by the imported strong reduction

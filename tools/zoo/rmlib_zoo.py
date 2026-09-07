@@ -69,7 +69,7 @@ READABILITY_BUDGETS: dict = {
         "noIdentifierLeaks": True,
         "noEnumTokens": True,
         "noImplementationVocabulary": True,
-        "maxDefaultOpenWords": 1500,
+        "maxDefaultOpenWords": 1491,
         "maxSections": 6,
         "requireLinks": ["reference.html", "methods.html"],
     },
@@ -80,10 +80,10 @@ READABILITY_BUDGETS: dict = {
         "maxSections": 8,
     },
     "reference": {
-        "maxIdentifierLeaks": 64,
+        "maxIdentifierLeaks": 27,
         "maxEnumTokensInProse": 8,
         "maxDuplicateSentences": 4,
-        "maxDefaultOpenWords": 1719,
+        "maxDefaultOpenWords": 1717,
     },
 }
 
@@ -230,7 +230,7 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append("duplicate ids in backendEvidence")
     BE_KINDS = {"contextRealization", "statementAdapter", "calculusIdentity",
                 "calculusNonderivability", "semanticCountermodel",
-                "standardCalculusIdentity", "calculusComparison"}
+                "standardCalculusIdentity", "calculusComparison", "contextAdequacy"}
     be_kind_of = {x["id"]: x.get("kind") for x in bes}
     for r in bes:
         rid = r.get("id")
@@ -266,6 +266,30 @@ def cmd_check(args: argparse.Namespace) -> None:
                     problems.append(f"backendEvidence {rid}: rendering must carry the "
                                     f"scope, witness-provenance, and honesty markers "
                                     f"(missing {marker!r})")
+        if r.get("kind") == "contextAdequacy":
+            data = r.get("data", {})
+            ref = data.get("contextRealization")
+            if be_kind_of.get(ref) != "contextRealization":
+                problems.append(f"backendEvidence {rid}: contextRealization must "
+                                "reference a contextRealization record")
+            fwd = next((x for x in bes if x["id"] == ref), None)
+            if fwd is not None and fwd.get("data", {}).get("theory") != data.get("theory"):
+                problems.append(f"backendEvidence {rid}: theory disagrees with the "
+                                "referenced forward record")
+            if fwd is not None and fwd.get("status") != "backendChecked" and \
+                    r.get("status") == "backendChecked":
+                problems.append(f"backendEvidence {rid}: backendChecked while its "
+                                "forward record is not")
+            if data.get("presentation") != "canonicalOmegaStructure" or \
+                    data.get("adequacyStatus") != "equivalence":
+                problems.append(f"backendEvidence {rid}: unknown presentation/status tags")
+            rendered = r.get("display", {}).get("rendered", "")
+            for marker in ("canonicalOmegaStructure", "exactly the",
+                           "not an identification of that theory with"):
+                if marker not in rendered:
+                    problems.append(f"backendEvidence {rid}: rendering must carry the "
+                                    f"presentation, the equivalence, and the "
+                                    f"non-identification marker (missing {marker!r})")
         if r.get("kind") == "calculusIdentity":
             if r.get("data", {}).get("standardComparison") not in ("pending", "recorded"):
                 problems.append(f"backendEvidence {rid}: unknown standardComparison tag")
@@ -515,6 +539,8 @@ def cmd_check(args: argparse.Namespace) -> None:
         problems.append(f"computed-closure evaluator fixture did not fail closed: {name}")
     for name in selftest_route_profiles():
         problems.append(f"route-profile checker did not fail closed: {name}")
+    for name in selftest_adequacy_prose():
+        problems.append(f"ω-context prose did not follow the evidence status: {name}")
     for name in check_route_profiles(catalog):
         problems.append(f"route profile: {name}")
     cv = fam_views["computed-closure"]
@@ -1724,7 +1750,9 @@ claim, and no arrow anywhere on this site comes from this table.</em></p>
         for r in bes:
             src, chk = r["source"], r["checking"]
             deps = src["dependencies"]
-            rows = [("statement", e(r["display"]["rendered"])),
+            # the rendered statement is a structured field: its theory, sentence, and
+            # context identifiers are data, marked as such rather than read as prose
+            rows = [("statement", prose(r["display"]["rendered"])),
                     ("checking theorem",
                      f"<code>{e(r.get('theorem') or '(none)')}</code>"),
                     ("export", f"<code>{e(r['export'])}</code>")]
@@ -1740,7 +1768,15 @@ claim, and no arrow anywhere on this site comes from this table.</em></p>
                 differs.append(("checked by", f"<code>{e(chk.get('mechanism') or '')}</code>"))
             if r.get("downgraded"):
                 differs.append(("downgraded", e(r["downgraded"])))
-            body = "".join(f"<dt>{n}</dt><dd>{v}</dd>" for n, v in rows + differs)
+            # a statement adapter's rendering is a fixed three-field template (sentence,
+            # presentation, interface) with no disclaimer content, repeated by
+            # construction across the adapter cards: marked as boilerplate so the
+            # duplicate-sentence rule keeps guarding the renderings that do carry
+            # honesty markers (nonderivability, countermodel, context adequacy)
+            boiler = " data-boilerplate" if r.get("kind") == "statementAdapter" else ""
+            body = "".join(
+                f"<dt>{n}</dt><dd{boiler if n == 'statement' else ''}>{v}</dd>"
+                for n, v in rows + differs)
             cards.append(f"""<details class="card" data-family="backend" id="backend-{e(r['id'])}">
 <summary><code>{e(r['id'])}</code>
 <span class="tag" data-boilerplate>{e(prose_verification(r['status']))}</span></summary>
@@ -1750,13 +1786,9 @@ claim, and no arrow anywhere on this site comes from this table.</em></p>
             shared + "\n" + "\n".join(cards),
             "<p><em>Results checked in the external Lean development that formalizes "
             "the syntax and semantics of second-order arithmetic, ingested with the "
-            "statement fingerprint recomputed here. Three kinds are kept apart: that "
-            "every Turing ideal realizes the theory, which is one direction only; that "
-            "a formal sentence and a property used here agree at every second-order "
-            "part; and that a sentence is not derivable in a named calculus. The "
-            "converse direction, that every model of the theory is a Turing ideal, is "
-            "not proved, so nothing here may be read as an unqualified statement about "
-            "RCA₀. These records contribute the two results shown on the "
+            "statement fingerprint recomputed here. "
+            + adequacy_prose(catalog, "reference") +
+            "These records contribute the two results shown on the "
             "<a href=\"index.html#bridge\">atlas</a> and nothing else.</em></p>\n")
 
     def corpus_section() -> str:
@@ -1874,8 +1906,9 @@ claim, and no arrow anywhere on this site comes from this table.</em></p>
         These results concern a named theory and a named sentence in that bridge,
         under a named model class or a named calculus. Rendering them as claims
         about RCA₀ and weak Kőnig's lemma would promote them past what was proved:
-        whether the bridge's theory captures RCA₀ is exactly the direction that
-        remains open.
+        the bridge's theory has exactly the Turing ideals as models on the standard
+        numbers, but whether it is RCA₀ as usually axiomatized is not part of any
+        record.
         """
         if x.get("summary"):
             return x["summary"]
@@ -2101,11 +2134,9 @@ Lean theorems: each says that over every Turing ideal, one principle implies ano
 is equivalent to it, or fails to imply it. A failure is always witnessed by an explicit
 countermodel, never asserted as underivability.</p>
 <p>Turing ideals are the second-order parts of ω-models of RCA₀. That identification is
-standard in the literature ([Sim09] VIII.1) and is quoted here, not proved. No result on
-these pages is a claim about derivability in RCA₀. The nonderivability result is about a
-named theory and a named sentence inside the bridge, in one named calculus; whether that
-theory captures RCA₀ is the direction that remains unproved, and until it is proved the
-result may not be read as being about RCA₀ itself.</p>
+standard in the literature ([Sim09] VIII.1) and is quoted here, not proved; {adequacy_prose(catalog, "public")} No result on these pages is a claim about derivability in RCA₀. The
+nonderivability result is about a named theory and a named sentence inside the bridge, in
+one named calculus, and may not be read as being about RCA₀ itself.</p>
 <p>Results reached by composing others are shown as derivations on the reference page
 and are counted nowhere. Findings quoted from the literature are recorded with their
 source and are never treated as proved here; where a translation between two
@@ -2587,6 +2618,118 @@ def check_route_profiles(catalog: dict, profiles: list | None = None) -> list[st
         if len(prof["cells"]) != len(ROUTE_DIMENSIONS):
             bad.append(f"route profile {prof['id']} has {len(prof['cells'])} "
                        f"comparison cells, expected {len(ROUTE_DIMENSIONS)}")
+    return bad
+
+
+
+def adequacy_status(catalog: dict) -> dict:
+    """What the ingested evidence actually licenses about the ω-context, read from the
+    records rather than assumed, with the two directions kept separate:
+
+    * ``forward``: ``checked`` when some contextRealization record is backendChecked,
+      ``reported`` when one exists but none is checked, ``absent`` when none exists;
+    * ``adequacy``: ``checked`` only when a backendChecked contextAdequacy record
+      references a backendChecked contextRealization record; ``reported`` when an
+      adequacy record exists but either side is not checked (reason carried);
+      ``absent`` when no adequacy record exists."""
+    bes = catalog.get("backendEvidence", [])
+    by_id = {x["id"]: x for x in bes}
+    fwds = [x for x in bes if x.get("kind") == "contextRealization"]
+    if any(x.get("status") == "backendChecked" for x in fwds):
+        forward = "checked"
+    elif fwds:
+        forward = "reported"
+    else:
+        forward = "absent"
+    adequacy, reason, record = "absent", "", ""
+    for r in bes:
+        if r.get("kind") != "contextAdequacy":
+            continue
+        record = r["id"]
+        fwd = by_id.get(r.get("data", {}).get("contextRealization"))
+        fwd_ok = bool(fwd) and fwd.get("kind") == "contextRealization" \
+            and fwd.get("status") == "backendChecked"
+        if r.get("status") == "backendChecked" and fwd_ok:
+            adequacy = "checked"
+        else:
+            adequacy = "reported"
+            reason = r.get("downgraded") or (
+                "" if fwd_ok else "its forward realization record is not checked")
+        break
+    return {"forward": forward, "adequacy": adequacy, "record": record,
+            "reason": reason}
+
+
+def adequacy_prose(catalog: dict, surface: str) -> str:
+    """The one sentence each reading surface may say about the ω-context, generated
+    from the evidence status so that neither direction is ever described as checked
+    unless its record is. ``surface`` is ``reference`` or ``public``."""
+    st = adequacy_status(catalog)
+    both = st["forward"] == "checked" and st["adequacy"] == "checked"
+    fwd_only = st["forward"] == "checked" and not both
+    if surface == "reference":
+        if both:
+            return ("Its theory has exactly the Turing ideals as models on the standard "
+                    "numbers, both directions checked; whether that theory is RCA₀ as "
+                    "usually axiomatized is not part of any record, so nothing here is "
+                    "an unqualified statement about RCA₀. ")
+        if fwd_only:
+            return ("Every Turing ideal realizes its theory, one direction checked; the "
+                    "converse is not checked here, so the models on the standard "
+                    "numbers are not asserted to be exactly the Turing ideals; whether "
+                    "that theory is RCA₀ as usually axiomatized is not part of any "
+                    "record, so nothing here is an unqualified statement about RCA₀. ")
+        return ("Neither direction of the relation between its theory and the Turing "
+                "ideals is checked here, so nothing about the ω-context is asserted, "
+                "and nothing here is an unqualified statement about RCA₀. ")
+    if both:
+        return ("what the bridge\nproves is that its own explicit theory has exactly the "
+                "Turing ideals as models on the\nstandard numbers.")
+    if fwd_only:
+        return ("the bridge checks\nthat every Turing ideal satisfies its own explicit "
+                "theory, one direction only.")
+    return ("the bridge checks\nneither direction of the relation between its own "
+            "explicit theory and the Turing ideals.")
+
+
+def selftest_adequacy_prose() -> list[str]:
+    """Render fixtures: the generated ω-context sentences must follow the evidence
+    status, direction by direction — a sentence may describe the forward direction
+    as checked only when a checked realization record exists, and the equivalence
+    only when the adequacy record and its forward reference are both checked.
+    Returns the fixtures whose sentence said too much or too little."""
+    def cat(records):
+        return {"backendEvidence": records}
+    fwd = {"id": "r.fwd", "kind": "contextRealization", "status": "backendChecked",
+           "data": {"theory": "T"}}
+    fwd_rep = dict(fwd, status="reported", downgraded="reported at source")
+    adq = {"id": "r.adq", "kind": "contextAdequacy", "status": "backendChecked",
+           "data": {"theory": "T", "contextRealization": "r.fwd"}}
+    adq_rep = dict(adq, status="reported", downgraded="reported at source")
+    adq_inh = dict(adq, status="reported",
+                   downgraded="referenced forward realization 'r.fwd' is not backendChecked")
+    adq_missing = dict(adq, data={"theory": "T", "contextRealization": "r.gone"})
+    # (catalog, equivalence asserted?, forward direction described as checked?)
+    cases = {
+        "checked": (cat([fwd, adq]), True, True),
+        "adequacy-reported": (cat([fwd, adq_rep]), False, True),
+        "adequacy-absent": (cat([fwd]), False, True),
+        "inherited-downgrade": (cat([fwd_rep, adq_inh]), False, False),
+        "unchecked-forward-claim": (cat([fwd_rep, adq]), False, False),
+        "forward-reported-only": (cat([fwd_rep]), False, False),
+        "missing-forward": (cat([adq_missing]), False, False),
+        "empty-evidence": (cat([]), False, False),
+    }
+    bad = []
+    for name, (c, equiv, fwd_checked) in cases.items():
+        for surface in ("reference", "public"):
+            text = adequacy_prose(c, surface)
+            says_equiv = "exactly the Turing ideals" in text and "not asserted" not in text
+            says_forward = ("one direction checked" in text or "both directions" in text
+                            or "what the bridge\nproves" in text
+                            or "checks\nthat every Turing ideal" in text)
+            if says_equiv != equiv or says_forward != fwd_checked:
+                bad.append(f"{name}/{surface}")
     return bad
 
 

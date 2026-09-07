@@ -21,7 +21,13 @@ distinct artifacts.
 What ingestion establishes, kept permanently distinct:
 
 * **checked forward context realization** — every Turing ideal satisfies the backend's
-  semantic RCA₀ theory (one-way; converse context adequacy still pending);
+  semantic RCA₀ theory (one-way, and kept one-way as a record);
+* **checked context adequacy** — the additive `contextAdequacy` record: the canonical
+  ω-structures satisfying that exact theory are exactly the Turing ideals (both
+  directions). It references the forward record by identity, inherits any downgrade of
+  it, contributes to no scoreboard column, and identifies the backend theory with
+  nothing — whether that theory is RCA₀ as axiomatized in the literature stays a
+  separate, literature-backed identification;
 * **checked unconditional statement adapters** for ŴKL, EFILC, and one-sided Hall;
 * **calculus identities and calculus-relative nonderivability** — `Rca0Theory ⊬
   wklSentence` in the backend's `henkinSafeV1` calculus AND in the backend's pinned
@@ -47,10 +53,10 @@ certified-facts section stays exactly the local kernel-checked facts.
 namespace ReverseMathlib.Ports
 
 rm_namespace rmFoundationBridge "cameronfreer/reverse-mathlib-foundation backend \
-  evidence (rmlib-bridge-evidence/4): the external checked ω-semantics bridge to \
-  FormalizedFormalLogic/Foundation — context-realization, statement-adapter, \
-  calculus, calculus-comparison, and semantic-countermodel records ingested as \
-  backend evidence, with interface fingerprints recomputed locally"
+  evidence (rmlib-bridge-evidence/5): the external checked ω-semantics bridge to \
+  FormalizedFormalLogic/Foundation — context-realization, context-adequacy, \
+  statement-adapter, calculus, calculus-comparison, and semantic-countermodel records \
+  ingested as backend evidence, with interface fingerprints recomputed locally"
 
 rm_external_ref rmFoundationBridge "rca0/turingIdealOmega" exactAlias semanticContext
   rca0.turingIdealOmega
@@ -65,9 +71,9 @@ rm_external_ref rmFoundationBridge
 
 /- The artifact-publishing revision: the bridge commit whose tree contains the vendored
 artifact byte-for-byte. Necessarily distinct from the artifact's embedded export/check
-revision (`ffcebe5…`) — by self-reference, the artifact cannot be committed at the
+revision (`9b8c902…`) — by self-reference, the artifact cannot be committed at the
 revision it records. Both are stored, exported, and rendered. -/
 rm_ingest_bridge_evidence "imports/reverse-mathlib-foundation/rmlib-bridge-evidence.json"
-  artifactRevision := "13b9b6b379712a63ba8c8bb9f6bcf9775adadf3b"
+  artifactRevision := "938c404bd04172a91a26f863eb7dad902841a48c"
 
 end ReverseMathlib.Ports

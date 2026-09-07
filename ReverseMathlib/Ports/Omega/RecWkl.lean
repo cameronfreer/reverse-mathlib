@@ -19,7 +19,9 @@ and its certification against `rca0.turingIdealOmega`.
 The verdict stays precisely scoped: a kernel-checked **model-class separation** over the
 registered Turing-ideal context — WKLω fails in some Turing ideal satisfying the RCA₀
 closure core (namely REC) — with the identification of Turing ideals with RCA₀'s ω-models
-literature-backed and backend adequacy pending. This is **never** rendered as, and never
+literature-backed (the bridge's explicit theory has exactly the Turing ideals as canonical
+ω-models — checked context adequacy; whether that theory is RCA₀ as axiomatized is the
+literature-backed step). This is **never** rendered as, and never
 promoted to, a checked `RCA₀ ⊬ WKL` turnstile theorem; that claim would need the syntactic
 layer, which remains empty.
 -/
@@ -34,8 +36,9 @@ rm_concept rca0Core where
     atlas uses this as its base-context condition at the ω layer"
   description := "A base-context node, not a theorem-strength principle; it gives \
     ω-scope separations an explicit typed left endpoint. Its identification with \
-    conventional RCA₀ ω-models remains literature-backed, with converse context \
-    adequacy pending. It carries no external crosswalk"
+    conventional RCA₀ ω-models remains literature-backed; the bridge's explicit theory \
+    has exactly the Turing ideals as canonical ω-models (checked context adequacy). \
+    It carries no external crosswalk"
 
 rm_statement_variant rca0Core.turingIdealClosure.turingIdealOmega where
   concept := rca0Core
