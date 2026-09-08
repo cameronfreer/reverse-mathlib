@@ -226,6 +226,35 @@ scaffolding that performs the selection. -/
    hallMatchingsFunctor,
    hallMatchingsOn.nonempty]
 
+/-! ### Kleene diagonal characterization gates (#76)
+
+The exact path characterization of the existing Kleene tree must cross the
+bounded/unbounded evaluator gap exactly as pinned: the forward direction through
+`evaln_complete` and `evaln_mono`, the converse through `evaln_sound` with the
+characteristic-bit prefixes built directly — no compactness, no path-existence theorem,
+no WKL capability. The obstruction corollary must route through the existing
+no-recursive-path theorem (mandatory), never around it. -/
+
+#rm_assert_proof_depends ReverseMathlib.Omega.diagonallyDisagreesMod2_of_isBinaryPathThrough
+  Nat.Partrec.Code.evaln_complete
+#rm_assert_proof_depends ReverseMathlib.Omega.diagonallyDisagreesMod2_of_isBinaryPathThrough
+  Nat.Partrec.Code.evaln_mono
+#rm_assert_proof_depends ReverseMathlib.Omega.isBinaryPathThrough_of_diagonallyDisagreesMod2
+  Nat.Partrec.Code.evaln_sound
+#rm_assert_not_proof_depends ReverseMathlib.Omega.isBinaryPathThrough_of_diagonallyDisagreesMod2
+  [ReverseMathlib.Omega.hasNodeAtEveryLevel_kleeneTree,
+   ReverseMathlib.Omega.kleeneWitness,
+   ReverseMathlib.Omega.WeakKonigAt,
+   ReverseMathlib.Omega.not_weakKonigAt_recursivePart,
+   nonempty_sections_of_finite_inverse_system,
+   exists_seq_forall_proj_of_forall_finite]
+#rm_assert_not_proof_depends ReverseMathlib.Omega.isBinaryPathThrough_kleeneTree_iff
+  [ReverseMathlib.Omega.WeakKonigAt, ReverseMathlib.Omega.not_weakKonigAt_recursivePart]
+#rm_assert_proof_depends ReverseMathlib.Omega.not_recursiveSet_of_diagonallyDisagreesMod2
+  ReverseMathlib.Omega.not_isBinaryPathThrough_of_recursiveSet
+#rm_assert_proof_depends ReverseMathlib.Omega.not_recursiveSet_of_diagonallyDisagreesMod2
+  ReverseMathlib.Omega.isBinaryPathThrough_of_diagonallyDisagreesMod2
+
 /-! ### Tree-bridge gates: the WKL ↔ EFILC factorizations
 
 Both directions must factor through their hypotheses, not through mathlib's classical Kőnig
