@@ -1040,8 +1040,10 @@ matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice → coded anal
 
 After the ω-context adequacy checkpoint (2026-09-07): the diagonalization umbrella #75,
 starting with the Kleene-tree path characterization #76 (existing tree and coding
-unchanged; no registration) → restricted replay #20 (audit its nonstandard-model
-obligations before promising a small construction; the positive all-model or syntactic
-WKL → EFILC theorem stays the foundational flagship) → relative diagonalization and the
-separation adapter under #75. No general resource/effect machinery ahead of a concrete
-replay or cross-scope theorem.
+unchanged; no registration). Next comes restricted replay #20, checking the explicit
+relative theorem against an approved declaration boundary; restricted replay itself
+establishes neither all-model nor syntactic transport. Separately, the positive all-model
+or syntactic WKL → EFILC flagship requires an audit of its nonstandard-model or
+object-calculus obligations before any small construction is promised. Then relative
+diagonalization and the separation adapter under #75. No general resource/effect
+machinery ahead of a concrete replay or cross-scope theorem.
