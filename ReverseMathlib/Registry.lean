@@ -6,6 +6,8 @@ Authors: Cameron Freer
 import ReverseMathlib.Meta.DepGraph
 import ReverseMathlib.Meta.Report
 import ReverseMathlib.Meta.Commands
+import ReverseMathlib.Meta.Boundary
+import ReverseMathlib.Meta.Boundaries.HallCompactness
 import ReverseMathlib.Meta.Registry
 import ReverseMathlib.Meta.Concepts
 import ReverseMathlib.Meta.Interchange

@@ -18,6 +18,7 @@ import ReverseMathlibFixtures.MixA
 import ReverseMathlibFixtures.MixB
 import ReverseMathlibFixtures.MergeVar
 import ReverseMathlibFixtures.MergeIface
+import ReverseMathlibFixtures.BoundaryProbes
 import ReverseMathlibFixtures.MergeMix
 import ReverseMathlibFixtures.SchemaFix
 import ReverseMathlibFixtures.SchemaA
