@@ -1,0 +1,18 @@
+{
+  "id": "replay.hall.finiteInverseLimitCompactness.v1",
+  "sourcePath": "ReverseMathlib/Slice/HallFromCompactness.lean",
+  "sourceModule": "ReverseMathlib.Slice.HallFromCompactness",
+  "replayModule": "ReverseMathlibReplay.HallFromCompactness",
+  "namespaceMap": {"ReverseMathlib.Slice": "ReverseMathlibReplay.Slice"},
+  "approvedImports": [
+    "Mathlib.Combinatorics.Hall.Finite",
+    "Mathlib.Data.Finset.Prod",
+    "Mathlib.Logic.Equiv.List",
+    "ReverseMathlib.Standard.Hall",
+    "ReverseMathlib.Standard.InverseLimit"
+  ],
+  "target": "ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness",
+  "replayTarget": "ReverseMathlibReplay.Slice.countableHall_of_finiteInverseLimitCompactness",
+  "boundaryModule": "ReverseMathlib.Meta.Boundaries.HallCompactness",
+  "boundary": "ReverseMathlib.Meta.Boundaries.hallCompactnessReplayBoundary"
+}

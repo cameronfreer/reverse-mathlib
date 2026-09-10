@@ -45,6 +45,14 @@ jobs:
       - name: Meta smoke tests and dependency assertions
         run: lake env lean scripts/MetaSmoke.lean
 
+      # Restricted replay (#20): the Hall fixture's source proof recompiled fresh in a
+      # sandbox under exactly the approved imports, tied to the original by exact
+      # statement agreement, and boundary-checked; then the rejection fixtures.
+      - name: Restricted replay of the Hall fixture, and its rejection fixtures
+        run: |
+          python3 scripts/replay.py scripts/replay/plan_hall.json
+          python3 scripts/replay.py --selftest
+
       # The zoo: deterministic catalog export from the elaborated environment, canonical
       # invariant checks (direction-aware edge recomputation, sortedness, no timestamps),
       # and the ambient-factorization view. SVG is ephemeral (Graphviz bytes vary across

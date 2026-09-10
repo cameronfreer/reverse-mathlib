@@ -31,7 +31,7 @@ contain — never a certified weak background and never a claim about any object
 
 namespace ReverseMathlib.Meta.Boundaries
 
-open ReverseMathlib.Meta
+open ReverseMathlib.Meta Lean
 
 /-- The declaration boundary for the Hall walking slice's relative theorem. -/
 def hallCompactnessBoundary : DeclBoundary where
@@ -89,5 +89,24 @@ def hallCompactnessBoundary : DeclBoundary where
     [`nonempty_sections_of_finite_inverse_system,
      `Finset.all_card_le_biUnion_card_iff_exists_injective,
      `hallMatchingsOn.nonempty, `hallMatchingsFunctor]
+
+/-- Rename a declaration name's namespace prefix. -/
+def renamePrefix (old new : Name) (n : Name) : Name :=
+  if old.isPrefixOf n then
+    (n.components.drop old.components.length).foldl (fun a c => a ++ c) new
+  else n
+
+/-- The same boundary for the **replayed** copy of the fixture: identical policy, with the
+fixture's own helpers and auxiliaries renamed into the replay namespace. Derived by
+renaming, so the two boundaries cannot drift apart. The original fixture module is
+forbidden to the replay: a replay that reached it would not be a fresh compilation of the
+source proof. -/
+def hallCompactnessReplayBoundary : DeclBoundary :=
+  let ren := renamePrefix `ReverseMathlib.Slice `ReverseMathlibReplay.Slice
+  { hallCompactnessBoundary with
+      id := hallCompactnessBoundary.id ++ ".replay",
+      allowedDecls := hallCompactnessBoundary.allowedDecls.map ren,
+      forbiddenModules := `ReverseMathlib.Slice.HallFromCompactness ::
+        hallCompactnessBoundary.forbiddenModules }
 
 end ReverseMathlib.Meta.Boundaries

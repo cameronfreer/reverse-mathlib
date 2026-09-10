@@ -67,7 +67,7 @@ structure DeclBoundary where
   allowedPrefixes : List Name := []
   /-- Exact modules admitted (e.g. the finite-Hall module, deliberately). -/
   allowedModules : List Name := []
-  /-- Exact declarations admitted, together with their compiler-generated auxiliaries. -/
+  /-- Exact declarations only; auxiliaries must be enumerated explicitly. -/
   allowedDecls : List Name := []
   /-- Forbidden module prefixes; precede every allowance. -/
   forbiddenPrefixes : List Name := []
@@ -162,7 +162,10 @@ unowned or forbidden root, and unowned constants; otherwise returns the report (
 and non-standard axioms may be nonempty). -/
 def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryReport := do
   let env ← getEnv
-  for d in b.allowedDecls ++ b.forbiddenDecls do
+  -- an ALLOWED name that resolves to nothing fails closed; a FORBIDDEN name absent from
+  -- the environment is trivially unreachable (the sandbox of a replay imports only the
+  -- approved modules, so forbidden machinery is usually absent — that is the point)
+  for d in b.allowedDecls do
     unless env.contains d do
       throwError "rm_check_boundary: boundary '{b.id}' names '{d}', which is not a constant \
         in this environment — a missing constant cannot be allowed or forbidden by name"
@@ -284,6 +287,25 @@ elab "#rm_boundary_record " id:ident bnd:ident : command => do
        {rev?.getD "unavailable"} (metadata, not verification of the loaded dependencies)",
      "  artifact attestation: withheld — this checker inspects a loaded environment and \
        cannot bind it to an object file; the replay runner supplies that binding"]
+
+/-- `#rm_assert_same_statement a b`: hard assertion that two declarations have **exactly**
+the same statement — identical universe parameters and syntactically identical types
+(`Expr` equality, no defeq, no unfolding). The replay runner uses it to tie a freshly
+compiled replay to the original theorem. -/
+elab "#rm_assert_same_statement " a:ident b:ident : command => do
+  let na ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo a
+  let nb ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo b
+  let env ← getEnv
+  let some ca := env.find? na | throwErrorAt a "rm_assert: unknown constant '{na}'"
+  let some cb := env.find? nb | throwErrorAt b "rm_assert: unknown constant '{nb}'"
+  unless ca.levelParams == cb.levelParams do
+    throwErrorAt b "rm_assert: '{na}' and '{nb}' differ in universe parameters \
+      ({ca.levelParams} vs {cb.levelParams})"
+  unless ca.type == cb.type do
+    throwErrorAt b "rm_assert: statements of '{na}' and '{nb}' are not syntactically \
+      identical:\n  {ca.type}\n  {cb.type}"
+  logInfo s!"#rm_assert_same_statement: '{na}' and '{nb}' have syntactically identical \
+    statements ({ca.levelParams.length} universe parameter(s))"
 
 /-- `#rm_boundary_auxiliaries thm`: list the constants of `thm`'s total closure whose names
 look like compiler-generated auxiliaries of `thm` or of any constant in the closure — the
