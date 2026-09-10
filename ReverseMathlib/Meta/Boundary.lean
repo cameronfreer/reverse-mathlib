@@ -25,24 +25,33 @@ by subtracting their dependencies.
 The boundary is a coarse, revision-pinned policy, not a certified weak background:
 
 * three explicitly distinguished allowance kinds — module **prefixes**, **exact modules**,
-  and **exact declaration names** (an exact declaration admits its compiler-generated
-  auxiliaries `_proof_*`, `match_*`, `eq_*`, `_f`, …, and nothing else);
+  and **exact declaration names**. Compiler-generated auxiliaries (`_proof_*`, `match_*`,
+  `eq_*`, `_f`, …) of an allowed declaration — and of the target — are **not** admitted by
+  their spelling, since a hand-written `foo._anything` is indistinguishable by name:
+  they must be enumerated explicitly (`#rm_boundary_auxiliaries thm` lists the candidates);
 * forbidden names, exact modules, and module prefixes take precedence over every allowance;
 * allowances are not frontier cuts: every admitted constant is still expanded transitively,
   so a forbidden dependency beneath an allowed helper is found;
+* the **root is validated too**: the target must have compiled-module ownership, must not
+  be forbidden, and — if it is itself an axiom — counts as one of the closure's axioms;
+* the **standard-axiom policy is enforced independently** of every allowance: the
+  closure's axioms (root included) must be a subset of `propext`, `Classical.choice`,
+  `Quot.sound`, whatever the boundary admits;
 * fail closed: a truncated closure, an unknown constant (even one named in an allowance),
   a constant whose module ownership cannot be determined, or an allowed name that resolves
-  to no constant all fail. The standard-axiom check is reported independently.
+  to no constant all fail.
 
 Documented limitation, not a test: neither ℕ-valued interfaces nor a passing declaration
 audit restrict set formation, induction motives, or choice occurrences (`Classical.choice`
 reaches every classical proof through `Classical.em` and decidability instances). Import
 restrictions belong to the replay runner; this checker restricts declarations only.
 
-`#rm_boundary_record thm bnd` additionally prints the canonical boundary hash and an
-environment record — Lean version, mathlib revision, and the hash of the **loaded `.olean`**
-of the target's module (the compiled artifact actually in the environment; hashing source
-beside possibly stale object files would prove nothing).
+`#rm_boundary_record thm bnd` additionally prints the canonical boundary hash and the Lean
+version. **Artifact attestation is withheld**: resolving an object file on the search path
+after loading does not bind the record to the loaded environment (the path can be shadowed
+without changing the environment), and the manifest's mathlib revision is metadata, not
+verification of the loaded dependencies. The replay runner, which compiles what it checks,
+supplies that binding; this checker does not pretend to.
 -/
 
 namespace ReverseMathlib.Meta
@@ -94,9 +103,9 @@ def hash (b : DeclBoundary) : String :=
 
 end DeclBoundary
 
-/-- Whether `n` is a compiler-generated auxiliary of `d`: `d` is a proper prefix and the
-first extra component is `_…`, `match_…`, `eq_…`, or `proof_…`. -/
-def isAuxiliaryOf (d n : Name) : Bool :=
+/-- A name that *looks like* a compiler-generated auxiliary of `d` — used only to list
+candidates for explicit enumeration, never to accept anything. -/
+def looksAuxiliaryOf (d n : Name) : Bool :=
   d.isPrefixOf n && d != n &&
     match (n.components.drop d.components.length) with
     | c :: _ =>
@@ -123,9 +132,8 @@ def classifyConst (env : Environment) (b : DeclBoundary) (target : Name) (n : Na
     if b.forbiddenDecls.contains n then .forbidden "forbidden declaration"
     else if b.forbiddenModules.contains m then .forbidden s!"forbidden module {m}"
     else if b.forbiddenPrefixes.any (·.isPrefixOf m) then .forbidden s!"forbidden prefix of {m}"
-    else if n == target || isAuxiliaryOf target n then .admitted "target"
+    else if n == target then .admitted "target"
     else if b.allowedDecls.contains n then .admitted "exact declaration"
-    else if b.allowedDecls.any (isAuxiliaryOf · n) then .admitted "auxiliary of allowed"
     else if b.allowedModules.contains m then .admitted s!"exact module {m}"
     else if b.allowedPrefixes.any (·.isPrefixOf m) then .admitted s!"prefix of {m}"
     else .outside
@@ -142,17 +150,34 @@ structure BoundaryReport where
   byPrefix : Nat
   byModule : Nat
   byDecl : Nat
-  byAux : Nat
   offenders : Array (Name × String)
+  /-- Axioms outside the standard three (root included); nonempty fails the check. -/
+  nonStandardAxioms : Array Name
 
-/-- Run the check. Fails closed on truncation, unknowns, unresolvable allowed names, and
-unowned constants; otherwise returns the report (offenders may be nonempty). -/
+/-- The standard axioms every checked closure may use. -/
+def boundaryStandardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
+
+/-- Run the check. Fails closed on truncation, unknowns, unresolvable allowed names, an
+unowned or forbidden root, and unowned constants; otherwise returns the report (offenders
+and non-standard axioms may be nonempty). -/
 def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryReport := do
   let env ← getEnv
   for d in b.allowedDecls ++ b.forbiddenDecls do
     unless env.contains d do
       throwError "rm_check_boundary: boundary '{b.id}' names '{d}', which is not a constant \
         in this environment — a missing constant cannot be allowed or forbidden by name"
+  -- the root itself: compiled ownership and prohibitions, checked before anything else
+  match classifyConst env b target target with
+  | .unownedModule =>
+    throwError "rm_check_boundary: target '{target}' has no determinable module ownership \
+      (a declaration of the current file?) — run the check against compiled modules"
+  | .forbidden why =>
+    throwError "rm_check_boundary: target '{target}' is itself forbidden by boundary \
+      '{b.id}' ({why})"
+  | _ => pure ()
+  let rootIsAxiom := match env.find? target with
+    | some (.axiomInfo _) => true
+    | _ => false
   let cfg ← mineConfig false
   let r ← match mineTarget env cfg target with
     | .ok r => pure r
@@ -166,7 +191,6 @@ def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryRepo
   let mut byPrefix := 0
   let mut byModule := 0
   let mut byDecl := 0
-  let mut byAux := 0
   for n in total.toList do
     match classifyConst env b target n with
     | .forbidden why => offenders := offenders.push (n, why)
@@ -177,8 +201,7 @@ def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryRepo
     | .admitted how =>
       if how.startsWith "prefix" then byPrefix := byPrefix + 1
       else if how.startsWith "exact module" then byModule := byModule + 1
-      else if how == "exact declaration" || how == "target" then byDecl := byDecl + 1
-      else byAux := byAux + 1
+      else byDecl := byDecl + 1
   -- offenders ordered by severity of reason, then readability (public names before
   -- hygienic or private ones), then name — so the first few shown are the meaningful ones
   let severity : String → Nat := fun why =>
@@ -192,11 +215,14 @@ def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryRepo
     let (s₁, s₂) := (severity w₁, severity w₂)
     let (u₁, u₂) := ((if ugly n₁ then 1 else 0), (if ugly n₂ then 1 else 0))
     s₁ < s₂ || (s₁ == s₂ && (u₁ < u₂ || (u₁ == u₂ && Name.lt n₁ n₂)))
+  let axioms := if rootIsAxiom && !r.axioms.contains target then r.axioms.push target
+    else r.axioms
+  let nonStandard := (axioms.filter (!boundaryStandardAxioms.contains ·)).qsort Name.lt
   return { target, boundary := b.id, total := total.size,
            statement := r.statement.reached.size, value := r.value.reached.size,
-           proofOnly := r.proofOnlyClosure.size, axioms := r.axioms,
-           byPrefix, byModule, byDecl, byAux,
-           offenders := offenders.qsort lt }
+           proofOnly := r.proofOnlyClosure.size, axioms := axioms.qsort Name.lt,
+           byPrefix, byModule, byDecl,
+           offenders := offenders.qsort lt, nonStandardAxioms := nonStandard }
 
 /-- Evaluate a `DeclBoundary` constant (compiled data, evaluated by the interpreter). -/
 unsafe def evalBoundaryUnsafe (id : Ident) : CommandElabM DeclBoundary := do
@@ -213,9 +239,10 @@ def BoundaryReport.summary (rep : BoundaryReport) : String :=
      s!"  total closure: {rep.total} constants (statement {rep.statement}, value \
        {rep.value}, proof-only {rep.proofOnly}) — acceptance is on the total closure",
      s!"  admitted by: {rep.byPrefix} prefix / {rep.byModule} exact module / \
-       {rep.byDecl} exact declaration / {rep.byAux} auxiliary",
-     s!"  kernel axioms: {if rep.axioms.isEmpty then "(none)" else
-       ", ".intercalate (rep.axioms.toList.map toString)}",
+       {rep.byDecl} exact declaration (auxiliaries enumerated explicitly)",
+     s!"  kernel axioms (root included, standard policy enforced): \
+       {if rep.axioms.isEmpty then "(none)" else
+        ", ".intercalate (rep.axioms.toList.map toString)}",
      "  a declaration audit only: no import restriction, no replay, no fragment \
        membership, no weak-system interpretation"]
 
@@ -225,6 +252,10 @@ elab "#rm_check_boundary " id:ident bnd:ident : command => do
   let target ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
   let b ← evalBoundary bnd
   let rep ← checkBoundary target b
+  unless rep.nonStandardAxioms.isEmpty do
+    throwErrorAt id "rm_check_boundary: '{target}' depends on non-standard axiom(s) \
+      {rep.nonStandardAxioms.toList} — the standard-axiom policy (propext, \
+      Classical.choice, Quot.sound) is enforced independently of every allowance"
   unless rep.offenders.isEmpty do
     let shown := rep.offenders.toList.take 3
     let rendered := "; ".intercalate (shown.map fun (n, why) => s!"{n} ({why})")
@@ -233,31 +264,49 @@ elab "#rm_check_boundary " id:ident bnd:ident : command => do
       {rep.offenders.size} constant(s) not admitted — {rendered}{more}"
   logInfo rep.summary
 
-/-- FNV-1a over a byte array. -/
-def hashBytes (bs : ByteArray) : String :=
-  DeclBoundary.hex64 <| bs.foldl (init := (14695981039346656037 : UInt64))
-    fun h c => (h ^^^ c.toUInt64) * 1099511628211
-
-/-- `#rm_boundary_record thm bnd`: the check, plus the canonical boundary hash and the
-environment record tied to the loaded compiled artifact. -/
+/-- `#rm_boundary_record thm bnd`: the check, plus the canonical boundary hash and the Lean
+version. Artifact and dependency attestation are withheld — see the module doc. -/
 elab "#rm_boundary_record " id:ident bnd:ident : command => do
   let target ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
   let b ← evalBoundary bnd
   let rep ← checkBoundary target b
+  unless rep.nonStandardAxioms.isEmpty do
+    throwErrorAt id "rm_boundary_record: '{target}' depends on non-standard axiom(s) \
+      {rep.nonStandardAxioms.toList}"
   unless rep.offenders.isEmpty do
     throwErrorAt id "rm_boundary_record: '{target}' leaves boundary '{b.id}' \
       ({rep.offenders.size} constant(s)); see #rm_check_boundary"
-  let env ← getEnv
-  let some idx := env.getModuleIdxFor? target
-    | throwError "rm_boundary_record: '{target}' is not from a compiled module"
-  let modName := env.allImportedModuleNames.getD idx.toNat .anonymous
-  let olean ← findOLean modName
-  let bytes ← IO.FS.readBinFile olean
   let rev? ← readMathlibRev
   logInfo <| "\n".intercalate
     [rep.summary,
      s!"  boundary hash: {b.hash} (canonical: id and the six sorted lists)",
-     s!"  environment: Lean {Lean.versionString}; mathlib {rev?.getD "unavailable"}",
-     s!"  loaded artifact: {modName} .olean hash {hashBytes bytes} ({bytes.size} bytes)"]
+     s!"  Lean {Lean.versionString}; manifest mathlib revision \
+       {rev?.getD "unavailable"} (metadata, not verification of the loaded dependencies)",
+     "  artifact attestation: withheld — this checker inspects a loaded environment and \
+       cannot bind it to an object file; the replay runner supplies that binding"]
+
+/-- `#rm_boundary_auxiliaries thm`: list the constants of `thm`'s total closure whose names
+look like compiler-generated auxiliaries of `thm` or of any constant in the closure — the
+candidates an author enumerates explicitly in a boundary. Listing only; admits nothing. -/
+elab "#rm_boundary_auxiliaries " id:ident : command => do
+  let target ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
+  let env ← getEnv
+  let cfg ← mineConfig false
+  let r ← match mineTarget env cfg target with
+    | .ok r => pure r
+    | .error e => throwError e
+  requireComplete r
+  let total := r.totalClosure
+  let mods := env.allImportedModuleNames
+  let owned : Name → Bool := fun n =>
+    match env.getModuleIdxFor? n with
+    | some idx => (`ReverseMathlib).isPrefixOf (mods.getD idx.toNat .anonymous)
+    | none => false
+  let names := total.toList
+  let cands := names.filter fun n =>
+    owned n && (looksAuxiliaryOf target n || names.any fun d => d != n && looksAuxiliaryOf d n)
+  let sorted := cands.toArray.qsort Name.lt
+  logInfo s!"#rm_boundary_auxiliaries {target}: {sorted.size} candidate(s) — \
+    {sorted.toList}"
 
 end ReverseMathlib.Meta

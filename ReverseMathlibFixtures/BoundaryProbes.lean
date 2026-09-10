@@ -55,6 +55,44 @@ def probeBeneathHelper : Nat := helperHidden
 /-- Clean: uses nothing forbidden, in a module with forbidden imports. -/
 theorem probeClean : (1 : Nat) + 1 = 2 := rfl
 
+/-! ### Review probes: auxiliary spelling, the root, and the axiom policy -/
+
+/-- An allowed helper. -/
+def allowedHelper : Nat := 0
+
+/-- Hand-written declarations whose names merely look like compiler-generated auxiliaries
+of `allowedHelper`; they must not be admitted by spelling. -/
+def allowedHelper._handwritten : Nat := 42
+def allowedHelper.eq_handwritten : Nat := 17
+
+/-- Depends only on the hand-written look-alikes. -/
+def usesPretendAux : Nat := allowedHelper._handwritten + allowedHelper.eq_handwritten
+
+/-- A custom axiom, present ONLY so the checker's independent standard-axiom policy has
+something to reject. Never imported by any production root (this is the fixtures
+library); the production axiom audit sweeps the root spines and cannot see it. -/
+axiom addedAxiom : False
+
+/-- Uses the custom axiom. -/
+theorem fromAddedAxiom : False := addedAxiom
+
+/-- A clean root, to be forbidden by name. -/
+theorem cleanRoot : True := True.intro
+
+/-- Only `allowedHelper` allowed (plus `Init`): the look-alikes must be rejected. -/
+def boundaryNarrow : DeclBoundary :=
+  { id := "probe.narrow", allowedPrefixes := [`Init], allowedDecls := [``allowedHelper] }
+
+/-- The custom axiom explicitly allowed: the axiom policy must still reject it. -/
+def boundaryAllowsAxiom : DeclBoundary :=
+  { id := "probe.allowsAxiom", allowedPrefixes := [`Init],
+    allowedDecls := [``addedAxiom, ``fromAddedAxiom] }
+
+/-- Roots forbidden by name. -/
+def boundaryForbiddenRoot : DeclBoundary :=
+  { id := "probe.forbiddenRoot", allowedPrefixes := [`Init],
+    forbiddenDecls := [``cleanRoot, ``addedAxiom] }
+
 /-- The Hall boundary with the finite-Hall module removed: the genuine fixture must fail. -/
 def boundaryNoFiniteHall : DeclBoundary :=
   { hallCompactnessBoundary with

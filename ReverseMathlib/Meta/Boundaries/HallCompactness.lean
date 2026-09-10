@@ -21,7 +21,8 @@ contain — never a certified weak background and never a claim about any object
   two capability-interface modules `Standard.Hall` and `Standard.InverseLimit` are admitted
   as the explicit hypotheses' homes; `Batteries.Logic` (`congr_arg`) is admitted exactly.
 * Exact declarations: the fixture's own coded-transversal helpers, listed by name, never
-  `ReverseMathlib.Slice` wholesale.
+  `ReverseMathlib.Slice` wholesale — and every compiler-generated auxiliary of the helpers
+  and of the target, enumerated explicitly (a name's spelling admits nothing).
 * Forbidden, preceding every allowance: the compactness boundary that mathlib's infinite
   Hall crosses (`nonempty_sections_of_finite_inverse_system`, `CofilteredSystem`), the
   infinite Hall theorem itself, the matching-selection scaffolding, topological Kőnig, and
@@ -49,7 +50,37 @@ def hallCompactnessBoundary : DeclBoundary where
      ``ReverseMathlib.Slice.levelFiber, ``ReverseMathlib.Slice.transversalLists,
      ``ReverseMathlib.Slice.mem_transversalLists,
      ``ReverseMathlib.Slice.take_mem_transversalLists,
-     ``ReverseMathlib.Slice.transversalLists_nonempty]
+     ``ReverseMathlib.Slice.transversalLists_nonempty,
+     -- compiler-generated auxiliaries, enumerated explicitly (never admitted by
+     -- spelling); `#rm_boundary_auxiliaries` lists the candidates after a change
+     `ReverseMathlib.Slice.candLists._f, `ReverseMathlib.Slice.candLists.eq_1,
+     `ReverseMathlib.Slice.candLists.eq_2, `ReverseMathlib.Slice.candLists.match_1,
+     `ReverseMathlib.Slice.hallSystem._proof_1, `ReverseMathlib.Slice.hallSystem._proof_2,
+     `ReverseMathlib.Slice.mem_candLists._f, `ReverseMathlib.Slice.mem_candLists.match_1_1,
+     `ReverseMathlib.Slice.mem_candLists._proof_1_6,
+     `ReverseMathlib.Slice.mem_candLists._proof_1_7,
+     `ReverseMathlib.Slice.mem_candLists._proof_1_8,
+     `ReverseMathlib.Slice.mem_candLists._proof_1_9,
+     `ReverseMathlib.Slice.take_mem_transversalLists._proof_1_1,
+     `ReverseMathlib.Slice.take_mem_transversalLists._proof_1_2,
+     `ReverseMathlib.Slice.take_mem_transversalLists._proof_1_3,
+     `ReverseMathlib.Slice.transversalLists.eq_1,
+     -- the target's own auxiliaries
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_2,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_3,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_4,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_5,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_6,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_7,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_8,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_9,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_10,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_11,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_12,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_13,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_14,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_15,
+     `ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_16]
   forbiddenPrefixes := [`Mathlib.Topology, `Mathlib.CategoryTheory]
   forbiddenModules := [`Mathlib.Combinatorics.Hall.Basic, `Mathlib.Order.KonigLemma]
   -- literal names: this module does not import the forbidden machinery; the checker
