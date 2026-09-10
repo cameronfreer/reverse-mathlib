@@ -7,6 +7,8 @@ import Mathlib.Combinatorics.Hall.Basic
 import Mathlib.Order.KonigLemma
 import ReverseMathlib
 import ReverseMathlib.Registry
+import ReverseMathlib.Meta.Boundaries.HallCompactness
+import ReverseMathlibFixtures.BoundaryProbes
 
 /-!
 # Meta smoke tests
@@ -225,6 +227,166 @@ scaffolding that performs the selection. -/
    nonempty_sections_of_finite_inverse_system,
    hallMatchingsFunctor,
    hallMatchingsOn.nonempty]
+
+/-! ### Declaration-boundary checker (#20, first tranche)
+
+`#rm_check_boundary` audits the **total** closure of an elaborated declaration against a
+declared boundary. It is not restricted replay (no fresh compilation, no proof replay, no
+import restriction) and carries no evidence label. The Hall fixture passes its boundary;
+each pinned failure shape is rejected with its reason. -/
+
+/--
+info: #rm_check_boundary ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness against hall.finiteInverseLimitCompactness.v1: PASS
+  total closure: 5844 constants (statement 3331, value 5843, proof-only 2513) — acceptance is on the total closure
+  admitted by: 5766 prefix / 36 exact module / 42 exact declaration (auxiliaries enumerated explicitly)
+  kernel axioms (root included, standard policy enforced): propext, Classical.choice, Quot.sound
+  a declaration audit only: no import restriction, no replay, no fragment membership, no weak-system interpretation
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  ReverseMathlib.Meta.Boundaries.hallCompactnessBoundary
+
+-- 1. the compactness route is rejected by name
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.probeCompactness' leaves boundary 'hall.finiteInverseLimitCompactness.v1': 600 constant(s) not admitted — nonempty_sections_of_finite_inverse_system (forbidden declaration); ClusterPt (forbidden prefix of Mathlib.Topology.Defs.Filter); CompactSpace (forbidden prefix of Mathlib.Topology.Defs.Filter) … and 597 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeCompactness
+  ReverseMathlib.Meta.Boundaries.hallCompactnessBoundary
+
+-- 2. the infinite Hall route is rejected (by name and by module)
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.probeInfiniteHall' leaves boundary 'hall.finiteInverseLimitCompactness.v1': 617 constant(s) not admitted — hallMatchingsFunctor (forbidden declaration); nonempty_sections_of_finite_inverse_system (forbidden declaration); Finset.all_card_le_biUnion_card_iff_exists_injective (forbidden declaration) … and 614 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeInfiniteHall
+  ReverseMathlib.Meta.Boundaries.hallCompactnessBoundary
+
+-- 3. a topology declaration is rejected by prefix, not by name
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.probeTopology' leaves boundary 'hall.finiteInverseLimitCompactness.v1': 4 constant(s) not admitted — IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace.IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic) … and 1 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeTopology
+  ReverseMathlib.Meta.Boundaries.hallCompactnessBoundary
+
+-- 4. truncation fails closed
+/--
+error: rm_assert: dependency closure of 'ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness' is INCOMPLETE (truncated at rm.maxNodes); raise the option — assertions never pass on a truncated graph
+-/
+#guard_msgs in
+set_option rm.maxNodes 100 in
+#rm_check_boundary ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  ReverseMathlib.Meta.Boundaries.hallCompactnessBoundary
+
+-- 5. boundary drift: without the finite-Hall module the genuine fixture fails
+/--
+error: rm_check_boundary: 'ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness' leaves boundary 'probe.noFiniteHall': 27 constant(s) not admitted — Finset.all_card_le_biUnion_card_iff_existsInjective' (outside every allowance); HallMarriageTheorem.hall_cond_of_compl (outside every allowance); HallMarriageTheorem.hall_cond_of_erase (outside every allowance) … and 24 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  ReverseMathlibFixtures.boundaryNoFiniteHall
+
+-- 6. a forbidden dependency shared by statement and proof through a wrapper: invisible to
+-- the proof-only difference, caught on the total closure
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.probeShared' leaves boundary 'probe.withProbes': 4 constant(s) not admitted — IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace.IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic) … and 1 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeShared
+  ReverseMathlibFixtures.boundaryWithProbes
+
+-- 7. a forbidden dependency beneath an allowed helper: allowances are not frontier cuts
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.probeBeneathHelper' leaves boundary 'probe.allowsHelper': 4 constant(s) not admitted — IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace (forbidden prefix of Mathlib.Topology.Defs.Basic); TopologicalSpace.IsOpen (forbidden prefix of Mathlib.Topology.Defs.Basic) … and 1 more
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeBeneathHelper
+  ReverseMathlibFixtures.boundaryAllowsHelper
+
+-- 8. a boundary naming a constant that does not exist fails closed
+/--
+error: rm_check_boundary: boundary 'probe.missingName' names 'ReverseMathlib.Slice.thisDoesNotExist', which is not a constant in this environment — a missing constant cannot be allowed or forbidden by name
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
+  ReverseMathlibFixtures.boundaryMissingName
+
+-- 9. an unused forbidden import is not a dependency: declaration restrictions only
+/--
+info: #rm_check_boundary ReverseMathlibFixtures.probeClean against probe.withProbes: PASS
+  total closure: 31 constants (statement 30, value 31, proof-only 1) — acceptance is on the total closure
+  admitted by: 31 prefix / 0 exact module / 0 exact declaration (auxiliaries enumerated explicitly)
+  kernel axioms (root included, standard policy enforced): (none)
+  a declaration audit only: no import restriction, no replay, no fragment membership, no weak-system interpretation
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.probeClean
+  ReverseMathlibFixtures.boundaryWithProbes
+
+-- 10. auxiliary admission does not trust spelling: hand-written look-alikes are rejected
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.usesPretendAux' leaves boundary 'probe.narrow': 2 constant(s) not admitted — ReverseMathlibFixtures.allowedHelper._handwritten (outside every allowance); ReverseMathlibFixtures.allowedHelper.eq_handwritten (outside every allowance)
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.usesPretendAux ReverseMathlibFixtures.boundaryNarrow
+
+-- 11. the root is validated: an explicitly forbidden target fails
+/--
+error: rm_check_boundary: target 'ReverseMathlibFixtures.cleanRoot' is itself forbidden by boundary 'probe.forbiddenRoot' (forbidden declaration)
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.cleanRoot ReverseMathlibFixtures.boundaryForbiddenRoot
+
+-- 12. an axiom target counts as an axiom of its own closure (and is forbidden here)
+/--
+error: rm_check_boundary: target 'ReverseMathlibFixtures.addedAxiom' is itself forbidden by boundary 'probe.forbiddenRoot' (forbidden declaration)
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.addedAxiom ReverseMathlibFixtures.boundaryForbiddenRoot
+
+-- 12b. an axiom target under a permissive boundary still fails the axiom policy
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.addedAxiom' depends on non-standard axiom(s) [ReverseMathlibFixtures.addedAxiom] — the standard-axiom policy (propext, Classical.choice, Quot.sound) is enforced independently of every allowance
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.addedAxiom ReverseMathlibFixtures.boundaryAllowsAxiom
+
+-- 13. the standard-axiom policy is independent of allowances
+/--
+error: rm_check_boundary: 'ReverseMathlibFixtures.fromAddedAxiom' depends on non-standard axiom(s) [ReverseMathlibFixtures.addedAxiom] — the standard-axiom policy (propext, Classical.choice, Quot.sound) is enforced independently of every allowance
+-/
+#guard_msgs in
+#rm_check_boundary ReverseMathlibFixtures.fromAddedAxiom ReverseMathlibFixtures.boundaryAllowsAxiom
+
+-- 14. a current-file target has no compiled ownership and fails closed
+theorem boundaryCurrentFileTarget : True := True.intro
+/--
+error: rm_check_boundary: target 'RMSmoke.boundaryCurrentFileTarget' has no determinable module ownership (a declaration of the current file?) — run the check against compiled modules
+-/
+#guard_msgs in
+#rm_check_boundary boundaryCurrentFileTarget ReverseMathlibFixtures.boundaryNarrow
+
+-- the record withholds artifact attestation and labels the manifest revision as metadata
+/--
+info: #rm_check_boundary ReverseMathlibFixtures.probeClean against probe.withProbes: PASS
+  total closure: 31 constants (statement 30, value 31, proof-only 1) — acceptance is on the total closure
+  admitted by: 31 prefix / 0 exact module / 0 exact declaration (auxiliaries enumerated explicitly)
+  kernel axioms (root included, standard policy enforced): (none)
+  a declaration audit only: no import restriction, no replay, no fragment membership, no weak-system interpretation
+  boundary hash: cca5cde05f56e950 (canonical: id and the six sorted lists)
+  Lean 4.32.2; manifest mathlib revision 905b95818eb32af7874a58b427f50c1711a5e96c (metadata, not verification of the loaded dependencies)
+  artifact attestation: withheld — this checker inspects a loaded environment and cannot bind it to an object file; the replay runner supplies that binding
+-/
+#guard_msgs in
+#rm_boundary_record ReverseMathlibFixtures.probeClean ReverseMathlibFixtures.boundaryWithProbes
+
+-- the auxiliary listing admits nothing; it names the candidates a boundary must enumerate
+/--
+info: #rm_boundary_auxiliaries ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness: 32 candidate(s) — [ReverseMathlib.Slice.candLists._f, ReverseMathlib.Slice.candLists.eq_1, ReverseMathlib.Slice.candLists.eq_2, ReverseMathlib.Slice.candLists.match_1, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_10, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_11, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_12, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_13, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_14, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_15, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_16, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_2, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_3, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_4, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_5, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_6, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_7, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_8, ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness._proof_1_9, ReverseMathlib.Slice.hallSystem._proof_1, ReverseMathlib.Slice.hallSystem._proof_2, ReverseMathlib.Slice.mem_candLists._f, ReverseMathlib.Slice.mem_candLists._proof_1_6, ReverseMathlib.Slice.mem_candLists._proof_1_7, ReverseMathlib.Slice.mem_candLists._proof_1_8, ReverseMathlib.Slice.mem_candLists._proof_1_9, ReverseMathlib.Slice.mem_candLists.match_1_1, ReverseMathlib.Slice.take_mem_transversalLists._proof_1_1, ReverseMathlib.Slice.take_mem_transversalLists._proof_1_2, ReverseMathlib.Slice.take_mem_transversalLists._proof_1_3, ReverseMathlib.Slice.transversalLists.eq_1, ReverseMathlib.Standard.ExplicitFiniteInverseSystem.HasSection._proof_1]
+-/
+#guard_msgs in
+#rm_boundary_auxiliaries ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
 
 /-! ### Kleene diagonal characterization gates (#76)
 
