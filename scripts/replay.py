@@ -27,7 +27,7 @@ Import restrictions are enforced here (the sandbox imports exactly the approved 
 declaration restrictions by the boundary checker.
 """
 from __future__ import annotations
-import argparse, hashlib, json, os, re, shutil, subprocess, sys
+import argparse, hashlib, json, os, re, subprocess, sys, tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -143,10 +143,10 @@ without '..'")
         raise SystemExit(f"replay: replayTarget must be the target renamed through the "
                          f"namespace map (expected {derived!r})")
     root = REPLAY_DIR.resolve()
-    work = (root / plan["id"]).resolve()
-    if work.parent != root:
-        raise SystemExit("replay: work directory escapes the replay root")
-    return work
+    plan_root = (root / plan["id"]).resolve()
+    if plan_root.parent != root:
+        raise SystemExit("replay: plan directory escapes the replay root")
+    return plan_root
 
 def main() -> int:
     ap = argparse.ArgumentParser()
@@ -162,13 +162,13 @@ def main() -> int:
     print(json.dumps(record, indent=1) if args.json else render(record))
     return 0
 
-def replay(plan: dict, verbose: bool = True, work: Path | None = None) -> dict:
-    validated = validate_plan(plan)
-    work = validated if work is None else work.resolve()
-    if work.parent != REPLAY_DIR.resolve() and not str(work).startswith(str(REPLAY_DIR.resolve()) + os.sep):
-        raise SystemExit("replay: work directory must lie beneath the replay root")
-    if work.exists():
-        shutil.rmtree(work)
+def replay(plan: dict, verbose: bool = True) -> dict:
+    plan_root = validate_plan(plan)
+    # a FRESH directory per invocation beneath the trusted replay root: runs of the same
+    # plan never share or delete each other's directories, so what this run compiles is
+    # exactly what this run loads for its checks
+    plan_root.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="run-", dir=plan_root))
     src_dir, lib_dir = work / "src", work / "lib"
     src_dir.mkdir(parents=True); lib_dir.mkdir(parents=True)
     source_path = ROOT / plan["sourcePath"]
@@ -210,6 +210,11 @@ def replay(plan: dict, verbose: bool = True, work: Path | None = None) -> dict:
     ok = r2.returncode == 0 and "error" not in (r2.stdout + r2.stderr)
     if not ok:
         raise SystemExit(f"replay: checks FAILED:\n{r2.stdout[-4000:]}\n{r2.stderr[-4000:]}")
+    # the object the checks loaded must be the object this run compiled and hashed: the
+    # directory is private to this run, and this re-hash makes the attestation self-checking
+    if sha256(olean.read_bytes()) != sha256(olean_bytes):
+        raise SystemExit("replay: the compiled object changed between compilation and the "
+                         "checks; attestation refused")
     # 5. provenance bound to what this run compiled and loaded
     git = run(["git", "rev-parse", "HEAD"]).stdout.strip()
     lean_v = run(["lean", "--version"]).stdout.strip()
@@ -220,13 +225,14 @@ def replay(plan: dict, verbose: bool = True, work: Path | None = None) -> dict:
         "sandboxSourceSha256": sha256(sandbox.encode()),
         "approvedImports": plan["approvedImports"],
         "compiledOleanSha256": sha256(olean_bytes), "compiledOleanBytes": len(olean_bytes),
+        "workDir": str(work.relative_to(ROOT)),
         "target": plan["target"], "replayTarget": plan["replayTarget"],
         "boundary": plan["boundary"],
         "checkOutput": (r2.stdout + r2.stderr).strip(),
         "environment": {"lean": lean_v, "gitRevision": git,
-                         "note": "compile and load happened in this run on paths the "
-                                 "runner owns; the olean hash is of the file produced "
-                                 "here and loaded for the checks"},
+                         "note": "compile and load happened in this run in a directory "
+                                 "private to this invocation; the olean hash is of the "
+                                 "file produced here and re-verified after the checks"},
         "certifies": ["fresh compilation with exactly the approved imports (recorded by "
                        "the compiled module itself)",
                        "source-proof replay (distinct constants, owned by the freshly "
@@ -259,13 +265,12 @@ def selftest() -> int:
         """The fixture must be rejected, and for the stated reason (a substring of the
         runner's message) — a rejection for a different reason does not count."""
         p = dict(plan); p["id"] = f"selftest.{name}"
-        work = REPLAY_DIR / p["id"]
         try:
             if mutate_source is not None:
                 mp = REPLAY_DIR / f"{p['id']}.src.lean"
                 mp.parent.mkdir(parents=True, exist_ok=True)
                 mp.write_text(mutate_source); p["sourcePath"] = str(mp.relative_to(ROOT))
-            replay(p, verbose=False, work=work)
+            replay(p, verbose=False)
         except SystemExit as e:
             msg = str(e)
             if reason in msg:
@@ -340,9 +345,59 @@ def selftest() -> int:
     # (h) tampering: the plan's approved list is not what the sandbox imported — impossible
     #     by construction (the sandbox import block is generated from the plan), recorded
     #     here as a property, not a fixture
+    # (i) isolation under interleaving: run A of a plan id pauses right before its checks;
+    #     run B with the SAME id and a different source completes meanwhile; A resumes and
+    #     must check and attest ITS OWN object, in its own directory, untouched by B
+    interleave_failure = interleaving_fixture(base, src)
+    if interleave_failure:
+        failures.append(interleave_failure)
     if failures:
         print(f"replay selftest: {len(failures)} fixture(s) failed: {failures}"); return 1
     print("replay selftest: all rejection fixtures rejected for their stated reasons"); return 0
+
+def interleaving_fixture(base: dict, src: str) -> str | None:
+    """Same-id runs must stay isolated. Returns a failure name, or None."""
+    plan_a = dict(base); plan_a["id"] = "selftest.interleave"
+    # B replays a source with an extra harmless lemma so its object differs from A's
+    alt = REPLAY_DIR / "selftest.interleave.alt.lean"
+    alt.parent.mkdir(parents=True, exist_ok=True)
+    alt.write_text(src.replace("namespace ReverseMathlib.Slice",
+                               "namespace ReverseMathlib.Slice\n\ntheorem interleaveMarker : True := trivial\n", 1))
+    plan_b = dict(plan_a); plan_b["sourcePath"] = str(alt.relative_to(ROOT))
+    evidence: dict = {}
+    original_run = run
+    def interleave(cmd, *args, **kwargs):
+        if len(cmd) == 2 and cmd[0] == "lean" and Path(cmd[1]).name == "Check.lean":
+            globals()["run"] = original_run          # B runs unpatched
+            try:
+                evidence["record_b"] = replay(plan_b, verbose=False)
+            finally:
+                globals()["run"] = interleave
+            obj = Path(cmd[1]).parent / "lib" / "ReverseMathlibReplay" / "HallFromCompactness.olean"
+            evidence["loaded_for_a"] = sha256(obj.read_bytes())
+            globals()["run"] = original_run          # A's own check proceeds unpatched
+        return original_run(cmd, *args, **kwargs)
+    globals()["run"] = interleave
+    try:
+        record_a = replay(plan_a, verbose=False)
+    except SystemExit as e:
+        globals()["run"] = original_run
+        print(f"selftest interleave: run A FAILED: {str(e)[:200]}"); return "interleave"
+    finally:
+        globals()["run"] = original_run
+    record_b = evidence.get("record_b")
+    ok = (record_b is not None
+          and record_a["workDir"] != record_b["workDir"]
+          and record_a["compiledOleanSha256"] == evidence.get("loaded_for_a")
+          and record_a["compiledOleanSha256"] != record_b["compiledOleanSha256"])
+    if ok:
+        print("selftest interleave: same-id runs isolated — A attested the object its own "
+              "check loaded; B's directory and object differ")
+        return None
+    print(f"selftest interleave: ISOLATION FAILURE — A {record_a['compiledOleanSha256'][:12]} "
+          f"loaded {str(evidence.get('loaded_for_a'))[:12]}; B {str(record_b and record_b['compiledOleanSha256'])[:12]}; "
+          f"dirs {record_a['workDir']} / {record_b and record_b['workDir']}")
+    return "interleave"
 
 if __name__ == "__main__":
     sys.exit(main())
