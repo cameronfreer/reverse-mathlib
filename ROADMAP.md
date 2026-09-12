@@ -1030,6 +1030,27 @@ was proved.
   statement adapter. The scoreboard is unchanged at 10/1/1: this upgrades the formal
   status of the ω-context and is not a calibration fact.
 
+### Restricted replay MVP, issue #20 (2026-09-12)
+
+- **What exists** (reverse-mathlib `5b29680`, PR #79; `e299be8`, PR #80):
+  `#rm_check_boundary` audits the **total** dependency closure of an elaborated
+  declaration against a `DeclBoundary` (module prefixes, exact modules, exact
+  declarations with auxiliaries enumerated explicitly; forbidden rules first; standard-axiom
+  policy enforced independently, root included; fail closed on truncation, unknowns, unowned
+  roots, missing allowed names). `scripts/replay.py` replays the **source proof** of the
+  Hall fixture in a fresh per-invocation sandbox under exactly the approved imports, ties the
+  replay to the original by structural statement equality (`Expr.equal`), verifies the
+  compiled module's recorded imports and both targets' ownership, runs the boundary check on
+  the replay, and binds provenance (plan, source, sandbox, object hashes; re-verified after
+  the checks) to what the run compiled. Thirteen rejection fixtures run in CI.
+- **What a pass certifies**: fresh source-proof replay of the named theorem under the
+  approved imports and the declared declaration boundary, at the recorded environment.
+- **What it does not**: fragment membership in any object theory, a weak-system
+  interpretation, nonstandard-model transport, or any reverse-mathematical bound. Neither
+  ℕ-valued interfaces nor a passing audit restrict set formation, induction motives, or
+  choice occurrences. Replay becomes RM evidence only when paired with a fragment
+  interpretation, which does not exist yet.
+
 ## Near-term sequence
 
 Hall walking slice (done) → #5 layer-indexed typed facts and contexts → #6 typed semantic
@@ -1039,10 +1060,9 @@ bridge (the turnstile track) → tree and matching representation matrix → Sim
 matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice → coded analysis ladder.
 
 After the ω-context adequacy checkpoint (2026-09-07): the diagonalization umbrella #75,
-starting with the Kleene-tree path characterization #76 (existing tree and coding
-unchanged; no registration). Next comes restricted replay #20, checking the explicit
-relative theorem against an approved declaration boundary; restricted replay itself
-establishes neither all-model nor syntactic transport. Separately, the positive all-model
+starting with the Kleene-tree path characterization #76 (done, `4bdba1c`). Restricted
+replay #20 is done as an MVP (checkpoint above); it establishes neither all-model nor
+syntactic transport. Separately, the positive all-model
 or syntactic WKL → EFILC flagship requires an audit of its nonstandard-model or
 object-calculus obligations before any small construction is promised. Then relative
 diagonalization and the separation adapter under #75. No general resource/effect
