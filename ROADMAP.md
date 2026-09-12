@@ -612,13 +612,15 @@ comprehension classes, induction complexity, closure-lemma matching) requires tr
 into a formula layer/restricted IR or explicit definability evidence, so it is *not*
 backend-independent. Only the inventory proceeds early.
 
-Restricted replay (#20) discipline, recorded here so it is never diluted: declaration
-whitelisting is only **half** of replay. `Set α` is reducibly `α → Prop`, so a bare lambda
-can flow into a set position without touching any named comprehension constant — dependency
-analysis is structurally blind to this. The second half is structural: an abstract
-internal-set type with hidden constructors, a term-level checker, a restricted intermediate
-calculus, or the model-facing API whose types demand membership in `M.sets`. Replay is never
-an RM certificate until its interpretation bridge exists.
+Replay discipline, recorded here so it is never diluted: declaration whitelisting is only
+**half** of replay. `Set α` is reducibly `α → Prop`, so a bare lambda can flow into a set
+position without touching any named comprehension constant — dependency analysis is
+structurally blind to this. The completed restricted-replay MVP (#20, checkpoint below) is
+the **declaration-bounded** half only and documents this limitation rather than solving
+it. The second half is structural and is the stronger, **deferred fragment-replay stage**:
+an abstract internal-set type with hidden constructors, a term-level checker, a restricted
+intermediate calculus, or the model-facing API whose types demand membership in `M.sets`.
+Replay is never an RM certificate until its interpretation bridge exists.
 
 ### Order of work
 
@@ -634,7 +636,8 @@ scope. 13. REC/WKL certified separation. 14. Fragment-interpretation bridge for 
 ambient theorems.
 
 In parallel throughout: the portability-audit inventory; Q6 occurrence/effect auditing;
-restricted replay (#20) under the structural discipline above.
+the deferred fragment-replay stage under the structural discipline above (the
+declaration-bounded MVP #20 is done).
 
 ## Strict reverse mathematics (cross-cutting, not a sixth axis)
 
@@ -744,10 +747,13 @@ Mining-track items (issues open only as their prerequisites land):
   research-query program this enables (overshooting frontiers, finite-core+completion
   families, same-RM-different-oracle-pattern, route changes across mathlib revisions)
   merges into the empirical capability-basis program below, not a separate track.
-- **Restricted replay MVP** (after #6): sandbox module with approved imports/capability
+- **Restricted replay MVP** — **landed** (#20; PRs #79 and #80, see the checkpoint under
+  *Established boundaries*): sandbox module with approved imports/capability
   interfaces, replaying an already-explicit relative theorem (the Hall/EFILC slice as first
   fixture); fails on unapproved constants; records environment, source hash, allowed
-  interface; renders `restrictedReplay`, never a lower bound. More valuable than mechanical
+  interface; never a lower bound (no `restrictedReplay` evidence record is rendered yet —
+  the declaration-bounded audit stays a runner report until the fragment-interpretation
+  bridge exists). More valuable than mechanical
   slicing initially.
 - **Q6 occurrence/effect audit** (promote after Q2–Q5): per-occurrence choice liveness —
   Prop-only-and-erased vs flows-into-Type, instance constructions (`Fintype.ofFinite`),
@@ -1030,6 +1036,28 @@ was proved.
   statement adapter. The scoreboard is unchanged at 10/1/1: this upgrades the formal
   status of the ω-context and is not a calibration fact.
 
+### Restricted replay MVP, issue #20 (2026-09-12)
+
+- **What exists** (reverse-mathlib `5b29680`, PR #79; `e299be8`, PR #80):
+  `#rm_check_boundary` audits the **total** dependency closure of an elaborated
+  declaration against a `DeclBoundary` (module prefixes, exact modules, exact
+  declarations with auxiliaries enumerated explicitly; forbidden rules first; standard-axiom
+  policy enforced independently, root included; fail closed on truncation, unknowns, unowned
+  roots, missing allowed names). `scripts/replay.py` replays the **source proof** of the
+  Hall fixture in a fresh per-invocation sandbox under exactly the approved imports, ties the
+  replay to the original by structural statement equality (`Expr.equal`), verifies the
+  compiled module's recorded imports and both targets' ownership, runs the boundary check on
+  the replay, and binds provenance (plan, source, sandbox, and object hashes; the object
+  hash is rechecked after the checks) to what the run compiled. Twelve rejection fixtures
+  plus one interleaving-isolation fixture run in CI.
+- **What a pass certifies**: fresh source-proof replay of the named theorem under the
+  approved imports and the declared declaration boundary, at the recorded environment.
+- **What it does not**: fragment membership in any object theory, a weak-system
+  interpretation, nonstandard-model transport, or any reverse-mathematical bound. Neither
+  ℕ-valued interfaces nor a passing audit restrict set formation, induction motives, or
+  choice occurrences. Replay becomes RM evidence only when paired with a fragment
+  interpretation, which does not exist yet.
+
 ## Near-term sequence
 
 Hall walking slice (done) → #5 layer-indexed typed facts and contexts → #6 typed semantic
@@ -1039,10 +1067,13 @@ bridge (the turnstile track) → tree and matching representation matrix → Sim
 matching equivalences → RT²₂/SRT²₂/COH non-Big-Five slice → coded analysis ladder.
 
 After the ω-context adequacy checkpoint (2026-09-07): the diagonalization umbrella #75,
-starting with the Kleene-tree path characterization #76 (existing tree and coding
-unchanged; no registration). Next comes restricted replay #20, checking the explicit
-relative theorem against an approved declaration boundary; restricted replay itself
-establishes neither all-model nor syntactic transport. Separately, the positive all-model
+starting with the Kleene-tree path characterization #76 (done, `4bdba1c`). Restricted
+replay #20 is done as a declaration-bounded MVP (checkpoint above); it establishes neither
+all-model nor syntactic transport. The next decision checkpoint is the **bounded positive
+WKL → EFILC transport audit**: an audit of the flagship's nonstandard-model or
+object-calculus obligations, separate from replay and promising no implementation until
+those obligations are understood. Then relative diagonalization and the separation adapter
+under #75. Separately, the positive all-model
 or syntactic WKL → EFILC flagship requires an audit of its nonstandard-model or
 object-calculus obligations before any small construction is promised. Then relative
 diagonalization and the separation adapter under #75. No general resource/effect
