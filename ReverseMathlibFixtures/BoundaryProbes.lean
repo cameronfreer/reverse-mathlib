@@ -93,6 +93,13 @@ def boundaryForbiddenRoot : DeclBoundary :=
   { id := "probe.forbiddenRoot", allowedPrefixes := [`Init],
     forbiddenDecls := [``cleanRoot, ``addedAxiom] }
 
+/-! ### Statement-agreement probes: binder info and binder names are part of the contract -/
+
+theorem explicitInput (n : Nat) : n = n := rfl
+theorem implicitInput {n : Nat} : n = n := rfl
+theorem renamedInput (m : Nat) : m = m := rfl
+theorem explicitInputAgain (n : Nat) : n = n := rfl
+
 /-- The Hall boundary with the finite-Hall module removed: the genuine fixture must fail. -/
 def boundaryNoFiniteHall : DeclBoundary :=
   { hallCompactnessBoundary with

@@ -388,6 +388,30 @@ info: #rm_boundary_auxiliaries ReverseMathlib.Slice.countableHall_of_finiteInver
 #guard_msgs in
 #rm_boundary_auxiliaries ReverseMathlib.Slice.countableHall_of_finiteInverseLimitCompactness
 
+-- statement agreement is structural: binder info and binder names count; alpha-equivalent
+-- or re-annotated statements are rejected, an identical statement elsewhere is accepted
+/--
+error: rm_assert: statements of 'ReverseMathlibFixtures.explicitInput' and 'ReverseMathlibFixtures.implicitInput' are not structurally identical (binder names and binder info included):
+  ∀ (n : ℕ), n = n
+  ∀ {n : ℕ}, n = n
+-/
+#guard_msgs in
+#rm_assert_same_statement ReverseMathlibFixtures.explicitInput ReverseMathlibFixtures.implicitInput
+
+/--
+error: rm_assert: statements of 'ReverseMathlibFixtures.explicitInput' and 'ReverseMathlibFixtures.renamedInput' are not structurally identical (binder names and binder info included):
+  ∀ (n : ℕ), n = n
+  ∀ (m : ℕ), m = m
+-/
+#guard_msgs in
+#rm_assert_same_statement ReverseMathlibFixtures.explicitInput ReverseMathlibFixtures.renamedInput
+
+/--
+info: #rm_assert_same_statement: 'ReverseMathlibFixtures.explicitInput' and 'ReverseMathlibFixtures.explicitInputAgain' have structurally identical statements (0 universe parameter(s))
+-/
+#guard_msgs in
+#rm_assert_same_statement ReverseMathlibFixtures.explicitInput ReverseMathlibFixtures.explicitInputAgain
+
 /-! ### Kleene diagonal characterization gates (#76)
 
 The exact path characterization of the existing Kleene tree must cross the

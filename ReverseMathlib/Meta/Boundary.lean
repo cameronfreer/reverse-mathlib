@@ -67,7 +67,7 @@ structure DeclBoundary where
   allowedPrefixes : List Name := []
   /-- Exact modules admitted (e.g. the finite-Hall module, deliberately). -/
   allowedModules : List Name := []
-  /-- Exact declarations admitted, together with their compiler-generated auxiliaries. -/
+  /-- Exact declarations only; auxiliaries must be enumerated explicitly. -/
   allowedDecls : List Name := []
   /-- Forbidden module prefixes; precede every allowance. -/
   forbiddenPrefixes : List Name := []
@@ -162,7 +162,10 @@ unowned or forbidden root, and unowned constants; otherwise returns the report (
 and non-standard axioms may be nonempty). -/
 def checkBoundary (target : Name) (b : DeclBoundary) : CommandElabM BoundaryReport := do
   let env ← getEnv
-  for d in b.allowedDecls ++ b.forbiddenDecls do
+  -- an ALLOWED name that resolves to nothing fails closed; a FORBIDDEN name absent from
+  -- the environment is trivially unreachable (the sandbox of a replay imports only the
+  -- approved modules, so forbidden machinery is usually absent — that is the point)
+  for d in b.allowedDecls do
     unless env.contains d do
       throwError "rm_check_boundary: boundary '{b.id}' names '{d}', which is not a constant \
         in this environment — a missing constant cannot be allowed or forbidden by name"
@@ -284,6 +287,61 @@ elab "#rm_boundary_record " id:ident bnd:ident : command => do
        {rev?.getD "unavailable"} (metadata, not verification of the loaded dependencies)",
      "  artifact attestation: withheld — this checker inspects a loaded environment and \
        cannot bind it to an object file; the replay runner supplies that binding"]
+
+/-- `#rm_assert_same_statement a b`: hard assertion that two declarations have **exactly**
+the same statement — identical universe parameters and structurally identical types
+(`Expr.equal`: binder names and binder info included; no alpha-equivalence, no defeq, no
+unfolding). The replay runner uses it to tie a freshly
+compiled replay to the original theorem. -/
+elab "#rm_assert_same_statement " a:ident b:ident : command => do
+  let na ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo a
+  let nb ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo b
+  let env ← getEnv
+  let some ca := env.find? na | throwErrorAt a "rm_assert: unknown constant '{na}'"
+  let some cb := env.find? nb | throwErrorAt b "rm_assert: unknown constant '{nb}'"
+  unless ca.levelParams == cb.levelParams do
+    throwErrorAt b "rm_assert: '{na}' and '{nb}' differ in universe parameters \
+      ({ca.levelParams} vs {cb.levelParams})"
+  -- `Expr.equal`, not `==`: structural equality that also compares binder names and
+  -- binder info (`==` is alpha-equivalence and ignores explicit/implicit annotations)
+  unless ca.type.equal cb.type do
+    throwErrorAt b "rm_assert: statements of '{na}' and '{nb}' are not structurally \
+      identical (binder names and binder info included):\n  {ca.type}\n  {cb.type}"
+  logInfo s!"#rm_assert_same_statement: '{na}' and '{nb}' have structurally identical \
+    statements ({ca.levelParams.length} universe parameter(s))"
+
+/-- `#rm_assert_owned_by decl Mod`: hard assertion that `decl` is a constant of the compiled
+module `Mod` in the loaded environment (not of the current file, not of any other module). -/
+elab "#rm_assert_owned_by " id:ident m:ident : command => do
+  let n ← liftCoreM <| realizeGlobalConstNoOverloadWithInfo id
+  let env ← getEnv
+  let mods := env.allImportedModuleNames
+  match env.getModuleIdxFor? n with
+  | none => throwErrorAt id "rm_assert: '{n}' is not owned by any compiled module"
+  | some idx =>
+    let owner := mods.getD idx.toNat .anonymous
+    unless owner == m.getId do
+      throwErrorAt m "rm_assert: '{n}' is owned by module '{owner}', not '{m.getId}'"
+    logInfo s!"#rm_assert_owned_by: '{n}' is owned by compiled module '{owner}'"
+
+/-- `#rm_assert_module_imports Mod [A, B, …]`: hard assertion that the **compiled** module
+`Mod` loaded in this environment records exactly the direct imports `A, B, …` (as the
+`.olean` states them — what the module was actually compiled against), in any order. -/
+elab "#rm_assert_module_imports " m:ident "[" mods:ident,* "]" : command => do
+  let env ← getEnv
+  let names := env.allImportedModuleNames
+  let some idx := names.findIdx? (· == m.getId)
+    | throwErrorAt m "rm_assert: module '{m.getId}' is not loaded"
+  let some data := env.header.moduleData[idx]?
+    | throwErrorAt m "rm_assert: no module data for '{m.getId}'"
+  -- every module implicitly imports the prelude `Init`; it is not part of the contract
+  let actual := ((data.imports.map (·.module)).filter (· != `Init)).qsort Name.lt
+  let expected := ((mods.getElems.map (·.getId)).filter (· != `Init)).qsort Name.lt
+  unless actual == expected do
+    throwErrorAt m "rm_assert: compiled module '{m.getId}' records direct imports \
+      {actual.toList}, not the expected {expected.toList}"
+  logInfo s!"#rm_assert_module_imports: '{m.getId}' was compiled with exactly \
+    {actual.toList}"
 
 /-- `#rm_boundary_auxiliaries thm`: list the constants of `thm`'s total closure whose names
 look like compiler-generated auxiliaries of `thm` or of any constant in the closure — the

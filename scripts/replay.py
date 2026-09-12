@@ -1,0 +1,403 @@
+#!/usr/bin/env python3
+"""Restricted replay runner (issue #20, second tranche).
+
+Replays the SOURCE PROOF of an explicit relative theorem in a sandbox, then ties the
+replay to the original by exact statement agreement and checks the replay's total
+dependency closure against a declared boundary. Provenance is bound to what this runner
+itself compiled.
+
+What a passing run certifies, precisely:
+  1. fresh compilation — the sandbox source (the fixture's source text with its import
+     block REPLACED by the plan's approved imports and its namespace renamed) compiled
+     from scratch, in this run, with exactly those imports;
+  2. source-proof replay — the replayed declarations are the source's own proofs,
+     elaborated afresh; they are distinct constants, never the original ones (the
+     original module is forbidden to the replay by its boundary);
+  3. exact statement agreement — the replayed target's statement is syntactically
+     identical to the original's (`#rm_assert_same_statement`);
+  4. the complete declaration-boundary check on the replay (`#rm_check_boundary`,
+     total closure, standard-axiom policy enforced);
+  5. provenance bound to the compiled artifact — sha256 of the plan, of the sandbox
+     source this runner wrote, and of the .olean this runner produced and then loaded
+     for the checks (compile and load happen in one run, on paths this runner owns).
+
+What it does NOT certify: fragment membership in any object theory, a weak-system
+interpretation, nonstandard-model transport, or any reverse-mathematical bound.
+Import restrictions are enforced here (the sandbox imports exactly the approved list);
+declaration restrictions by the boundary checker.
+"""
+from __future__ import annotations
+import argparse, hashlib, json, os, re, subprocess, sys, tempfile
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parent.parent
+REPLAY_DIR = ROOT / ".lake" / "build" / "replay"
+
+def sha256(data: bytes) -> str:
+    return hashlib.sha256(data).hexdigest()
+
+def run(cmd: list[str], env: dict | None = None, cwd: Path = ROOT) -> subprocess.CompletedProcess:
+    return subprocess.run(cmd, cwd=cwd, env=env, capture_output=True, text=True)
+
+def lean_path() -> str:
+    r = run(["lake", "env", "printenv", "LEAN_PATH"])
+    if r.returncode != 0:
+        raise SystemExit(f"replay: cannot read LEAN_PATH: {r.stderr}")
+    return r.stdout.strip()
+
+IDENT_RE = re.compile(r"[A-Za-z_][A-Za-z0-9_.']*")
+SAFE_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,120}$")
+
+def skip_trivia(text: str, i: int) -> int:
+    """Skip whitespace, line comments, and (nested) block comments starting at `i`."""
+    n = len(text)
+    while i < n:
+        if text[i].isspace():
+            i += 1
+        elif text.startswith("--", i):
+            j = text.find("\n", i)
+            i = n if j < 0 else j + 1
+        elif text.startswith("/-", i):
+            depth, i = 1, i + 2
+            while i < n and depth > 0:
+                if text.startswith("/-", i):
+                    depth += 1; i += 2
+                elif text.startswith("-/", i):
+                    depth -= 1; i += 2
+                else:
+                    i += 1
+            if depth != 0:
+                raise SystemExit("replay: unterminated block comment in the source header")
+        else:
+            break
+    return i
+
+def parse_header(text: str) -> tuple[list[str], int]:
+    """Parse the leading import section with a real tokenizer: comments (nested, line, and
+    trailing) are skipped, each `import M` is read as a token pair, and the section ends at
+    the first token that is not `import`. Returns (imports, offset of the first body
+    token). Imports anywhere after that offset are rejected separately."""
+    i = skip_trivia(text, 0)
+    imports = []
+    while True:
+        i = skip_trivia(text, i)
+        if not (text.startswith("import", i) and (i + 6 == len(text) or not
+                (text[i + 6].isalnum() or text[i + 6] in "_.'"))):
+            break
+        i += 6
+        i = skip_trivia(text, i)
+        m = IDENT_RE.match(text, i)
+        if not m:
+            raise SystemExit("replay: malformed import in the source header")
+        imports.append(m.group(0)); i = m.end()
+    return imports, i
+
+def make_sandbox_source(plan: dict, source: str) -> str:
+    _orig_imports, body_start = parse_header(source)
+    body = source[body_start:]
+    # any further `import` token in the body is refused (Lean would reject it too, but a
+    # commented-out one is harmless; a real one must never survive into the sandbox)
+    for m in re.finditer(r"(?m)^\s*import\b", body):
+        raise SystemExit("replay: an import outside the leading import section; refusing")
+    for old, new in plan["namespaceMap"].items():
+        body = body.replace(old, new)
+    imports = "\n".join(f"import {m}" for m in plan["approvedImports"])
+    banner = (f"/-! Restricted replay sandbox — generated by scripts/replay.py from "
+              f"{plan['sourcePath']} under plan {plan['id']}; imports are exactly the "
+              f"approved list; the source's own header and imports were removed; namespace "
+              f"renamed per the plan. Never edit by hand. -/")
+    # the generated imports come FIRST, before any comment: nothing in the source can
+    # enclose them, and the source's own import section is cut away by offset
+    return f"{imports}\n\n{banner}\n{body}"
+
+def validate_plan(plan: dict) -> Path:
+    """Validate every field and path BEFORE touching the filesystem; return the unique
+    work directory, guaranteed to lie beneath the trusted replay root."""
+    for key in ("id", "sourcePath", "sourceModule", "replayModule", "namespaceMap",
+                "approvedImports", "target", "replayTarget", "boundaryModule", "boundary"):
+        if key not in plan:
+            raise SystemExit(f"replay: plan lacks '{key}'")
+    if not SAFE_ID_RE.match(plan["id"]) or ".." in plan["id"]:
+        raise SystemExit(f"replay: plan id {plan['id']!r} is not a safe identifier")
+    sp = Path(plan["sourcePath"])
+    if sp.is_absolute() or ".." in sp.parts:
+        raise SystemExit(f"replay: sourcePath {plan['sourcePath']!r} must be a relative path \
+without '..'")
+    src = (ROOT / sp).resolve()
+    if not str(src).startswith(str(ROOT.resolve()) + os.sep) or not src.is_file():
+        raise SystemExit(f"replay: sourcePath {plan['sourcePath']!r} is not a file inside the repository")
+    for m in plan["approvedImports"] + [plan["sourceModule"], plan["replayModule"],
+                                        plan["boundaryModule"]]:
+        if not IDENT_RE.fullmatch(m):
+            raise SystemExit(f"replay: malformed module name {m!r}")
+    if not plan["replayModule"].startswith("ReverseMathlibReplay."):
+        raise SystemExit("replay: replayModule must live under ReverseMathlibReplay")
+    if plan["target"] == plan["replayTarget"]:
+        raise SystemExit("replay: target and replayTarget must be distinct constants")
+    # the replay target is DERIVED from the target through the namespace map; a plan may
+    # state it, but it must agree
+    derived = plan["target"]
+    for old, new in plan["namespaceMap"].items():
+        derived = derived.replace(old, new)
+    if derived == plan["target"] or derived != plan["replayTarget"]:
+        raise SystemExit(f"replay: replayTarget must be the target renamed through the "
+                         f"namespace map (expected {derived!r})")
+    root = REPLAY_DIR.resolve()
+    plan_root = (root / plan["id"]).resolve()
+    if plan_root.parent != root:
+        raise SystemExit("replay: plan directory escapes the replay root")
+    return plan_root
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("plan", nargs="?")
+    ap.add_argument("--selftest", action="store_true", help="run the rejection fixtures")
+    ap.add_argument("--json", action="store_true", help="emit the record as JSON only")
+    args = ap.parse_args()
+    if args.selftest:
+        return selftest()
+    if not args.plan:
+        ap.error("plan required")
+    record = replay(json.loads(Path(args.plan).read_text()), verbose=not args.json)
+    print(json.dumps(record, indent=1) if args.json else render(record))
+    return 0
+
+def replay(plan: dict, verbose: bool = True) -> dict:
+    plan_root = validate_plan(plan)
+    # a FRESH directory per invocation beneath the trusted replay root: runs of the same
+    # plan never share or delete each other's directories, so what this run compiles is
+    # exactly what this run loads for its checks
+    plan_root.mkdir(parents=True, exist_ok=True)
+    work = Path(tempfile.mkdtemp(prefix="run-", dir=plan_root))
+    src_dir, lib_dir = work / "src", work / "lib"
+    src_dir.mkdir(parents=True); lib_dir.mkdir(parents=True)
+    source_path = ROOT / plan["sourcePath"]
+    source = source_path.read_text()
+    sandbox = make_sandbox_source(plan, source)
+    mod_parts = plan["replayModule"].split(".")
+    src_file = src_dir.joinpath(*mod_parts).with_suffix(".lean")
+    src_file.parent.mkdir(parents=True, exist_ok=True)
+    src_file.write_text(sandbox)
+    olean = lib_dir.joinpath(*mod_parts).with_suffix(".olean")
+    ilean = olean.with_suffix(".ilean")
+    olean.parent.mkdir(parents=True, exist_ok=True)
+    # 1. fresh compilation with exactly the approved imports
+    env = dict(os.environ); env["LEAN_PATH"] = lean_path()
+    r = run(["lean", str(src_file), "-o", str(olean), "-i", str(ilean)], env=env)
+    if r.returncode != 0:
+        raise SystemExit(f"replay: fresh compilation FAILED under the approved imports:\n"
+                         f"{r.stdout[-4000:]}\n{r.stderr[-4000:]}")
+    olean_bytes = olean.read_bytes()
+    # 2–4. statement agreement and boundary check, loading the olean this run produced
+    check = work / "Check.lean"
+    approved = ", ".join(plan["approvedImports"])
+    check.write_text("\n".join([
+        f"import {plan['sourceModule']}",
+        f"import {plan['replayModule']}",
+        f"import {plan['boundaryModule']}",
+        "set_option rm.maxNodes 800000",
+        # the compiled replay module records exactly the approved imports
+        f"#rm_assert_module_imports {plan['replayModule']} [{approved}]",
+        # the original target is owned by the source module, the replay target by the
+        # freshly compiled replay module — neither may be some other declaration
+        f"#rm_assert_owned_by {plan['target']} {plan['sourceModule']}",
+        f"#rm_assert_owned_by {plan['replayTarget']} {plan['replayModule']}",
+        f"#rm_assert_same_statement {plan['target']} {plan['replayTarget']}",
+        f"#rm_check_boundary {plan['replayTarget']} {plan['boundary']}",
+        ""]))
+    env2 = dict(env); env2["LEAN_PATH"] = f"{lib_dir}:{env['LEAN_PATH']}"
+    r2 = run(["lean", str(check)], env=env2)
+    ok = r2.returncode == 0 and "error" not in (r2.stdout + r2.stderr)
+    if not ok:
+        raise SystemExit(f"replay: checks FAILED:\n{r2.stdout[-4000:]}\n{r2.stderr[-4000:]}")
+    # the object the checks loaded must be the object this run compiled and hashed: the
+    # directory is private to this run, and this re-hash makes the attestation self-checking
+    if sha256(olean.read_bytes()) != sha256(olean_bytes):
+        raise SystemExit("replay: the compiled object changed between compilation and the "
+                         "checks; attestation refused")
+    # 5. provenance bound to what this run compiled and loaded
+    git = run(["git", "rev-parse", "HEAD"]).stdout.strip()
+    lean_v = run(["lean", "--version"]).stdout.strip()
+    return {
+        "kind": "restrictedReplay",
+        "plan": plan["id"], "planSha256": sha256(json.dumps(plan, sort_keys=True).encode()),
+        "sourcePath": plan["sourcePath"], "sourceSha256": sha256(source.encode()),
+        "sandboxSourceSha256": sha256(sandbox.encode()),
+        "approvedImports": plan["approvedImports"],
+        "compiledOleanSha256": sha256(olean_bytes), "compiledOleanBytes": len(olean_bytes),
+        "workDir": str(work.relative_to(ROOT)),
+        "target": plan["target"], "replayTarget": plan["replayTarget"],
+        "boundary": plan["boundary"],
+        "checkOutput": (r2.stdout + r2.stderr).strip(),
+        "environment": {"lean": lean_v, "gitRevision": git,
+                         "note": "compile and load happened in this run in a directory "
+                                 "private to this invocation; the olean hash is of the "
+                                 "file produced here and re-verified after the checks"},
+        "certifies": ["fresh compilation with exactly the approved imports (recorded by "
+                       "the compiled module itself)",
+                       "source-proof replay (distinct constants, owned by the freshly "
+                       "compiled module)",
+                       "exact statement agreement", "declaration boundary on the total "
+                       "closure with the standard-axiom policy"],
+        "doesNotCertify": ["fragment membership in any object theory",
+                            "weak-system interpretation", "nonstandard-model transport",
+                            "any reverse-mathematical bound"],
+    }
+
+def render(rec: dict) -> str:
+    out = [f"restricted replay {rec['plan']}: PASS",
+           f"  source {rec['sourcePath']} sha256 {rec['sourceSha256'][:16]}…; sandbox "
+           f"sha256 {rec['sandboxSourceSha256'][:16]}…; plan sha256 {rec['planSha256'][:16]}…",
+           f"  approved imports: {', '.join(rec['approvedImports'])}",
+           f"  compiled olean sha256 {rec['compiledOleanSha256'][:16]}… "
+           f"({rec['compiledOleanBytes']} bytes), loaded for the checks in this run",
+           f"  {rec['environment']['lean']}; git {rec['environment']['gitRevision'][:12]}",
+           "  checks:"]
+    out += ["    " + ln for ln in rec["checkOutput"].split("\n")]
+    out += ["  does not certify: " + "; ".join(rec["doesNotCertify"])]
+    return "\n".join(out)
+
+# ---------------------------------------------------------------- rejection fixtures
+def selftest() -> int:
+    base = json.loads((ROOT / "scripts/replay/plan_hall.json").read_text())
+    failures = []
+    def expect_fail(name: str, plan: dict, reason: str, mutate_source: str | None = None):
+        """The fixture must be rejected, and for the stated reason (a substring of the
+        runner's message) — a rejection for a different reason does not count."""
+        p = dict(plan); p["id"] = f"selftest.{name}"
+        try:
+            if mutate_source is not None:
+                mp = REPLAY_DIR / f"{p['id']}.src.lean"
+                mp.parent.mkdir(parents=True, exist_ok=True)
+                mp.write_text(mutate_source); p["sourcePath"] = str(mp.relative_to(ROOT))
+            replay(p, verbose=False)
+        except SystemExit as e:
+            msg = str(e)
+            if reason in msg:
+                print(f"selftest {name}: rejected for the required reason ({reason!r})")
+            else:
+                failures.append(name)
+                print(f"selftest {name}: rejected but NOT for {reason!r}:\n"
+                      + "\n".join("    " + l for l in msg.splitlines()[:6]))
+            return
+        failures.append(name); print(f"selftest {name}: NOT rejected")
+    def expect_fail_direct(name: str, plan: dict, reason: str):
+        try:
+            replay(plan, verbose=False)
+        except SystemExit as e:
+            if reason in str(e):
+                print(f"selftest {name}: refused before any filesystem action ({reason!r})"); return
+            failures.append(name); print(f"selftest {name}: refused but NOT for {reason!r}: {str(e)[:160]}"); return
+        failures.append(name); print(f"selftest {name}: NOT refused")
+    src = (ROOT / base["sourcePath"]).read_text()
+    thm = "theorem countableHall_of_finiteInverseLimitCompactness\n    (hcompact : ExplicitFiniteInverseLimitCompactness) : CountableHall := by\n"
+    assert thm in src, "fixture theorem header changed; update the selftest"
+    # (a) an import the source needs is missing from the approved list: fresh compilation
+    #     fails — import restriction is enforced by construction
+    p = dict(base); p["approvedImports"] = [m for m in base["approvedImports"]
+                                            if m != "Mathlib.Combinatorics.Hall.Finite"]
+    expect_fail("missing-approved-import", p, "fresh compilation FAILED")
+    # (b) statement drift: the replayed source is mutated so the target's statement changes
+    #     (an implicit binder), everything else intact — refused by structural agreement
+    drifted = src.replace("(hcompact : ExplicitFiniteInverseLimitCompactness) : CountableHall := by",
+                          "{hcompact : ExplicitFiniteInverseLimitCompactness} : CountableHall := by", 1)
+    assert drifted != src
+    expect_fail("statement-drift", dict(base), "not structurally identical", drifted)
+    # (c) boundary violation with the statement intact: the source proof is mutated to
+    #     touch mathlib's infinite Hall theorem under a plan approving its module —
+    #     compiles, statements agree, the boundary rejects it by name
+    mutated = src.replace(thm, thm + "  have _forbidden := @Finset.all_card_le_biUnion_card_iff_exists_injective.{0, 0}\n", 1)
+    mutated = mutated.replace("assert_not_exists Finset.all_card_le_biUnion_card_iff_exists_injective\n", "")
+    p = dict(base); p["approvedImports"] = base["approvedImports"] + ["Mathlib.Combinatorics.Hall.Basic"]
+    expect_fail("boundary-violation", p, "forbidden declaration", mutated)
+    # (d) a "replay" that reaches the ORIGINAL module instead of replaying: the plan
+    #     approves the original module and the proof delegates to the original theorem —
+    #     compiles, statements agree, the boundary rejects the original module
+    #     (the proof is kept intact so its enumerated auxiliaries still exist; it merely
+    #     touches an original helper, named with guillemets so the plan's textual
+    #     namespace rename leaves the reference pointing at the ORIGINAL module)
+    mutated2 = src.replace(thm, thm + "  have _original := «ReverseMathlib».Slice.decodeList\n", 1)
+    p = dict(base); p["approvedImports"] = base["approvedImports"] + ["ReverseMathlib.Slice.HallFromCompactness"]
+    expect_fail("reaches-original-module", p, "forbidden module ReverseMathlib.Slice.HallFromCompactness", mutated2)
+    # (e) path safety: absolute or traversing ids and source paths are refused before
+    #     anything is deleted or written
+    for bad_id in ["/tmp/replay-selftest-abs", "../escape", "a/b"]:
+        p = dict(base); p["id"] = bad_id
+        expect_fail_direct(f"unsafe-id:{bad_id}", p, "not a safe identifier")
+    for bad_src in ["/etc/hostname", "../reverse-mathlib/ReverseMathlib/Slice/HallFromCompactness.lean"]:
+        p = dict(base); p["sourcePath"] = bad_src
+        expect_fail_direct(f"unsafe-source:{bad_src}", p, "must be a relative path")
+    # (f) import bypass through a nested header comment and trailing comments on imports:
+    #     the source's own imports must be cut, the approved list must take effect, so
+    #     removing a needed import must fail compilation
+    mutated3 = ("/-\nheader\n/- nested -/\n-/\n" +
+                "\n".join(f"import {m} -- trailing comment" for m in base["approvedImports"]) +
+                "\n" + src[src.index("/-!"):])
+    p = dict(base); p["approvedImports"] = [m for m in base["approvedImports"]
+                                            if m != "Mathlib.Combinatorics.Hall.Finite"]
+    expect_fail("commented-header-import-bypass", p, "fresh compilation FAILED", mutated3)
+    # (g) self-comparison: target = replayTarget, or a replay target not derived from the
+    #     target, is refused before compilation
+    p = dict(base); p["target"] = p["replayTarget"] = "True.intro"
+    expect_fail_direct("self-comparison", p, "must be distinct")
+    p = dict(base); p["replayTarget"] = "ReverseMathlibReplay.Slice.mem_transversalLists"
+    expect_fail_direct("underived-replay-target", p, "renamed through the namespace map")
+    # (h) tampering: the plan's approved list is not what the sandbox imported — impossible
+    #     by construction (the sandbox import block is generated from the plan), recorded
+    #     here as a property, not a fixture
+    # (i) isolation under interleaving: run A of a plan id pauses right before its checks;
+    #     run B with the SAME id and a different source completes meanwhile; A resumes and
+    #     must check and attest ITS OWN object, in its own directory, untouched by B
+    interleave_failure = interleaving_fixture(base, src)
+    if interleave_failure:
+        failures.append(interleave_failure)
+    if failures:
+        print(f"replay selftest: {len(failures)} fixture(s) failed: {failures}"); return 1
+    print("replay selftest: all rejection fixtures rejected for their stated reasons"); return 0
+
+def interleaving_fixture(base: dict, src: str) -> str | None:
+    """Same-id runs must stay isolated. Returns a failure name, or None."""
+    plan_a = dict(base); plan_a["id"] = "selftest.interleave"
+    # B replays a source with an extra harmless lemma so its object differs from A's
+    alt = REPLAY_DIR / "selftest.interleave.alt.lean"
+    alt.parent.mkdir(parents=True, exist_ok=True)
+    alt.write_text(src.replace("namespace ReverseMathlib.Slice",
+                               "namespace ReverseMathlib.Slice\n\ntheorem interleaveMarker : True := trivial\n", 1))
+    plan_b = dict(plan_a); plan_b["sourcePath"] = str(alt.relative_to(ROOT))
+    evidence: dict = {}
+    original_run = run
+    def interleave(cmd, *args, **kwargs):
+        if len(cmd) == 2 and cmd[0] == "lean" and Path(cmd[1]).name == "Check.lean":
+            globals()["run"] = original_run          # B runs unpatched
+            try:
+                evidence["record_b"] = replay(plan_b, verbose=False)
+            finally:
+                globals()["run"] = interleave
+            obj = Path(cmd[1]).parent / "lib" / "ReverseMathlibReplay" / "HallFromCompactness.olean"
+            evidence["loaded_for_a"] = sha256(obj.read_bytes())
+            globals()["run"] = original_run          # A's own check proceeds unpatched
+        return original_run(cmd, *args, **kwargs)
+    globals()["run"] = interleave
+    try:
+        record_a = replay(plan_a, verbose=False)
+    except SystemExit as e:
+        globals()["run"] = original_run
+        print(f"selftest interleave: run A FAILED: {str(e)[:200]}"); return "interleave"
+    finally:
+        globals()["run"] = original_run
+    record_b = evidence.get("record_b")
+    ok = (record_b is not None
+          and record_a["workDir"] != record_b["workDir"]
+          and record_a["compiledOleanSha256"] == evidence.get("loaded_for_a")
+          and record_a["compiledOleanSha256"] != record_b["compiledOleanSha256"])
+    if ok:
+        print("selftest interleave: same-id runs isolated — A attested the object its own "
+              "check loaded; B's directory and object differ")
+        return None
+    print(f"selftest interleave: ISOLATION FAILURE — A {record_a['compiledOleanSha256'][:12]} "
+          f"loaded {str(evidence.get('loaded_for_a'))[:12]}; B {str(record_b and record_b['compiledOleanSha256'])[:12]}; "
+          f"dirs {record_a['workDir']} / {record_b and record_b['workDir']}")
+    return "interleave"
+
+if __name__ == "__main__":
+    sys.exit(main())
